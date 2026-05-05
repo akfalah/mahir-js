@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum SubmissionStatus {
+  PENDING
+  RUNNING
+  PASSED
+  FAILED
+  ERROR
+}
+
+enum TestResultStatus {
+  PASSED
+  FAILED
+  ERROR
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String
+  role      Role      @default(STUDENT)
+  password  String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  submissions         Submission[]
+  studyCaseProgresses StudyCaseProgress[]
+  materialProgresses  MaterialProgress[]
+  conceptProgresses   ConceptProgress[]
+
+  @@map("users")
+}
+
+model Concept {
+  id          Int       @id @default(autoincrement())
+  slug        String    @unique
+  title       String
+  description String
+  order       Int
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  materials         Material[]
+  conceptProgresses ConceptProgress[]
+
+  @@map("concepts")
+}
+
+model Material {
+  id        Int       @id @default(autoincrement())
+  conceptId Int       @map("concept_id")
+  slug      String
+  title     String
+  content   String
+  order     Int
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  concept Concept @relation(fields: [conceptId], references: [id])
+
+  studyCases         StudyCase[]
+  materialProgresses MaterialProgress[]
+
+  @@unique([conceptId, order])
+  @@map("materials")
+}
+
+model StudyCase {
+  id             Int       @id @default(autoincrement())
+  materialId     Int       @map("material_id")
+  title          String
+  description    String
+  starterCode    String    @map("starter_code")
+  order          Int
+  parameterNames Json?     @map("parameter_names")
+  functionName   String?   @map("function_name")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime? @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  material Material @relation(fields: [materialId], references: [id])
+
+  testCases           TestCase[]
+  submissions         Submission[]
+  studyCaseProgresses StudyCaseProgress[]
+
+  @@unique([materialId, order])
+  @@map("study_cases")
+}
+
+model TestCase {
+  id          Int       @id @default(autoincrement())
+  studyCaseId Int       @map("study_case_id")
+  description String
+  input       Json
+  expected    Json
+  order       Int
+  isPublished Boolean   @default(false) @map("is_published")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  studyCase StudyCase @relation(fields: [studyCaseId], references: [id])
+
+  testResults TestResult[]
+
+  @@unique([studyCaseId, order])
+  @@map("test_cases")
+}
+
+model Submission {
+  id           Int              @id @default(autoincrement())
+  userId       Int              @map("user_id")
+  studyCaseId  Int              @map("study_case_id")
+  code         String
+  status       SubmissionStatus @default(PENDING)
+  errorMessage String?          @map("error_message")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+  studyCase StudyCase @relation(fields: [studyCaseId], references: [id])
+
+  testResults TestResult[]
+
+  @@map("submissions")
+}
+
+model TestResult {
+  id           Int              @id @default(autoincrement())
+  submissionId Int              @map("submission_id")
+  testCaseId   Int              @map("test_case_id")
+  description  String
+  status       TestResultStatus
+  expected     String?
+  received     String?
+
+  submission Submission @relation(fields: [submissionId], references: [id])
+  testCase   TestCase   @relation(fields: [testCaseId], references: [id])
+
+  @@map("test_results")
+}
+
+model StudyCaseProgress {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  studyCaseId Int       @map("study_case_id")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  isUnlocked  Boolean   @default(false) @map("is_unlocked")
+  completedAt DateTime? @map("completed_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  studyCase StudyCase @relation(fields: [studyCaseId], references: [id])
+
+  @@unique([userId, studyCaseId])
+  @@map("study_case_progresses")
+}
+
+model MaterialProgress {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  materialId  Int       @map("material_id")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  isUnlocked  Boolean   @default(false) @map("is_unlocked")
+  completedAt DateTime? @map("completed_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  material Material @relation(fields: [materialId], references: [id])
+
+  @@unique([userId, materialId])
+  @@map("material_progresses")
+}
+
+model ConceptProgress {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  conceptId   Int       @map("concept_id")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  isUnlocked  Boolean   @default(false) @map("is_unlocked")
+  completedAt DateTime? @map("completed_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  concept Concept @relation(fields: [conceptId], references: [id])
+
+  @@unique([userId, conceptId])
+  @@map("concept_progresses")
+}

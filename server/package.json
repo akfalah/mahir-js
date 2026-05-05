@@ -1,0 +1,46 @@
+{
+  "name": "mahirjs-server",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "test": "jest --runInBand --forceExit"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.[t|j]sx?$": "babel-jest"
+    },
+    "setupFiles": [
+      "./tests/jest.setup.ts"
+    ]
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0",
+    "winston": "^3.19.0",
+    "zod": "^4.4.2"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.29.3",
+    "@babel/preset-typescript": "^7.28.5",
+    "@jest/globals": "^30.3.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.6.0",
+    "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.0",
+    "babel-jest": "^30.3.0",
+    "jest": "^30.3.0",
+    "prisma": "^7.8.0",
+    "supertest": "^7.2.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}
