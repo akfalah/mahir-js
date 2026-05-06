@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 
-import { GetRequest } from '../models/user.model';
+import { GetUsersRequest } from '../models/user.model';
 
 import { UserService } from '../services/user.service';
 
 export class UserController {
-  static async get(req: Request, res: Response, next: NextFunction) {
+  static async index(req: Request, res: Response, next: NextFunction) {
     try {
-      const request: GetRequest = {
+      const request: GetUsersRequest = {
         page: Number(req.query.page) || 1,
         limit: Number(req.query.limit) || 10,
         search: req.query.search as string | undefined,
@@ -22,14 +22,14 @@ export class UserController {
 
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await UserService.showUser(Number(req.params.id));
+      const response = await UserService.getUserById(Number(req.params.id));
       res.status(200).json({ data: response });
     } catch (e) {
       next(e);
     }
   }
 
-  static async create(req: Request, res: Response, next: NextFunction) {
+  static async store(req: Request, res: Response, next: NextFunction) {
     try {
       const response = await UserService.createUser(req.body);
 
@@ -52,7 +52,7 @@ export class UserController {
     }
   }
 
-  static async deleteUser(req: Request, res: Response, next: NextFunction) {
+  static async destroy(req: Request, res: Response, next: NextFunction) {
     try {
       await UserService.deleteUser(Number(req.params.id));
       res.status(200).json({ data: 'User deleted successfully' });

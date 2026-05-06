@@ -1,6 +1,26 @@
 import { User } from '../../generated/prisma/client';
 import { Role } from '../../generated/prisma/enums';
 
+export type GetUsersRequest = {
+  page: number;
+  limit: number;
+  search?: string;
+};
+
+export type CreateUserRequest = {
+  email: string;
+  name: string;
+  role: Role;
+  password: string;
+};
+
+export type UpdateUserRequest = {
+  email?: string;
+  name?: string;
+  role?: Role;
+  password?: string;
+};
+
 export type UserResponse = {
   id: number;
   email: string;
@@ -8,7 +28,7 @@ export type UserResponse = {
   role: Role;
 };
 
-export type GetResponse = {
+export type GetUsersResponse = {
   data: UserResponse[];
   pagination: {
     page: number;
@@ -16,26 +36,6 @@ export type GetResponse = {
     total: number;
     totalPages: number;
   };
-};
-
-export type GetRequest = {
-  page: number;
-  limit: number;
-  search?: string;
-};
-
-export type CreateRequest = {
-  email: string;
-  name: string;
-  role: Role;
-  password: string;
-};
-
-export type UpdateRequest = {
-  email?: string;
-  name?: string;
-  role?: Role;
-  password?: string;
 };
 
 export function toUserResponse(user: User): UserResponse {

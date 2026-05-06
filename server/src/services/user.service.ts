@@ -4,20 +4,20 @@ import { prisma } from '../applications/database';
 
 import { ResponseError } from '../error/response.error';
 
-import { UserValidation } from '../validations/user.validation';
 import { Validation } from '../validations/validation';
+import { UserValidation } from '../validations/user.validation';
 
 import {
-  CreateRequest,
-  GetRequest,
-  GetResponse,
+  CreateUserRequest,
+  GetUsersRequest,
+  GetUsersResponse,
   toUserResponse,
-  UpdateRequest,
+  UpdateUserRequest,
   UserResponse,
 } from '../models/user.model';
 
 export class UserService {
-  static async getUsers(request: GetRequest): Promise<GetResponse> {
+  static async getUsers(request: GetUsersRequest): Promise<GetUsersResponse> {
     const data = Validation.validate(UserValidation.GET, request);
 
     const where = data.search
@@ -53,7 +53,7 @@ export class UserService {
     };
   }
 
-  static async showUser(id: number): Promise<UserResponse> {
+  static async getUserById(id: number): Promise<UserResponse> {
     const user = await prisma.user.findFirst({
       where: { id, deletedAt: null },
     });
@@ -63,7 +63,7 @@ export class UserService {
     return toUserResponse(user);
   }
 
-  static async createUser(request: CreateRequest): Promise<UserResponse> {
+  static async createUser(request: CreateUserRequest): Promise<UserResponse> {
     const data = Validation.validate(UserValidation.CREATE, request);
 
     const count = await prisma.user.count({
@@ -87,7 +87,7 @@ export class UserService {
 
   static async updateUser(
     userId: number,
-    request: UpdateRequest,
+    request: UpdateUserRequest,
   ): Promise<UserResponse> {
     const data = Validation.validate(UserValidation.UPDATE, request);
 

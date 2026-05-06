@@ -5,8 +5,8 @@ import { prisma } from '../applications/database';
 
 import { ResponseError } from '../error/response.error';
 
-import { AuthValidation } from '../validations/auth.validation';
 import { Validation } from '../validations/validation';
+import { AuthValidation } from '../validations/auth.validation';
 
 import {
   AuthResponse,
@@ -74,7 +74,7 @@ export class AuthService {
 
   static async profile(userId: number): Promise<ProfileResponse> {
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userId, deletedAt: null },
     });
 
     if (!user) throw new ResponseError(404, 'User not found');
@@ -99,7 +99,7 @@ export class AuthService {
     if (data.password) data.password = await bcrypt.hash(data.password, 10);
 
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: { id: userId, deletedAt: null },
       data,
     });
 

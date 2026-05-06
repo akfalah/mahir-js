@@ -3,7 +3,11 @@ import jwt from 'jsonwebtoken';
 
 import { ResponseError } from '../error/response.error';
 
-import { JwtPayload } from '../models/auth.model';
+export type JwtPayload = {
+  id: number;
+  email: string;
+  role: string;
+};
 
 declare global {
   namespace Express {

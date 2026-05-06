@@ -1,21 +1,6 @@
 import { User } from '../../generated/prisma/client';
 import { Role } from '../../generated/prisma/enums';
 
-export type AuthResponse = {
-  id: number;
-  email: string;
-  name: string;
-  role: Role;
-  token: string;
-};
-
-export type ProfileResponse = {
-  id: number;
-  email: string;
-  name: string;
-  role: Role;
-};
-
 export type RegisterRequest = {
   email: string;
   name: string;
@@ -33,10 +18,19 @@ export type UpdateProfileRequest = {
   password?: string;
 };
 
-export type JwtPayload = {
+export type AuthResponse = {
   id: number;
   email: string;
-  role: string;
+  name: string;
+  role: Role;
+  token: string;
+};
+
+export type ProfileResponse = {
+  id: number;
+  email: string;
+  name: string;
+  role: Role;
 };
 
 export function toProfileResponse(user: User): ProfileResponse {
