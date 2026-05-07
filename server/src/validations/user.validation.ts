@@ -2,19 +2,9 @@ import z, { ZodType } from 'zod';
 
 import { Role } from '../../generated/prisma/enums';
 
-import {
-  CreateUserRequest,
-  GetUsersRequest,
-  UpdateUserRequest,
-} from '../models/user.model';
+import { CreateUserRequest, UpdateUserRequest } from '../models/user.model';
 
 export class UserValidation {
-  static readonly GET: ZodType<GetUsersRequest> = z.object({
-    page: z.number().min(1).default(1),
-    limit: z.number().min(1).max(100).default(10),
-    search: z.string().optional(),
-  });
-
   static readonly CREATE: ZodType<CreateUserRequest> = z.object({
     email: z.email(),
     name: z.string().min(3),

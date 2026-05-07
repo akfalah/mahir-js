@@ -1,11 +1,7 @@
 import { User } from '../../generated/prisma/client';
 import { Role } from '../../generated/prisma/enums';
 
-export type GetUsersRequest = {
-  page: number;
-  limit: number;
-  search?: string;
-};
+import { PaginationResponse } from './paginations.model';
 
 export type CreateUserRequest = {
   email: string;
@@ -28,15 +24,7 @@ export type UserResponse = {
   role: Role;
 };
 
-export type GetUsersResponse = {
-  data: UserResponse[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-};
+export type GetUsersResponse = PaginationResponse<UserResponse>;
 
 export function toUserResponse(user: User): UserResponse {
   return {

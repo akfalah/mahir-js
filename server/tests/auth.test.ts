@@ -243,6 +243,6 @@ describe('DELETE /api/auth/logout', () => {
 
     logger.debug(response.body);
     expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Logged out successfully');
+    expect(response.body.data).toBe('Logged out successfully');
   });
 });

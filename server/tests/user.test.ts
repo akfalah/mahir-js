@@ -1,10 +1,10 @@
 import 'dotenv/config';
 import supertest from 'supertest';
 
+import { Role } from '../generated/prisma/enums';
+
 import { server } from '../src/applications/server';
 import { logger } from '../src/applications/logger';
-
-import { Role } from '../generated/prisma/enums';
 
 import { createUserTest, deleteUserTest, getTokenTest } from './test.util';
 
@@ -285,7 +285,7 @@ describe('DELETE /api/users/:id', () => {
 
   beforeEach(async () => {
     await createUserTest(Role.ADMIN);
-    
+
     const student = await createUserTest(
       Role.STUDENT,
       'student.test@example.com',

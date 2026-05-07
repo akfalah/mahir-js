@@ -2,9 +2,9 @@ import { NextFunction, Request, Response } from 'express';
 
 import { PaginationRequest } from '../models/paginations.model';
 
-import { UserService } from '../services/user.service';
+import { ConceptService } from '../services/concept.service';
 
-export class UserController {
+export class ConceptController {
   static async index(req: Request, res: Response, next: NextFunction) {
     try {
       const request: PaginationRequest = {
@@ -13,7 +13,7 @@ export class UserController {
         search: req.query.search as string | undefined,
       };
 
-      const response = await UserService.getUsers(request);
+      const response = await ConceptService.getConcepts(request);
 
       res.status(200).json(response);
     } catch (e) {
@@ -23,7 +23,9 @@ export class UserController {
 
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await UserService.getUserById(Number(req.params.id));
+      const response = await ConceptService.getConceptById(
+        Number(req.params.id),
+      );
 
       res.status(200).json({ data: response });
     } catch (e) {
@@ -33,7 +35,7 @@ export class UserController {
 
   static async store(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await UserService.createUser(req.body);
+      const response = await ConceptService.createConcept(req.body);
 
       res.status(201).json({ data: response });
     } catch (e) {
@@ -43,7 +45,7 @@ export class UserController {
 
   static async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await UserService.updateUser(
+      const response = await ConceptService.updateConcept(
         Number(req.params.id),
         req.body,
       );
@@ -56,9 +58,9 @@ export class UserController {
 
   static async destroy(req: Request, res: Response, next: NextFunction) {
     try {
-      await UserService.deleteUser(Number(req.params.id));
-      
-      res.status(200).json({ data: 'User deleted successfully' });
+      await ConceptService.deleteConceptTest(Number(req.params.id));
+
+      res.status(200).json({ data: 'Concept deleted successfully' });
     } catch (e) {
       next(e);
     }

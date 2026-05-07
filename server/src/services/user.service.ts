@@ -6,19 +6,21 @@ import { ResponseError } from '../error/response.error';
 
 import { Validation } from '../validations/validation';
 import { UserValidation } from '../validations/user.validation';
+import { PaginationValidation } from '../validations/pagination.validation';
 
 import {
   CreateUserRequest,
-  GetUsersRequest,
   GetUsersResponse,
   toUserResponse,
   UpdateUserRequest,
   UserResponse,
 } from '../models/user.model';
 
+import { PaginationRequest } from '../models/paginations.model';
+
 export class UserService {
-  static async getUsers(request: GetUsersRequest): Promise<GetUsersResponse> {
-    const data = Validation.validate(UserValidation.GET, request);
+  static async getUsers(request: PaginationRequest): Promise<GetUsersResponse> {
+    const data = Validation.validate(PaginationValidation, request);
 
     const where = data.search
       ? {
@@ -86,18 +88,18 @@ export class UserService {
   }
 
   static async updateUser(
-    userId: number,
+    id: number,
     request: UpdateUserRequest,
   ): Promise<UserResponse> {
     const data = Validation.validate(UserValidation.UPDATE, request);
 
-    const exists = await prisma.user.findUnique({ where: { id: userId } });
+    const exists = await prisma.user.findFirst({ where: { id, deletedAt: null} });
 
     if (!exists) throw new ResponseError(404, 'User not found');
 
     if (data.email) {
       const count = await prisma.user.count({
-        where: { email: data.email, NOT: { id: userId } },
+        where: { email: data.email, NOT: { id } },
       });
 
       if (count !== 0) throw new ResponseError(400, 'Email already exists');
@@ -108,7 +110,7 @@ export class UserService {
     }
 
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: { id },
       data,
     });
 
