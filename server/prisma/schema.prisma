@@ -63,7 +63,7 @@ model Concept {
 model Material {
   id        Int       @id @default(autoincrement())
   conceptId Int       @map("concept_id")
-  slug      String
+  slug      String    
   title     String
   content   String
   order     Int

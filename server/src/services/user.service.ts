@@ -15,7 +15,6 @@ import {
   UpdateUserRequest,
   UserResponse,
 } from '../models/user.model';
-
 import { PaginationRequest } from '../models/paginations.model';
 
 export class UserService {

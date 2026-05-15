@@ -1,4 +1,5 @@
 import { Concept } from '../../generated/prisma/client';
+
 import { PaginationResponse } from './paginations.model';
 
 export type CreateConceptRequest = {

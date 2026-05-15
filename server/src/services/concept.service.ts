@@ -1,5 +1,11 @@
 import { prisma } from '../applications/database';
+
 import { ResponseError } from '../error/response.error';
+
+import { Validation } from '../validations/validation';
+import { ConceptValidation } from '../validations/concept.validation';
+import { PaginationValidation } from '../validations/pagination.validation';
+
 import {
   ConceptResponse,
   CreateConceptRequest,
@@ -8,9 +14,6 @@ import {
   UpdateConceptRequest,
 } from '../models/concept.model';
 import { PaginationRequest } from '../models/paginations.model';
-import { ConceptValidation } from '../validations/concept.validation';
-import { PaginationValidation } from '../validations/pagination.validation';
-import { Validation } from '../validations/validation';
 
 export class ConceptService {
   static async getConcepts(
