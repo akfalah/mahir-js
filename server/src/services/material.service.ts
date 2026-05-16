@@ -40,7 +40,7 @@ export class MaterialService {
         where,
         skip,
         take: data.limit,
-        orderBy: { order: 'asc' },
+        orderBy: { id: 'asc' },
       }),
       prisma.material.count({ where }),
     ]);
@@ -100,17 +100,17 @@ export class MaterialService {
   ): Promise<MaterialResponse> {
     const data = Validation.validate(MaterialValidation.UPDATE, request);
 
-    const concept = await prisma.concept.findFirst({
-      where: { id: data.conceptId, deletedAt: null },
-    });
-
-    if (!concept) throw new ResponseError(404, 'Concept not found');
-
     const exists = await prisma.material.findFirst({
       where: { id, deletedAt: null },
     });
 
     if (!exists) throw new ResponseError(404, 'Material not found');
+
+    const concept = await prisma.concept.findFirst({
+      where: { id: data.conceptId, deletedAt: null },
+    });
+
+    if (!concept) throw new ResponseError(404, 'Concept not found');
 
     if (data.slug && data.slug !== exists.slug) {
       const count = await prisma.material.count({

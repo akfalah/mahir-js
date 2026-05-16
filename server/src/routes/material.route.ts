@@ -1,6 +1,8 @@
 import { Router } from 'express';
-import { MaterialController } from '../controllers/material.controller';
+
 import { roleMiddleware } from '../middlewares/auth.middleware';
+
+import { MaterialController } from '../controllers/material.controller';
 
 export const materialRouter = Router();
 

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { ConceptController } from '../controllers/concept.controller';
-
 import { roleMiddleware } from '../middlewares/auth.middleware';
+
+import { ConceptController } from '../controllers/concept.controller';
 
 export const conceptRouter = Router();
 

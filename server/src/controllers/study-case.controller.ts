@@ -2,9 +2,9 @@ import { NextFunction, Request, Response } from 'express';
 
 import { PaginationRequest } from '../models/paginations.model';
 
-import { MaterialService } from '../services/material.service';
+import { StudyCaseService } from '../services/study-case.service';
 
-export class MaterialController {
+export class StudyCaseController {
   static async index(req: Request, res: Response, next: NextFunction) {
     try {
       const request: PaginationRequest = {
@@ -13,7 +13,7 @@ export class MaterialController {
         search: req.query.search as string | undefined,
       };
 
-      const response = await MaterialService.getMaterials(request);
+      const response = await StudyCaseService.getStudyCases(request);
 
       res.status(200).json(response);
     } catch (e) {
@@ -23,11 +23,11 @@ export class MaterialController {
 
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await MaterialService.getMaterialById(
+      const response = await StudyCaseService.getStudyCaseById(
         Number(req.params.id),
       );
 
-      res.status(200).json({ data: response });
+      res.status(200).json(response);
     } catch (e) {
       next(e);
     }
@@ -35,9 +35,9 @@ export class MaterialController {
 
   static async store(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await MaterialService.createMaterial(req.body);
+      const response = await StudyCaseService.createStudyCase(req.body);
 
-      res.status(201).json({ data: response });
+      res.status(201).json(response);
     } catch (e) {
       next(e);
     }
@@ -45,12 +45,12 @@ export class MaterialController {
 
   static async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await MaterialService.updateMaterial(
+      const response = await StudyCaseService.updateStudyCase(
         Number(req.params.id),
         req.body,
       );
 
-      res.status(200).json({ data: response });
+      res.status(200).json(response);
     } catch (e) {
       next(e);
     }
@@ -58,9 +58,9 @@ export class MaterialController {
 
   static async destroy(req: Request, res: Response, next: NextFunction) {
     try {
-      await MaterialService.deleteMaterial(Number(req.params.id));
+      await StudyCaseService.deleteStudyCase(Number(req.params.id));
 
-      res.status(200).json({ data: 'Material deleted successfully' });
+      res.status(200).json({ data: 'Study case deleted successfully' });
     } catch (e) {
       next(e);
     }
