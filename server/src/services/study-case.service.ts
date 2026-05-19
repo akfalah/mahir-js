@@ -1,5 +1,10 @@
-import { PaginationValidation } from '../validations/pagination.validation';
+import { prisma } from '../applications/database';
+
+import { ResponseError } from '../error/response.error';
+
 import { Validation } from '../validations/validation';
+import { PaginationValidation } from '../validations/pagination.validation';
+import { StudyCaseValidation } from '../validations/study-case.validation';
 
 import {
   CreateStudyCaseRequest,
@@ -9,9 +14,6 @@ import {
   UpdateStudyCaseRequest,
 } from '../models/study-case.model';
 import { PaginationRequest } from '../models/paginations.model';
-import { prisma } from '../applications/database';
-import { ResponseError } from '../error/response.error';
-import { StudyCaseValidation } from '../validations/study-case.validation';
 
 export class StudyCaseService {
   static async getStudyCases(
@@ -131,10 +133,7 @@ export class StudyCaseService {
     if (!studyCase) throw new ResponseError(404, 'Study case not found');
 
     await prisma.studyCase.update({
-      where: {
-        id,
-        deletedAt: null,
-      },
+      where: { id },
       data: { deletedAt: new Date() },
     });
   }

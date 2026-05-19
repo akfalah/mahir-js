@@ -1,4 +1,5 @@
 import { StudyCase } from '../../generated/prisma/client';
+
 import { PaginationResponse } from './paginations.model';
 
 export type CreateStudyCaseRequest = {
