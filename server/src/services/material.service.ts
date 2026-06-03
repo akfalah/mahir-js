@@ -1,37 +1,38 @@
 import { prisma } from '../applications/database';
 
-import { ResponseError } from '../error/response.error';
+import { ResponseError } from '../errors/response.error';
 
 import { Validation } from '../validations/validation';
-import { PaginationValidation } from '../validations/pagination.validation';
 import { MaterialValidation } from '../validations/material.validation';
 
 import {
   CreateMaterialRequest,
-  GetMaterialResponse,
+  MaterialPaginationRequest,
+  MaterialPaginationResponse,
   MaterialResponse,
   toMaterialResponse,
   UpdateMaterialRequest,
 } from '../models/material.model';
-import { PaginationRequest } from '../models/paginations.model';
 
 export class MaterialService {
   static async getMaterials(
-    request: PaginationRequest,
-  ): Promise<GetMaterialResponse> {
-    const data = Validation.validate(PaginationValidation, request);
+    request: MaterialPaginationRequest,
+  ): Promise<MaterialPaginationResponse> {
+    const data = Validation.validate(MaterialValidation.GET, request);
 
-    const where = data.search
-      ? {
-          OR: [
-            { title: { contains: data.search, mode: 'insensitive' as const } },
-            {
-              content: { contains: data.search, mode: 'insensitive' as const },
-            },
-          ],
-          deletedAt: null,
-        }
-      : { deletedAt: null };
+    if (data.sortBy === 'order' && !data.conceptId) {
+      throw new ResponseError(400, 'sortBy order requires conceptId filter');
+    }
+
+    const where = {
+      ...(data.conceptId && { conceptId: data.conceptId }),
+      ...(data.search && {
+        OR: [
+          { title: { contains: data.search, mode: 'insensitive' as const } },
+          { content: { contains: data.search, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
 
     const skip = (data.page - 1) * data.limit;
 
@@ -40,7 +41,7 @@ export class MaterialService {
         where,
         skip,
         take: data.limit,
-        orderBy: { id: 'asc' },
+        orderBy: { [data.sortBy as string]: data.orderBy },
       }),
       prisma.material.count({ where }),
     ]);
@@ -57,9 +58,7 @@ export class MaterialService {
   }
 
   static async getMaterialById(id: number): Promise<MaterialResponse> {
-    const material = await prisma.material.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const material = await prisma.material.findUnique({ where: { id } });
 
     if (!material) throw new ResponseError(404, 'Material not found');
 
@@ -71,23 +70,23 @@ export class MaterialService {
   ): Promise<MaterialResponse> {
     const data = Validation.validate(MaterialValidation.CREATE, request);
 
-    const concept = await prisma.concept.findFirst({
-      where: { id: data.conceptId, deletedAt: null },
+    const concept = await prisma.concept.findUnique({
+      where: { id: data.conceptId },
     });
 
     if (!concept) throw new ResponseError(404, 'Concept not found');
 
-    const [countSlug, countOrder] = await Promise.all([
+    const [slugExists, orderExists] = await Promise.all([
       prisma.material.count({
-        where: { slug: data.slug, conceptId: data.conceptId },
+        where: { conceptId: data.conceptId, slug: data.slug },
       }),
       prisma.material.count({
-        where: { order: data.order, conceptId: data.conceptId },
+        where: { conceptId: data.conceptId, order: data.order },
       }),
     ]);
 
-    if (countSlug !== 0) throw new ResponseError(400, 'Slug already exists');
-    if (countOrder !== 0) throw new ResponseError(400, 'Order already exists');
+    if (slugExists) throw new ResponseError(400, 'Slug already exists');
+    if (orderExists) throw new ResponseError(400, 'Order already exists');
 
     const material = await prisma.material.create({ data });
 
@@ -100,52 +99,36 @@ export class MaterialService {
   ): Promise<MaterialResponse> {
     const data = Validation.validate(MaterialValidation.UPDATE, request);
 
-    const exists = await prisma.material.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const exists = await prisma.material.findUnique({ where: { id } });
 
     if (!exists) throw new ResponseError(404, 'Material not found');
 
-    const concept = await prisma.concept.findFirst({
-      where: { id: data.conceptId, deletedAt: null },
-    });
-
-    if (!concept) throw new ResponseError(404, 'Concept not found');
-
-    if (data.slug && data.slug !== exists.slug) {
-      const count = await prisma.material.count({
+    if (data.slug) {
+      const slugExists = await prisma.material.count({
         where: { slug: data.slug, NOT: { id } },
       });
 
-      if (!count) throw new ResponseError(400, 'Slug already exists');
+      if (slugExists) throw new ResponseError(400, 'Slug already exists');
     }
 
-    if (data.order && data.order !== exists.order) {
-      const count = await prisma.material.count({
-        where: { order: data.order, NOT: { id } },
+    if (data.order) {
+      const orderExists = await prisma.material.count({
+        where: { conceptId: exists.conceptId, order: data.order, NOT: { id } },
       });
 
-      if (!count) throw new ResponseError(400, 'Order already exists');
+      if (orderExists) throw new ResponseError(400, 'Order already exists');
     }
 
-    const material = await prisma.material.update({
-      where: { id },
-      data,
-    });
+    const material = await prisma.material.update({ where: { id }, data });
 
     return toMaterialResponse(material);
   }
 
   static async deleteMaterial(id: number): Promise<void> {
-    const material = await prisma.material.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const material = await prisma.material.findUnique({ where: { id } });
 
     if (!material) throw new ResponseError(404, 'Material not found');
 
-    await prisma.material.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await prisma.material.delete({ where: { id } });
   }
 }

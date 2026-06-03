@@ -1,15 +1,20 @@
-import { NextFunction, Request, response, Response } from 'express';
-import { PaginationRequest } from '../models/paginations.model';
+import { NextFunction, Request, Response } from 'express';
+
+import { TestCasePaginationRequest } from '../models/test-case.model';
+
 import { TestCaseService } from '../services/test-case.service';
 
 export class TestCaseController {
   static async index(req: Request, res: Response, next: NextFunction) {
     try {
-      const request: PaginationRequest = {
-        page: Number(req.query.page) || 1,
-        limit: Number(req.query.limit) || 10,
-        search: (req.query.search as string) || undefined,
-      };
+      const request = {
+        page: req.query.page,
+        limit: req.query.limit,
+        search: req.query.search,
+        sortBy: req.query.sortBy,
+        orderBy: req.query.orderBy,
+        studyCaseId: req.query.studyCaseId,
+      } as unknown as TestCasePaginationRequest;
 
       const response = await TestCaseService.getTestCases(request);
 

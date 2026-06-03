@@ -1,6 +1,18 @@
 import { TestCase } from '../../generated/prisma/client';
 
-import { PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './paginations.model';
+
+export type TestCaseSortBy =
+  | 'id'
+  | 'studyCaseId'
+  | 'order'
+  | 'isPublished'
+  | 'createdAt';
+
+export type TestCasePaginationRequest = PaginationRequest<TestCaseSortBy> & {
+  studyCaseId?: number;
+  isPublished?: boolean;
+};
 
 export type CreateTestCaseRequest = {
   studyCaseId: number;
@@ -18,7 +30,6 @@ export type CreateTestCaseRequest = {
 };
 
 export type UpdateTestCaseRequest = {
-  studyCaseId?: number;
   description?: string;
   input?: Record<
     string,
@@ -46,9 +57,10 @@ export type TestCaseResponse = {
   >;
   order: number;
   isPublished: boolean;
+  createdAt: Date;
 };
 
-export type GetTestCaseResponse = PaginationResponse<TestCaseResponse>;
+export type TestCasePaginationResponse = PaginationResponse<TestCaseResponse>;
 
 export function toTestCaseResponse(testCase: TestCase) {
   return {
@@ -65,5 +77,6 @@ export function toTestCaseResponse(testCase: TestCase) {
     >,
     order: testCase.order,
     isPublished: testCase.isPublished,
+    createdAt: testCase.createdAt,
   };
 }

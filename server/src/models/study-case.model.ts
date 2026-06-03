@@ -1,6 +1,17 @@
 import { StudyCase } from '../../generated/prisma/client';
 
-import { PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './paginations.model';
+
+export type StudyCaeSortBy =
+  | 'id'
+  | 'materialId'
+  | 'title'
+  | 'order'
+  | 'createdAt';
+
+export type StudyCasePaginationRequest = PaginationRequest<StudyCaeSortBy> & {
+  materialId?: number;
+};
 
 export type CreateStudyCaseRequest = {
   materialId: number;
@@ -13,7 +24,6 @@ export type CreateStudyCaseRequest = {
 };
 
 export type UpdateStudyCaseRequest = {
-  materialId?: number;
   title?: string;
   description?: string;
   starterCode?: string;
@@ -29,11 +39,12 @@ export type StudyCaseResponse = {
   description: string;
   starterCode: string;
   order: number;
-  parameterNames?: string[];
-  functionName?: string;
+  parameterNames: string[] | null;
+  functionName: string | null;
+  createdAt: Date;
 };
 
-export type GetStudyCaseResponse = PaginationResponse<StudyCaseResponse>;
+export type StudyCasePaginationResponse = PaginationResponse<StudyCaseResponse>;
 
 export function toStudyCaseResponse(studyCase: StudyCase) {
   return {
@@ -43,7 +54,8 @@ export function toStudyCaseResponse(studyCase: StudyCase) {
     description: studyCase.description,
     starterCode: studyCase.starterCode,
     order: studyCase.order,
-    parameterNames: (studyCase.parameterNames as string[]) ?? undefined,
-    functionName: studyCase.functionName ?? undefined,
+    parameterNames: studyCase.parameterNames as string[] | null,
+    functionName: studyCase.functionName,
+    createdAt: studyCase.createdAt,
   };
 }

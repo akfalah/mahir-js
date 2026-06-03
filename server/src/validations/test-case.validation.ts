@@ -1,14 +1,34 @@
 import z, { ZodType } from 'zod';
 
+import { PaginationValidation } from './pagination.validation';
+
 import {
   CreateTestCaseRequest,
+  TestCasePaginationRequest,
+  TestCaseSortBy,
   UpdateTestCaseRequest,
 } from '../models/test-case.model';
 
 export class TestCaseValidation {
+  static readonly GET: ZodType<TestCasePaginationRequest> = z.object({
+    ...PaginationValidation.BaseSchema,
+    sortBy: z
+      .enum([
+        'id',
+        'studyCaseId',
+        'isPublished',
+        'order',
+        'createdAt',
+      ] as const satisfies readonly TestCaseSortBy[])
+      .default('id'),
+    orderBy: z.enum(['asc', 'desc']).default('asc'),
+    studyCaseId: z.coerce.number().min(1).optional(),
+    isPublished: z.boolean().optional(),
+  });
+
   static readonly CREATE: ZodType<CreateTestCaseRequest> = z.object({
-    studyCaseId: z.number().positive(),
-    description: z.string().min(12),
+    studyCaseId: z.number().min(1),
+    description: z.string().min(3),
     input: z.record(
       z.string(),
       z.union([
@@ -27,13 +47,12 @@ export class TestCaseValidation {
         z.array(z.union([z.string(), z.number(), z.boolean()])),
       ]),
     ),
-    order: z.number().int().min(1),
+    order: z.number().min(1),
     isPublished: z.boolean().optional(),
   });
 
   static readonly UPDATE: ZodType<UpdateTestCaseRequest> = z.object({
-    studyCaseId: z.number().positive().optional(),
-    description: z.string().min(12).optional(),
+    description: z.string().min(3).optional(),
     input: z
       .record(
         z.string(),
@@ -56,7 +75,7 @@ export class TestCaseValidation {
         ]),
       )
       .optional(),
-    order: z.number().int().min(1).optional(),
+    order: z.number().min(1).optional(),
     isPublished: z.boolean().optional(),
   });
 }

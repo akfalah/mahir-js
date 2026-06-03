@@ -1,13 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import { ResponseError } from '../error/response.error';
+import { Role } from '../../generated/prisma/enums';
 
-export type JwtPayload = {
-  id: number;
-  email: string;
-  role: string;
-};
+import { ResponseError } from '../errors/response.error';
+
+import { JwtPayload } from '../models/auth.model';
 
 declare global {
   namespace Express {
@@ -17,38 +15,35 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
-
-export const authMiddleware = (
+export function authMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
-  const authHeader = req.headers.authorization;
+) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(new ResponseError(401, 'Unauthorized'));
-  }
-
-  const token = authHeader.split(' ')[1];
+  if (!token) throw new ResponseError(401, 'Unauthorized');
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string,
+    ) as JwtPayload;
+
     req.user = payload;
     next();
   } catch (e) {
     next(new ResponseError(401, 'Invalid or expired token'));
   }
-};
+}
 
-export const roleMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  if (req.user?.role !== 'ADMIN') {
-    return next(new ResponseError(403, 'Forbidden'));
-  }
+export function roleMiddleware(...roles: Role[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) throw new ResponseError(401, 'Unauthorized');
+    if (!roles.includes(req.user.role as Role)) {
+      throw new ResponseError(403, 'Forbidden');
+    }
 
-  next();
-};
+    next();
+  };
+}

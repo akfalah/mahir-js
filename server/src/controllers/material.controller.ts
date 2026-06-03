@@ -1,17 +1,20 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { PaginationRequest } from '../models/paginations.model';
+import { MaterialPaginationRequest } from '../models/material.model';
 
 import { MaterialService } from '../services/material.service';
 
 export class MaterialController {
   static async index(req: Request, res: Response, next: NextFunction) {
     try {
-      const request: PaginationRequest = {
-        page: Number(req.query.page) || 1,
-        limit: Number(req.query.limit) || 10,
-        search: req.query.search as string | undefined,
-      };
+      const request = {
+        page: req.query.page,
+        limit: req.query.limit,
+        search: req.query.search,
+        sortBy: req.query.sortBy,
+        orderBy: req.query.orderBy,
+        conceptId: req.query.conceptId,
+      } as unknown as MaterialPaginationRequest;
 
       const response = await MaterialService.getMaterials(request);
 

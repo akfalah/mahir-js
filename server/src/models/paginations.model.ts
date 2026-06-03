@@ -1,7 +1,11 @@
-export type PaginationRequest = {
+export type OrderBy = 'asc' | 'desc';
+
+export type PaginationRequest<TSort extends string = string> = {
   page: number;
   limit: number;
   search?: string;
+  sortBy?: TSort;
+  orderBy?: OrderBy;
 };
 
 export type PaginationResponse<T> = {

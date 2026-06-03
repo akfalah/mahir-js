@@ -1,6 +1,17 @@
 import { Material } from '../../generated/prisma/client';
 
-import { PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './paginations.model';
+
+export type MaterialSortBy =
+  | 'id'
+  | 'conceptId'
+  | 'title'
+  | 'order'
+  | 'createdAt';
+
+export type MaterialPaginationRequest = PaginationRequest<MaterialSortBy> & {
+  conceptId?: number;
+};
 
 export type CreateMaterialRequest = {
   conceptId: number;
@@ -11,7 +22,6 @@ export type CreateMaterialRequest = {
 };
 
 export type UpdateMaterialRequest = {
-  conceptId?: number;
   slug?: string;
   title?: string;
   content?: string;
@@ -25,9 +35,10 @@ export type MaterialResponse = {
   title: string;
   content: string;
   order: number;
+  createdAt: Date;
 };
 
-export type GetMaterialResponse = PaginationResponse<MaterialResponse>;
+export type MaterialPaginationResponse = PaginationResponse<MaterialResponse>;
 
 export function toMaterialResponse(material: Material) {
   return {
@@ -37,5 +48,6 @@ export function toMaterialResponse(material: Material) {
     title: material.title,
     content: material.content,
     order: material.order,
+    createdAt: material.createdAt,
   };
 }

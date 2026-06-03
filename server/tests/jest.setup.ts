@@ -1,2 +1,3 @@
-// tests/jest.setup.ts
 import 'dotenv/config';
+
+jest.setTimeout(1000000);

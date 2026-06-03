@@ -1,17 +1,20 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { PaginationRequest } from '../models/paginations.model';
+import { StudyCasePaginationRequest } from '../models/study-case.model';
 
 import { StudyCaseService } from '../services/study-case.service';
 
 export class StudyCaseController {
   static async index(req: Request, res: Response, next: NextFunction) {
     try {
-      const request: PaginationRequest = {
-        page: Number(req.query.page) || 1,
-        limit: Number(req.query.limit) || 10,
-        search: req.query.search as string | undefined,
-      };
+      const request = {
+        page: req.query.page,
+        limit: req.query.limit,
+        search: req.query.search,
+        sortBy: req.query.sortBy,
+        orderBy: req.query.orderBy,
+        materialId: req.query.materialId,
+      } as unknown as StudyCasePaginationRequest;
 
       const response = await StudyCaseService.getStudyCases(request);
 
@@ -27,7 +30,7 @@ export class StudyCaseController {
         Number(req.params.id),
       );
 
-      res.status(200).json(response);
+      res.status(200).json({ data: response });
     } catch (e) {
       next(e);
     }
@@ -37,7 +40,7 @@ export class StudyCaseController {
     try {
       const response = await StudyCaseService.createStudyCase(req.body);
 
-      res.status(201).json(response);
+      res.status(201).json({ data: response });
     } catch (e) {
       next(e);
     }
@@ -50,7 +53,7 @@ export class StudyCaseController {
         req.body,
       );
 
-      res.status(200).json(response);
+      res.status(200).json({ data: response });
     } catch (e) {
       next(e);
     }

@@ -8,6 +8,6 @@ export const testCaseRouter = Router();
 
 testCaseRouter.get('/', TestCaseController.index);
 testCaseRouter.get('/:id', TestCaseController.show);
-testCaseRouter.post('/', roleMiddleware, TestCaseController.store);
-testCaseRouter.patch('/:id', roleMiddleware, TestCaseController.update);
-testCaseRouter.delete('/:id', roleMiddleware, TestCaseController.destroy);
+testCaseRouter.post('/', TestCaseController.store);
+testCaseRouter.patch('/:id', TestCaseController.update);
+testCaseRouter.delete('/:id', TestCaseController.destroy);

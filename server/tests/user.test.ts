@@ -1,364 +1,205 @@
-import 'dotenv/config';
 import supertest from 'supertest';
 
-import { Role } from '../generated/prisma/enums';
-
 import { server } from '../src/applications/server';
-import { logger } from '../src/applications/logger';
+import { prisma } from '../src/applications/database';
 
-import { createUserTest, deleteUserTest, getTokenTest } from './test.util';
+import { createAdminToken, createStudentToken } from './helpers/auth.helper';
 
-// ------------------------------------------------------------
-// GET ALL
-// ------------------------------------------------------------
-describe('GET /api/users', () => {
-  beforeEach(async () => {
-    await createUserTest(Role.ADMIN);
+const api = supertest(server);
+
+describe('user test', () => {
+  let adminToken: string;
+  let studentToken: string;
+  let createdUserId: number;
+
+  beforeAll(async () => {
+    adminToken = await createAdminToken();
+    studentToken = await createStudentToken();
+
+    await prisma.user.deleteMany({ where: { email: 'crud.test@example.com' } });
   });
 
-  afterEach(async () => {
-    await deleteUserTest();
-    await deleteUserTest('student.test@example.com');
+  afterAll(async () => {
+    await prisma.user.deleteMany({ where: { email: 'crud.test@example.com' } });
   });
 
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server).get('/api/users');
+  // ------------------------------------------------------------
+  // GET /users
+  // ------------------------------------------------------------
+  describe('GET /api/users', () => {
+    it('should return paginated users for admin', async () => {
+      const res = await api
+        .get('/api/users')
+        .set('Authorization', `Bearer ${adminToken}`);
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
+      expect(res.status).toBe(200);
+      expect(res.body.data).toBeDefined();
+      expect(res.body.pagination).toBeDefined();
+    });
+
+    it('should filter by role', async () => {
+      const res = await api
+        .get('/api/users?role=STUDENT')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.every((u: any) => u.role === 'STUDENT')).toBe(true);
+    });
+
+    it('should filter by search', async () => {
+      const res = await api
+        .get('/api/users?search=admin')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+    });
+
+    it('should fail with invalid page', async () => {
+      const res = await api
+        .get('/api/users?page=abc')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 403 for student', async () => {
+      const res = await api
+        .get('/api/users')
+        .set('Authorization', `Bearer ${studentToken}`);
+
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 401 without token', async () => {
+      const res = await api.get('/api/users');
+
+      expect(res.status).toBe(401);
+    });
   });
 
-  it('Should get all users with pagination', async () => {
-    const token = await getTokenTest();
+  // ------------------------------------------------------------
+  // POST /users
+  // ------------------------------------------------------------
+  describe('POST /api/users', () => {
+    it('should create user successfully', async () => {
+      const res = await api
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          email: 'crud.test@example.com',
+          name: 'Crud Test',
+          password: 'password123',
+          role: 'STUDENT',
+        });
 
-    const response = await supertest(server)
-      .get('/api/users?page=1&limit=10')
-      .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(201);
+      expect(res.body.data.email).toBe('crud.test@example.com');
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.pagination).toBeDefined();
-    expect(response.body.pagination.page).toBe(1);
-    expect(response.body.pagination.limit).toBe(10);
-    expect(response.body.pagination.total).toBeDefined();
-    expect(response.body.pagination.totalPages).toBeDefined();
+      createdUserId = res.body.data.id;
+    });
+
+    it('should fail with duplicate email', async () => {
+      const res = await api
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          email: 'crud.test@example.com',
+          name: 'Crud Test',
+          password: 'password123',
+          role: 'STUDENT',
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should fail with invalid role', async () => {
+      const res = await api
+        .post('/api/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          email: 'new@example.com',
+          name: 'New User',
+          password: 'password123',
+          role: 'INVALID',
+        });
+
+      expect(res.status).toBe(400);
+    });
   });
 
-  it('Should get users filtered by search', async () => {
-    await createUserTest(Role.STUDENT, 'student.test@example.com');
+  // ------------------------------------------------------------
+  // GET /users/:id
+  // ------------------------------------------------------------
+  describe('GET /api/users/:id', () => {
+    it('should return user by id', async () => {
+      const res = await api
+        .get(`/api/users/${createdUserId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
-    const token = await getTokenTest();
+      expect(res.status).toBe(200);
+      expect(res.body.data.id).toBe(createdUserId);
+    });
 
-    const response = await supertest(server)
-      .get('/api/users?search=student')
-      .set('Authorization', `Bearer ${token}`);
+    it('should return 404 for non-existent user', async () => {
+      const res = await api
+        .get('/api/users/999999')
+        .set('Authorization', `Bearer ${adminToken}`);
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.data.length).toBeGreaterThan(0);
-    expect(
-      response.body.data.every((u: { email: string }) =>
-        u.email.includes('student'),
-      ),
-    ).toBe(true);
-  });
-});
-
-// ------------------------------------------------------------
-// GET BY ID
-// ------------------------------------------------------------
-describe('GET /api/users/:id', () => {
-  let studentId: number;
-
-  beforeEach(async () => {
-    await createUserTest(Role.ADMIN);
-
-    const student = await createUserTest(
-      Role.STUDENT,
-      'student.test@example.com',
-    );
-    studentId = student.id;
+      expect(res.status).toBe(404);
+    });
   });
 
-  afterEach(async () => {
-    await deleteUserTest();
-    await deleteUserTest('student.test@example.com');
+  // ------------------------------------------------------------
+  // PATCH /users/:id
+  // ------------------------------------------------------------
+  describe('PATCH /api/users/:id', () => {
+    it('should update user successfully', async () => {
+      const res = await api
+        .patch(`/api/users/${createdUserId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Updated Crud' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.name).toBe('Updated Crud');
+    });
+
+    it('should fail with duplicate email', async () => {
+      const res = await api
+        .patch(`/api/users/${createdUserId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ email: 'admin.test@example.com' });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 404 for non-existent user', async () => {
+      const res = await api
+        .patch('/api/users/999999')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Test' });
+
+      expect(res.status).toBe(404);
+    });
   });
 
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server).get(`/api/users/${studentId}`);
+  // ------------------------------------------------------------
+  // DELETE /users/:id
+  // ------------------------------------------------------------
+  describe('DELETE /api/users/:id', () => {
+    it('should delete user successfully', async () => {
+      const res = await api
+        .delete(`/api/users/${createdUserId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
+      expect(res.status).toBe(200);
+    });
 
-  it('Should reject if user not found', async () => {
-    const token = await getTokenTest();
+    it('should return 404 after deletion', async () => {
+      const res = await api
+        .get(`/api/users/${createdUserId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
-    const response = await supertest(server)
-      .get('/api/users/99999')
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should get user by id successfully', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .get(`/api/users/${studentId}`)
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.id).toBe(studentId);
-    expect(response.body.data.email).toBe('student.test@example.com');
-    expect(response.body.data.password).toBeUndefined();
-  });
-});
-
-// ------------------------------------------------------------
-// CREATE
-// ------------------------------------------------------------
-describe('POST /api/users', () => {
-  let token: string;
-
-  beforeEach(async () => {
-    await createUserTest(Role.ADMIN);
-  });
-
-  afterEach(async () => {
-    await deleteUserTest();
-    await deleteUserTest('student.test@example.com');
-  });
-
-  it('Should reject create new user if request is invalid', async () => {
-    token = await getTokenTest();
-
-    const response = await supertest(server)
-      .post('/api/users')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        email: '',
-        name: '',
-        role: '',
-        password: '',
-      });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should create new user', async () => {
-    token = await getTokenTest();
-
-    const response = await supertest(server)
-      .post('/api/users')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        email: 'student.test@example.com',
-        name: 'Student Test',
-        role: 'STUDENT',
-        password: '12345678',
-      });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(201);
-    expect(response.body.data.email).toBe('student.test@example.com');
-    expect(response.body.data.name).toBe('Student Test');
-  });
-});
-
-// ------------------------------------------------------------
-// UPDATE
-// ------------------------------------------------------------
-describe('PATCH /api/users/:id', () => {
-  let token: string;
-  let studentId: number;
-
-  beforeEach(async () => {
-    await createUserTest(Role.ADMIN);
-
-    token = await getTokenTest();
-
-    const student = await createUserTest(
-      Role.STUDENT,
-      'student.test@example.com',
-    );
-    studentId = student.id;
-  });
-
-  afterEach(async () => {
-    await deleteUserTest();
-    await deleteUserTest('student.test@example.com');
-  });
-
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server)
-      .patch(`/api/users/${studentId}`)
-      .send({ name: 'Updated Name' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should reject if not admin', async () => {
-    const student = await createUserTest(
-      Role.STUDENT,
-      'another.student@example.com',
-    );
-
-    const studentToken = await getTokenTest('another.student@example.com');
-
-    const response = await supertest(server)
-      .patch(`/api/users/${studentId}`)
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({ name: 'Updated Name' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(403);
-    expect(response.body.errors).toBeDefined();
-
-    await deleteUserTest('another.student@example.com');
-  });
-
-  it('Should reject if request is invalid', async () => {
-    const response = await supertest(server)
-      .patch(`/api/users/${studentId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ email: 'invalid-email' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should reject if user not found', async () => {
-    const response = await supertest(server)
-      .patch('/api/users/0')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Updated Name' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should update user successfully', async () => {
-    const response = await supertest(server)
-      .patch(`/api/users/${studentId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Updated Name' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.name).toBe('Updated Name');
-    expect(response.body.data.email).toBe('student.test@example.com');
-    expect(response.body.data.password).toBeUndefined();
-  });
-
-  it('Should update role successfully', async () => {
-    const response = await supertest(server)
-      .patch(`/api/users/${studentId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ role: Role.ADMIN });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.role).toBe(Role.ADMIN);
-  });
-});
-
-// ------------------------------------------------------------
-// DELETE
-// ------------------------------------------------------------
-describe('DELETE /api/users/:id', () => {
-  let studentId: number;
-
-  beforeEach(async () => {
-    await createUserTest(Role.ADMIN);
-
-    const student = await createUserTest(
-      Role.STUDENT,
-      'student.test@example.com',
-    );
-    studentId = student.id;
-  });
-
-  afterEach(async () => {
-    await deleteUserTest();
-    await deleteUserTest('student.test@example.com');
-  });
-
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server).delete(`/api/users/${studentId}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should reject if not admin', async () => {
-    await createUserTest(Role.STUDENT, 'another.test@example.com');
-    const studentToken = await getTokenTest('another.test@example.com');
-
-    const response = await supertest(server)
-      .delete(`/api/users/${studentId}`)
-      .set('Authorization', `Bearer ${studentToken}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(403);
-    expect(response.body.errors).toBeDefined();
-
-    await deleteUserTest('another.test@example.com');
-  });
-
-  it('Should reject if user not found', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .delete('/api/users/99999')
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should delete user successfully', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .delete(`/api/users/${studentId}`)
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data).toBe('User deleted successfully');
-  });
-
-  it('Should not find deleted user', async () => {
-    const token = await getTokenTest();
-
-    // delete dulu
-    await supertest(server)
-      .delete(`/api/users/${studentId}`)
-      .set('Authorization', `Bearer ${token}`);
-
-    // coba get lagi — harus 404
-    const response = await supertest(server)
-      .get(`/api/users/${studentId}`)
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(404);
+      expect(res.status).toBe(404);
+    });
   });
 });

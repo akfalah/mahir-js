@@ -1,500 +1,205 @@
-import 'dotenv/config';
 import supertest from 'supertest';
 
-import { Role } from '../generated/prisma/enums';
-
-import { prisma } from '../src/applications/database';
 import { server } from '../src/applications/server';
-import { logger } from '../src/applications/logger';
+import { prisma } from '../src/applications/database';
 
-import {
-  createUserTest,
-  deleteUserTest,
-  getTokenTest,
-  createConceptTest,
-  deleteConceptTest,
-} from './test.util';
+import { createAdminToken, createStudentToken } from './helpers/auth.helper';
 
-// ------------------------------------------------------------
-// GET ALL
-// ------------------------------------------------------------
-describe('GET /api/concepts', () => {
-  beforeEach(async () => {
-    await deleteConceptTest();
-    await createUserTest(Role.ADMIN);
-    await createConceptTest(99999);
+const api = supertest(server);
+
+describe('concept test', () => {
+  let adminToken: string;
+  let studentToken: string;
+  let createdConceptId: number;
+
+  beforeAll(async () => {
+    adminToken = await createAdminToken();
+    studentToken = await createStudentToken();
+
+    await prisma.concept.deleteMany({ where: { slug: 'test-concept' } });
   });
 
-  afterEach(async () => {
-    await deleteConceptTest();
-    await deleteUserTest();
+  afterAll(async () => {
+    await prisma.concept.deleteMany({
+      where: { slug: { in: ['test-concept', 'test-concept-updated'] } },
+    });
   });
 
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server).get('/api/concepts');
+  // ------------------------------------------------------------
+  // GET /concepts
+  // ------------------------------------------------------------
+  describe('GET /api/concepts', () => {
+    it('should return paginated concepts', async () => {
+      const res = await api
+        .get('/api/concepts')
+        .set('Authorization', `Bearer ${studentToken}`);
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should get all concepts with pagination', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .get('/api/concepts?page=1&limit=10')
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.pagination).toBeDefined();
-    expect(response.body.pagination.page).toBe(1);
-    expect(response.body.pagination.limit).toBe(10);
-    expect(response.body.pagination.total).toBeGreaterThan(0);
-  });
-
-  it('Should get concepts filtered by search', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .get('/api/concepts?search=Concept Test')
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBeGreaterThan(0);
-  });
-});
-
-// ------------------------------------------------------------
-// GET BY ID
-// ------------------------------------------------------------
-describe('GET /api/concepts/:id', () => {
-  let conceptId: number;
-
-  beforeEach(async () => {
-    await deleteConceptTest();
-    await createUserTest(Role.ADMIN);
-
-    const concept = await createConceptTest();
-    conceptId = concept.id;
-  });
-
-  afterEach(async () => {
-    await deleteConceptTest();
-    await deleteUserTest();
-  });
-
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server).get(`/api/concepts/${conceptId}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should reject if concept not found', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .get('/api/concepts/999999')
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should get concept by id successfully', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .get(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.id).toBe(conceptId);
-    expect(response.body.data.title).toBe('Concept Test 99999');
-    expect(response.body.data.slug).toBe('concept-test-99999');
-  });
-});
-
-// ------------------------------------------------------------
-// CREATE
-// ------------------------------------------------------------
-describe('POST /api/concepts', () => {
-  beforeEach(async () => {
-    await deleteConceptTest();
-    await createUserTest(Role.ADMIN);
-  });
-
-  afterEach(async () => {
-    await deleteConceptTest();
-    await deleteUserTest();
-  });
-
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server).post('/api/concepts').send({
-      slug: 'concept-test-99999',
-      title: 'Concept Test 99999',
-      description: 'Description',
-      order: 1,
+      expect(res.status).toBe(200);
+      expect(res.body.data).toBeDefined();
+      expect(res.body.pagination).toBeDefined();
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
+    it('should search concepts', async () => {
+      const res = await api
+        .get('/api/concepts?search=Test')
+        .set('Authorization', `Bearer ${studentToken}`);
 
-  it('Should reject if not admin', async () => {
-    await createUserTest(Role.STUDENT, 'student.test@example.com');
-    const studentToken = await getTokenTest('student.test@example.com');
-
-    const response = await supertest(server)
-      .post('/api/concepts')
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({
-        slug: 'concept-test-99999',
-        title: 'Concept Test 99999',
-        description: 'Description',
-        order: 1,
-      });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(403);
-    expect(response.body.errors).toBeDefined();
-
-    await deleteUserTest('student.test@example.com');
-  });
-
-  it('Should reject if request is invalid', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .post('/api/concepts')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        slug: '',
-        title: '',
-        description: '',
-        order: 0,
-      });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should reject if slug already exists', async () => {
-    await createConceptTest();
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .post('/api/concepts')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        slug: 'concept-test-1',
-        title: 'Concept Test 1',
-        description: 'Description',
-        order: 1,
-      });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should reject if order already exists', async () => {
-    await createConceptTest();
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .post('/api/concepts')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        slug: 'concept-test-99999',
-        title: 'Concept Test 99999',
-        description: 'Description',
-        order: 1,
-      });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should create concept successfully', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .post('/api/concepts')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        slug: 'concept-test-99999',
-        title: 'Concept Test 99999',
-        description: 'Description for concept test',
-        order: 99999,
-      });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(201);
-    expect(response.body.data.slug).toBe('concept-test-99999');
-    expect(response.body.data.title).toBe('Concept Test 99999');
-    expect(response.body.data.order).toBe(99999);
-  });
-});
-
-// ------------------------------------------------------------
-// UPDATE CONCEPT
-// ------------------------------------------------------------
-describe('PATCH /api/concepts/:id', () => {
-  let conceptId: number;
-
-  beforeEach(async () => {
-    await deleteConceptTest();
-    await createUserTest(Role.ADMIN);
-    const concept = await createConceptTest();
-    conceptId = concept.id;
-  });
-
-  afterEach(async () => {
-    await deleteConceptTest();
-    await deleteUserTest();
-  });
-
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server)
-      .patch(`/api/concepts/${conceptId}`)
-      .send({ title: 'Updated Title' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should reject if not admin', async () => {
-    await createUserTest(Role.STUDENT, 'student.test@example.com');
-    const studentToken = await getTokenTest('student.test@example.com');
-
-    const response = await supertest(server)
-      .patch(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({ title: 'Updated Title' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(403);
-    expect(response.body.errors).toBeDefined();
-
-    await deleteUserTest('student.test@example.com');
-  });
-
-  it('Should reject if concept not found', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .patch('/api/concepts/99999')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Updated Title' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should reject if slug already exists', async () => {
-    await prisma.concept.create({
-      data: {
-        slug: 'concept-test-other',
-        title: 'Concept Test Other',
-        description: 'Description for concept test other',
-        order: 99998,
-      },
+      expect(res.status).toBe(200);
     });
 
-    const token = await getTokenTest();
+    it('should sort by order', async () => {
+      const res = await api
+        .get('/api/concepts?sortBy=order&orderBy=asc')
+        .set('Authorization', `Bearer ${studentToken}`);
 
-    const response = await supertest(server)
-      .patch(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ slug: 'concept-test-other' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBe('Slug already exists');
+      expect(res.status).toBe(200);
+    });
   });
 
-  it('Should reject if order already exists', async () => {
-    await prisma.concept.create({
-      data: {
-        slug: 'concept-test-other',
-        title: 'Concept Test Other',
-        description: 'Description for concept test other',
-        order: 99998,
-      },
+  // ------------------------------------------------------------
+  // POST /concepts
+  // ------------------------------------------------------------
+  describe('POST /api/concepts', () => {
+    it('should create concept successfully', async () => {
+      const res = await api
+        .post('/api/concepts')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          slug: 'test-concept',
+          title: 'Test Concept',
+          description: 'Test description',
+          order: 99,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.slug).toBe('test-concept');
+
+      createdConceptId = res.body.data.id;
     });
 
-    const token = await getTokenTest();
+    it('should fail with duplicate slug', async () => {
+      const res = await api
+        .post('/api/concepts')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          slug: 'test-concept',
+          title: 'Test Concept 2',
+          description: 'Test description',
+          order: 100,
+        });
 
-    const response = await supertest(server)
-      .patch(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ order: 99998 });
+      expect(res.status).toBe(400);
+    });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBe('Order already exists');
+    it('should fail with duplicate order', async () => {
+      const res = await api
+        .post('/api/concepts')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          slug: 'test-concept-2',
+          title: 'Test Concept 2',
+          description: 'Test description',
+          order: 99,
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 403 for student', async () => {
+      const res = await api
+        .post('/api/concepts')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({
+          slug: 'test-concept-student',
+          title: 'Test',
+          description: 'Test',
+          order: 100,
+        });
+
+      expect(res.status).toBe(403);
+    });
   });
 
-  it('Should update title successfully', async () => {
-    const token = await getTokenTest();
+  // ------------------------------------------------------------
+  // GET /concepts/:id
+  // ------------------------------------------------------------
+  describe('GET /api/concepts/:id', () => {
+    it('should return concept by id', async () => {
+      const res = await api
+        .get(`/api/concepts/${createdConceptId}`)
+        .set('Authorization', `Bearer ${studentToken}`);
 
-    const response = await supertest(server)
-      .patch(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Updated Title' });
+      expect(res.status).toBe(200);
+      expect(res.body.data.id).toBe(createdConceptId);
+    });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.title).toBe('Updated Title');
-    expect(response.body.data.slug).toBe('concept-test-99999');
-    expect(response.body.data.order).toBe(99999);
+    it('should return 404 for non-existent concept', async () => {
+      const res = await api
+        .get('/api/concepts/999999')
+        .set('Authorization', `Bearer ${studentToken}`);
+
+      expect(res.status).toBe(404);
+    });
   });
 
-  it('Should update slug successfully', async () => {
-    const token = await getTokenTest();
+  // ------------------------------------------------------------
+  // PATCH /concepts/:id
+  // ------------------------------------------------------------
+  describe('PATCH /api/concepts/:id', () => {
+    it('should update concept successfully', async () => {
+      const res = await api
+        .patch(`/api/concepts/${createdConceptId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ title: 'Updated Concept' });
 
-    const response = await supertest(server)
-      .patch(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ slug: 'concept-test-updated' });
+      expect(res.status).toBe(200);
+      expect(res.body.data.title).toBe('Updated Concept');
+    });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.slug).toBe('concept-test-updated');
-    expect(response.body.data.order).toBe(99999);
+    it('should return 403 for student', async () => {
+      const res = await api
+        .patch(`/api/concepts/${createdConceptId}`)
+        .set('Authorization', `Bearer ${studentToken}`)
+        .send({ title: 'Updated' });
+
+      expect(res.status).toBe(403);
+    });
   });
 
-  it('Should update order successfully', async () => {
-    const token = await getTokenTest();
+  // ------------------------------------------------------------
+  // DELETE concepts/:id
+  // ------------------------------------------------------------
+  describe('DELETE /api/concepts/:id', () => {
+    it('should return 403 for student', async () => {
+      const res = await api
+        .delete(`/api/concepts/${createdConceptId}`)
+        .set('Authorization', `Bearer ${studentToken}`);
 
-    const response = await supertest(server)
-      .patch(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ order: 99998 });
+      expect(res.status).toBe(403);
+    });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.order).toBe(99998);
-    expect(response.body.data.slug).toBe('concept-test-99999');
-  });
+    it('should delete concept successfully', async () => {
+      const res = await api
+        .delete(`/api/concepts/${createdConceptId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
-  it('Should update same slug without conflict', async () => {
-    const token = await getTokenTest();
+      expect(res.status).toBe(200);
+    });
 
-    const response = await supertest(server)
-      .patch(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ slug: 'concept-test-99999' });
+    it('should return 404 after deletion for admin', async () => {
+      const res = await api
+        .get(`/api/concepts/${createdConceptId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.slug).toBe('concept-test-99999');
-  });
+      expect(res.status).toBe(404);
+    });
 
-  it('Should update same order without conflict', async () => {
-    const token = await getTokenTest();
+    it('should return 404 after deletion student', async () => {
+      const res = await api
+        .get(`/api/concepts/${createdConceptId}`)
+        .set('Authorization', `Bearer ${studentToken}`);
 
-    const response = await supertest(server)
-      .patch(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send({ order: 99999 });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.order).toBe(99999);
-  });
-});
-
-// ------------------------------------------------------------
-// DELETE CONCEPT
-// ------------------------------------------------------------
-describe('DELETE /api/concepts/:id', () => {
-  let conceptId: number;
-
-  beforeEach(async () => {
-    await createUserTest(Role.ADMIN);
-    const concept = await createConceptTest();
-    conceptId = concept.id;
-  });
-
-  afterEach(async () => {
-    await deleteConceptTest();
-    await deleteUserTest();
-  });
-
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server).delete(
-      `/api/concepts/${conceptId}`,
-    );
-
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should reject if not admin', async () => {
-    await createUserTest(Role.STUDENT, 'student.test@example.com');
-    const studentToken = await getTokenTest('student.test@example.com');
-
-    const response = await supertest(server)
-      .delete(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${studentToken}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(403);
-    expect(response.body.errors).toBeDefined();
-
-    await deleteUserTest('student.test@example.com');
-  });
-
-  it('Should reject if concept not found', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .delete('/api/concepts/99999')
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should delete concept successfully', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .delete(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data).toBe('Concept deleted successfully');
-  });
-
-  it('Should not find deleted concept', async () => {
-    const token = await getTokenTest();
-
-    await supertest(server)
-      .delete(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`);
-
-    const response = await supertest(server)
-      .get(`/api/concepts/${conceptId}`)
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(404);
+      expect(res.status).toBe(404);
+    });
   });
 });

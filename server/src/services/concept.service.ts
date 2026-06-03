@@ -1,40 +1,38 @@
 import { prisma } from '../applications/database';
 
-import { ResponseError } from '../error/response.error';
+import { ResponseError } from '../errors/response.error';
 
 import { Validation } from '../validations/validation';
 import { ConceptValidation } from '../validations/concept.validation';
-import { PaginationValidation } from '../validations/pagination.validation';
 
 import {
+  ConceptPaginationRequest,
+  ConceptPaginationResponse,
   ConceptResponse,
   CreateConceptRequest,
-  GetConceptsResponse,
   toConceptResponse,
   UpdateConceptRequest,
 } from '../models/concept.model';
-import { PaginationRequest } from '../models/paginations.model';
 
 export class ConceptService {
   static async getConcepts(
-    request: PaginationRequest,
-  ): Promise<GetConceptsResponse> {
-    const data = Validation.validate(PaginationValidation, request);
+    request: ConceptPaginationRequest,
+  ): Promise<ConceptPaginationResponse> {
+    const data = Validation.validate(ConceptValidation.GET, request);
 
-    const where = data.search
-      ? {
-          OR: [
-            { title: { contains: data.search, mode: 'insensitive' as const } },
-            {
-              description: {
-                contains: data.search,
-                mode: 'insensitive' as const,
-              },
+    const where = {
+      ...(data.search && {
+        OR: [
+          { title: { contains: data.search, mode: 'insensitive' as const } },
+          {
+            description: {
+              contains: data.search,
+              mode: 'insensitive' as const,
             },
-          ],
-          deletedAt: null,
-        }
-      : { deletedAt: null };
+          },
+        ],
+      }),
+    };
 
     const skip = (data.page - 1) * data.limit;
 
@@ -43,7 +41,7 @@ export class ConceptService {
         where,
         skip,
         take: data.limit,
-        orderBy: { order: 'asc' },
+        orderBy: { [data.sortBy as string]: data.orderBy },
       }),
       prisma.concept.count({ where }),
     ]);
@@ -60,9 +58,7 @@ export class ConceptService {
   }
 
   static async getConceptById(id: number): Promise<ConceptResponse> {
-    const concept = await prisma.concept.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const concept = await prisma.concept.findUnique({ where: { id } });
 
     if (!concept) throw new ResponseError(404, 'Concept not found');
 
@@ -74,17 +70,15 @@ export class ConceptService {
   ): Promise<ConceptResponse> {
     const data = Validation.validate(ConceptValidation.CREATE, request);
 
-    const [countSlug, countOrder] = await Promise.all([
+    const [slugExists, orderExists] = await Promise.all([
       prisma.concept.count({ where: { slug: data.slug } }),
       prisma.concept.count({ where: { order: data.order } }),
     ]);
 
-    if (countSlug !== 0) throw new ResponseError(400, 'Slug already exists');
-    if (countOrder !== 0) throw new ResponseError(400, 'Order already exists');
+    if (slugExists) throw new ResponseError(400, 'Slug already exists');
+    if (orderExists) throw new ResponseError(400, 'Order already exists');
 
-    const concept = await prisma.concept.create({
-      data: data,
-    });
+    const concept = await prisma.concept.create({ data });
 
     return toConceptResponse(concept);
   }
@@ -95,44 +89,36 @@ export class ConceptService {
   ): Promise<ConceptResponse> {
     const data = Validation.validate(ConceptValidation.UPDATE, request);
 
-    const exists = await prisma.concept.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const exists = await prisma.concept.findUnique({ where: { id } });
 
     if (!exists) throw new ResponseError(404, 'Concept not found');
 
-    if (data.slug && data.slug !== exists.slug) {
-      const count = await prisma.concept.count({
+    if (data.slug) {
+      const slugExists = await prisma.concept.count({
         where: { slug: data.slug, NOT: { id } },
       });
-      if (count !== 0) throw new ResponseError(400, 'Slug already exists');
+
+      if (slugExists) throw new ResponseError(400, 'Slug already exists');
     }
 
-    if (data.order && data.order !== exists.order) {
-      const count = await prisma.concept.count({
+    if (data.order) {
+      const orderExists = await prisma.concept.count({
         where: { order: data.order, NOT: { id } },
       });
-      if (count !== 0) throw new ResponseError(400, 'Order already exists');
+
+      if (orderExists) throw new ResponseError(400, 'Order already exists');
     }
 
-    const concept = await prisma.concept.update({
-      where: { id },
-      data,
-    });
+    const concept = await prisma.concept.update({ where: { id }, data });
 
     return toConceptResponse(concept);
   }
 
-  static async deleteConceptTest(id: number): Promise<void> {
-    const concept = await prisma.concept.findFirst({
-      where: { id, deletedAt: null },
-    });
+  static async deleteConcept(id: number): Promise<void> {
+    const concept = await prisma.concept.findUnique({ where: { id } });
 
     if (!concept) throw new ResponseError(404, 'Concept not found');
 
-    await prisma.concept.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await prisma.concept.delete({ where: { id } });
   }
 }

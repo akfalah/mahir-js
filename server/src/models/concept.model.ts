@@ -1,6 +1,10 @@
 import { Concept } from '../../generated/prisma/client';
 
-import { PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './paginations.model';
+
+export type ConceptSortBy = 'id' | 'title' | 'order' | 'createdAt';
+
+export type ConceptPaginationRequest = PaginationRequest<ConceptSortBy>;
 
 export type CreateConceptRequest = {
   slug: string;
@@ -22,9 +26,10 @@ export type ConceptResponse = {
   title: string;
   description: string;
   order: number;
+  createdAt: Date;
 };
 
-export type GetConceptsResponse = PaginationResponse<ConceptResponse>;
+export type ConceptPaginationResponse = PaginationResponse<ConceptResponse>;
 
 export function toConceptResponse(concept: Concept): ConceptResponse {
   return {
@@ -33,5 +38,6 @@ export function toConceptResponse(concept: Concept): ConceptResponse {
     title: concept.title,
     description: concept.description,
     order: concept.order,
+    createdAt: concept.createdAt,
   };
 }

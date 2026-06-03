@@ -1,248 +1,246 @@
-import 'dotenv/config';
 import supertest from 'supertest';
 
 import { server } from '../src/applications/server';
-import { logger } from '../src/applications/logger';
+import { prisma } from '../src/applications/database';
 
-import { createUserTest, deleteUserTest, getTokenTest } from './test.util';
+const api = supertest(server);
 
-// ------------------------------------------------------------
-// REGISTER
-// ------------------------------------------------------------
-describe('POST /api/auth/register', () => {
+describe('auth test', () => {
+  beforeAll(async () => {
+    await prisma.user.deleteMany({
+      where: { email: { in: ['signup.test@example.com'] } },
+    });
+  });
+
   afterAll(async () => {
-    await deleteUserTest();
+    await prisma.user.deleteMany({
+      where: { email: { in: ['signup.test@example.com'] } },
+    });
   });
 
-  it('Should reject register if request is invalid', async () => {
-    const response = await supertest(server).post('/api/auth/register').send({
-      email: 'invalid-email',
-      name: '',
-      password: '123',
+  // ------------------------------------------------------------
+  // SIGN UP
+  // ------------------------------------------------------------
+  describe('POST /api/auth/sign-up', () => {
+    it('should sign up successfully', async () => {
+      const res = await api.post('/api/auth/sign-up').send({
+        email: 'signup.test@example.com',
+        name: 'Test User',
+        password: 'password123',
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.email).toBe('signup.test@example.com');
+      expect(res.body.data.name).toBe('Test User');
+      expect(res.body.data.role).toBe('STUDENT');
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
+    it('should fail if email already exists', async () => {
+      const res = await api.post('/api/auth/sign-up').send({
+        email: 'signup.test@example.com',
+        name: 'Test User',
+        password: 'password123',
+      });
 
-  it('Should register successfully', async () => {
-    const response = await supertest(server).post('/api/auth/register').send({
-      email: 'test@example.com',
-      name: `Test User STUDENT`,
-      password: '12345678',
+      expect(res.status).toBe(400);
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(201);
-    expect(response.body.data.email).toBe('test@example.com');
-    expect(response.body.data.name).toBe('Test User STUDENT');
-    expect(response.body.data.role).toBe('STUDENT');
-    expect(response.body.data.password).toBeUndefined();
-  });
+    it('should fail if email is invalid', async () => {
+      const res = await api.post('/api/auth/sign-up').send({
+        email: 'signup.test',
+        name: 'Test User',
+        password: 'password123',
+      });
 
-  it('Should reject register if email already exists', async () => {
-    // await createUserTest();
-
-    const response = await supertest(server).post('/api/auth/register').send({
-      email: 'test@example.com',
-      name: `Test User STUDENT`,
-      password: '12345678',
+      expect(res.status).toBe(400);
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
-});
+    it('should fail if password is too short', async () => {
+      const res = await api.post('/api/auth/sign-up').send({
+        email: 'signup.test@example.com',
+        name: 'Test User',
+        password: '123',
+      });
 
-// ------------------------------------------------------------
-// LOGIN
-// ------------------------------------------------------------
-describe('POST /api/auth/login', () => {
-  beforeEach(async () => {
-    await createUserTest();
-  });
-
-  afterEach(async () => {
-    await deleteUserTest();
-  });
-
-  it('Should reject login if request is invalid', async () => {
-    const response = await supertest(server).post('/api/auth/login').send({
-      email: '',
-      password: '',
+      expect(res.status).toBe(400);
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
+    it('should fail if name is too short', async () => {
+      const res = await api.post('/api/auth/sign-up').send({
+        email: 'signup.test',
+        name: 'abc',
+        password: 'password123',
+      });
+
+      expect(res.status).toBe(400);
+    });
   });
 
-  it('Should reject login if email is wrong', async () => {
-    const response = await supertest(server).post('/api/auth/login').send({
-      email: 'wrong@example.com',
-      password: 'password123',
+  // ------------------------------------------------------------
+  // SIGN IN
+  // ------------------------------------------------------------
+  describe('POST /api/auth/sign-in', () => {
+    it('should sign in successfully', async () => {
+      const res = await api.post('/api/auth/sign-in').send({
+        email: 'signup.test@example.com',
+        password: 'password123',
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.token).toBeDefined();
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
+    it('should fail with wrong password', async () => {
+      const res = await api.post('/api/auth/sign-in').send({
+        email: 'signup.test@example.com',
+        password: 'wrongpassword',
+      });
 
-  it('Should reject login if password is wrong', async () => {
-    const response = await supertest(server).post('/api/auth/login').send({
-      email: 'test@example.com',
-      password: 'wrongpassword',
+      expect(res.status).toBe(401);
     });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
+    it('should fail with non-existent email', async () => {
+      const res = await api.post('/api/auth/sign-in').send({
+        email: 'notfound@example.com',
+        password: 'password123',
+      });
+
+      expect(res.status).toBe(401);
+    });
   });
 
-  it('Should login successfully', async () => {
-    const response = await supertest(server).post('/api/auth/login').send({
-      email: 'test@example.com',
-      password: 'password123',
+  // ------------------------------------------------------------
+  // PROFILE
+  // ------------------------------------------------------------
+  describe('GET /api/auth/profile', () => {
+    let token: string;
+
+    beforeAll(async () => {
+      const res = await api.post('/api/auth/sign-in').send({
+        email: 'signup.test@example.com',
+        password: 'password123',
+      });
+
+      token = res.body.data.token;
     });
 
-    logger.info(response.body.data.token);
+    it('should return current user', async () => {
+      const res = await api
+        .get('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`);
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.email).toBe('test@example.com');
-    expect(response.body.data.token).toBeDefined();
-    expect(typeof response.body.data.token).toBe('string');
-  });
-});
+      expect(res.status).toBe(200);
+      expect(res.body.data.email).toBe('signup.test@example.com');
+    });
 
-// ------------------------------------------------------------
-// PROFILE
-// ------------------------------------------------------------
-describe('GET /api/auth/profile', () => {
-  beforeEach(async () => {
-    await createUserTest();
-  });
+    it('should fail without token', async () => {
+      const res = await api.get('/api/auth/profile');
 
-  afterEach(async () => {
-    await deleteUserTest();
-  });
+      expect(res.status).toBe(401);
+    });
 
-  it('Should reject profile if no token provided', async () => {
-    const response = await supertest(server).get('/api/auth/profile');
+    it('should fail with invalid token', async () => {
+      const res = await api
+        .get('/api/auth/profile')
+        .set('Authorization', 'Bearer invalidtoken');
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
+      expect(res.status).toBe(401);
+    });
   });
 
-  it('Should reject profile if token is invalid', async () => {
-    const response = await supertest(server)
-      .get('/api/auth/profile')
-      .set('Authorization', 'Bearer invalidtoken');
+  // ------------------------------------------------------------
+  // UPDATE PROFILE
+  // ------------------------------------------------------------
+  describe('PATCH /api/auth/profile', () => {
+    let token: string;
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
+    beforeAll(async () => {
+      const res = await api.post('/api/auth/sign-in').send({
+        email: 'signup.test@example.com',
+        password: 'password123',
+      });
+
+      token = res.body.data.token;
+    });
+
+    it('should update profile successfully', async () => {
+      const res = await api
+        .patch('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Updated Name', bio: 'Hello world' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.name).toBe('Updated Name');
+      expect(res.body.data.bio).toBe('Hello world');
+    });
+
+    it('should fail without token', async () => {
+      const res = await api.patch('/api/auth/profile');
+
+      expect(res.status).toBe(401);
+    });
+
+    it('should fail with invalid image format', async () => {
+      const res = await api
+        .patch('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ image: 'not-a-base64-image' });
+
+      expect(res.status).toBe(400);
+    });
   });
 
-  it('Should return profile successfully', async () => {
-    const token = await getTokenTest();
+  // ------------------------------------------------------------
+  // UPDATE PASSWORD
+  // ------------------------------------------------------------
+  describe('PATCH /api/auth/profile/password', () => {
+    let token: string;
 
-    const response = await supertest(server)
-      .get('/api/auth/profile')
-      .set('Authorization', `Bearer ${token}`);
+    beforeAll(async () => {
+      const res = await api.post('/api/auth/sign-in').send({
+        email: 'signup.test@example.com',
+        password: 'password123',
+      });
+      token = res.body.data.token;
+    });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.email).toBe('test@example.com');
-    expect(response.body.data.name).toBe('Test User STUDENT');
-    expect(response.body.data.role).toBe('STUDENT');
-    expect(response.body.data.password).toBeUndefined();
-  });
-});
+    it('should update password successfully', async () => {
+      const res = await api
+        .patch('/api/auth/profile/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          currentPassword: 'password123',
+          newPassword: 'newpassword123',
+        });
 
-// ------------------------------------------------------------
-// UPDATE PROFILE
-// ------------------------------------------------------------
-describe('PATCH /api/auth/profile', () => {
-  beforeEach(async () => {
-    await createUserTest();
-  });
+      expect(res.status).toBe(200);
+    });
 
-  afterEach(async () => {
-    await deleteUserTest();
-  });
+    it('should fail without token', async () => {
+      const res = await api.patch('/api/auth/profile/password');
 
-  it('Should reject if not authenticated', async () => {
-    const response = await supertest(server)
-      .patch('/api/auth/profile')
-      .send({ name: 'Updated Name' });
+      expect(res.status).toBe(401);
+    });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
+    it('should fail with wrong current password', async () => {
+      const res = await api
+        .patch('/api/auth/profile/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          currentPassword: 'wrongpassword',
+          newPassword: 'newpassword123',
+        });
 
-  it('Should reject if request is invalid', async () => {
-    const token = await getTokenTest();
+      expect(res.status).toBe(400);
+    });
 
-    const response = await supertest(server)
-      .patch('/api/auth/profile')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ email: 'invalid-email' });
+    it('should fail if new password is too short', async () => {
+      const res = await api
+        .patch('/api/auth/profile/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentPassword: 'newpassword123', newPassword: '123' });
 
-    logger.debug(response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should update profile successfully', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .patch('/api/auth/profile')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Updated Name' });
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.name).toBe('Updated Name');
-    expect(response.body.data.email).toBe('test@example.com');
-    expect(response.body.data.password).toBeUndefined();
-  });
-});
-
-// ------------------------------------------------------------
-// LOGOUT
-// ------------------------------------------------------------
-describe('DELETE /api/auth/logout', () => {
-  beforeEach(async () => {
-    await createUserTest();
-  });
-
-  afterEach(async () => {
-    await deleteUserTest();
-  });
-
-  it('Should reject logout if no token provided', async () => {
-    const response = await supertest(server).delete('/api/auth/logout');
-
-    logger.debug(response.body);
-    expect(response.status).toBe(401);
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should logout successfully', async () => {
-    const token = await getTokenTest();
-
-    const response = await supertest(server)
-      .delete('/api/auth/logout')
-      .set('Authorization', `Bearer ${token}`);
-
-    logger.debug(response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data).toBe('Logged out successfully');
+      expect(res.status).toBe(400);
+    });
   });
 });

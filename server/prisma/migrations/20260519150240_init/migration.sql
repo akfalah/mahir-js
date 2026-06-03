@@ -10,9 +10,9 @@ CREATE TYPE "TestResultStatus" AS ENUM ('PASSED', 'FAILED', 'ERROR');
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
-    "role" "Role" NOT NULL DEFAULT 'STUDENT',
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "role" "Role" NOT NULL DEFAULT 'STUDENT',
     "password" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE "study_cases" (
     "parameter_names" JSONB,
     "function_name" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3),
+    "updated_at" TIMESTAMP(3) NOT NULL,
     "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "study_cases_pkey" PRIMARY KEY ("id")
@@ -77,7 +77,7 @@ CREATE TABLE "test_cases" (
     "order" INTEGER NOT NULL,
     "is_published" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3),
+    "updated_at" TIMESTAMP(3) NOT NULL,
     "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "test_cases_pkey" PRIMARY KEY ("id")
@@ -92,6 +92,7 @@ CREATE TABLE "submissions" (
     "status" "SubmissionStatus" NOT NULL DEFAULT 'PENDING',
     "error_message" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "submissions_pkey" PRIMARY KEY ("id")
 );
@@ -153,6 +154,12 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "concepts_slug_key" ON "concepts"("slug");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "concepts_order_key" ON "concepts"("order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "materials_slug_key" ON "materials"("slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "materials_concept_id_order_key" ON "materials"("concept_id", "order");

@@ -1,19 +1,24 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { PaginationRequest } from '../models/paginations.model';
+import { UserPaginationRequest } from '../models/user.model';
 
 import { UserService } from '../services/user.service';
 
 export class UserController {
   static async index(req: Request, res: Response, next: NextFunction) {
     try {
-      const request: PaginationRequest = {
-        page: Number(req.query.page) || 1,
-        limit: Number(req.query.limit) || 10,
-        search: req.query.search as string | undefined,
-      };
+      const request = {
+        page: req.query.page,
+        limit: req.query.limit,
+        search: req.query.search,
+        sortBy: req.query.sortBy,
+        orderBy: req.query.orderBy,
+        role: req.query.role,
+      } as unknown as UserPaginationRequest;
 
-      const response = await UserService.getUsers(request);
+      const response = await UserService.getUsers(
+        request as UserPaginationRequest,
+      );
 
       res.status(200).json(response);
     } catch (e) {
@@ -57,7 +62,7 @@ export class UserController {
   static async destroy(req: Request, res: Response, next: NextFunction) {
     try {
       await UserService.deleteUser(Number(req.params.id));
-      
+
       res.status(200).json({ data: 'User deleted successfully' });
     } catch (e) {
       next(e);

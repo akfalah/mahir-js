@@ -1,32 +1,35 @@
 import { prisma } from '../applications/database';
 
-import { ResponseError } from '../error/response.error';
+import { ResponseError } from '../errors/response.error';
 
 import { Validation } from '../validations/validation';
-import { PaginationValidation } from '../validations/pagination.validation';
 import { TestCaseValidation } from '../validations/test-case.validation';
 
 import {
   CreateTestCaseRequest,
-  GetTestCaseResponse,
+  TestCasePaginationRequest,
+  TestCasePaginationResponse,
   TestCaseResponse,
   toTestCaseResponse,
   UpdateTestCaseRequest,
 } from '../models/test-case.model';
-import { PaginationRequest } from '../models/paginations.model';
 
 export class TestCaseService {
   static async getTestCases(
-    request: PaginationRequest,
-  ): Promise<GetTestCaseResponse> {
-    const data = Validation.validate(PaginationValidation, request);
+    request: TestCasePaginationRequest,
+  ): Promise<TestCasePaginationResponse> {
+    const data = Validation.validate(TestCaseValidation.GET, request);
 
-    const where = data.search
-      ? {
-          description: { contains: data.search, mode: 'insensitive' as const },
-          deletedAt: null,
-        }
-      : { deletedAt: null };
+    if (data.sortBy === 'order' && !data.studyCaseId) {
+      throw new ResponseError(400, 'sortBy order requires studyCaseId filter');
+    }
+
+    const where = {
+      ...(data.studyCaseId && { studyCaseId: data.studyCaseId }),
+      ...(data.search && {
+        description: { contains: data.search, mode: 'insensitive' as const },
+      }),
+    };
 
     const skip = (data.page - 1) * data.limit;
 
@@ -35,7 +38,7 @@ export class TestCaseService {
         where,
         skip,
         take: data.limit,
-        orderBy: { id: 'asc' },
+        orderBy: { [data.sortBy as string]: data.orderBy },
       }),
       prisma.testCase.count({ where }),
     ]);
@@ -52,9 +55,7 @@ export class TestCaseService {
   }
 
   static async getTestCaseById(id: number): Promise<TestCaseResponse> {
-    const testCase = await prisma.testCase.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const testCase = await prisma.testCase.findUnique({ where: { id } });
 
     if (!testCase) throw new ResponseError(404, 'Test case not found');
 
@@ -66,17 +67,17 @@ export class TestCaseService {
   ): Promise<TestCaseResponse> {
     const data = Validation.validate(TestCaseValidation.CREATE, request);
 
-    const studyCase = await prisma.studyCase.findFirst({
-      where: { id: data.studyCaseId, deletedAt: null },
+    const studyCase = await prisma.studyCase.findUnique({
+      where: { id: data.studyCaseId },
     });
 
     if (!studyCase) throw new ResponseError(404, 'Study case not found');
 
-    const countOrder = await prisma.testCase.count({
-      where: { order: data.order, studyCaseId: data.studyCaseId },
+    const orderExists = await prisma.testCase.count({
+      where: { studyCaseId: data.studyCaseId, order: data.order },
     });
 
-    if (countOrder !== 0) throw new ResponseError(400, 'Order already exists');
+    if (!orderExists) throw new ResponseError(400, 'Order already exists');
 
     const testCase = await prisma.testCase.create({ data });
 
@@ -89,44 +90,32 @@ export class TestCaseService {
   ): Promise<TestCaseResponse> {
     const data = Validation.validate(TestCaseValidation.UPDATE, request);
 
-    const exists = await prisma.testCase.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const exists = await prisma.testCase.findUnique({ where: { id } });
 
     if (!exists) throw new ResponseError(404, 'Test case not found');
 
-    const studyCase = await prisma.studyCase.findFirst({
-      where: { id: data.studyCaseId, deletedAt: null },
-    });
-
-    if (!studyCase) throw new ResponseError(404, 'Study case not found');
-
-    if (data.order && data.order !== exists.order) {
-      const count = await prisma.testCase.count({
-        where: { order: data.order, NOT: { id } },
+    if (data.order) {
+      const orderExists = await prisma.testCase.count({
+        where: {
+          studyCaseId: exists.studyCaseId,
+          order: data.order,
+          NOT: { id },
+        },
       });
 
-      if (count !== 0) throw new ResponseError(400, 'Order already exists');
+      if (!orderExists) throw new ResponseError(400, 'Order already exists');
     }
 
-    const testCase = await prisma.testCase.update({
-      where: { id },
-      data,
-    });
+    const testCase = await prisma.testCase.update({ where: { id }, data });
 
     return toTestCaseResponse(testCase);
   }
 
   static async deleteTestCase(id: number): Promise<void> {
-    const testCase = await prisma.testCase.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const testCase = await prisma.testCase.findUnique({ where: { id } });
 
     if (!testCase) throw new ResponseError(404, 'Test case not found');
 
-    await prisma.testCase.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await prisma.testCase.delete({ where: { id } });
   }
 }

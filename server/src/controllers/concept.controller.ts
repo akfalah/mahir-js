@@ -1,17 +1,19 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { PaginationRequest } from '../models/paginations.model';
+import { ConceptPaginationRequest } from '../models/concept.model';
 
 import { ConceptService } from '../services/concept.service';
 
 export class ConceptController {
   static async index(req: Request, res: Response, next: NextFunction) {
     try {
-      const request: PaginationRequest = {
-        page: Number(req.query.page) || 1,
-        limit: Number(req.query.limit) || 10,
-        search: req.query.search as string | undefined,
-      };
+      const request = {
+        page: req.query.page,
+        limit: req.query.limit,
+        search: req.query.search,
+        sortBy: req.query.sortBy,
+        orderBy: req.query.orderBy,
+      } as unknown as ConceptPaginationRequest;
 
       const response = await ConceptService.getConcepts(request);
 
@@ -58,7 +60,7 @@ export class ConceptController {
 
   static async destroy(req: Request, res: Response, next: NextFunction) {
     try {
-      await ConceptService.deleteConceptTest(Number(req.params.id));
+      await ConceptService.deleteConcept(Number(req.params.id));
 
       res.status(200).json({ data: 'Concept deleted successfully' });
     } catch (e) {
