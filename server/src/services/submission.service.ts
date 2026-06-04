@@ -64,7 +64,7 @@ export class SubmissionService {
   ): Promise<SubmissionResponse & { testResults: TestResultResponse[] }> {
     const submission = await prisma.submission.findUnique({
       where: { id },
-      include: { testResults: true },
+      include: { testResults: { orderBy: { id: 'asc' } } },
     });
 
     if (!submission) throw new ResponseError(404, 'Submission not found');

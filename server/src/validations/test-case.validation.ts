@@ -29,52 +29,16 @@ export class TestCaseValidation {
   static readonly CREATE: ZodType<CreateTestCaseRequest> = z.object({
     studyCaseId: z.number().min(1),
     description: z.string().min(3),
-    input: z.record(
-      z.string(),
-      z.union([
-        z.string(),
-        z.number(),
-        z.boolean(),
-        z.array(z.union([z.string(), z.number(), z.boolean()])),
-      ]),
-    ),
-    expected: z.record(
-      z.string(),
-      z.union([
-        z.string(),
-        z.number(),
-        z.boolean(),
-        z.array(z.union([z.string(), z.number(), z.boolean()])),
-      ]),
-    ),
+    input: z.record(z.string(), z.unknown()),
+    expected: z.record(z.string(), z.unknown()),
     order: z.number().min(1),
     isPublished: z.boolean().optional(),
   });
 
   static readonly UPDATE: ZodType<UpdateTestCaseRequest> = z.object({
     description: z.string().min(3).optional(),
-    input: z
-      .record(
-        z.string(),
-        z.union([
-          z.string(),
-          z.number(),
-          z.boolean(),
-          z.array(z.union([z.string(), z.number(), z.boolean()])),
-        ]),
-      )
-      .optional(),
-    expected: z
-      .record(
-        z.string(),
-        z.union([
-          z.string(),
-          z.number(),
-          z.boolean(),
-          z.array(z.union([z.string(), z.number(), z.boolean()])),
-        ]),
-      )
-      .optional(),
+    input: z.record(z.string(), z.unknown()).optional(),
+    expected: z.record(z.string(), z.unknown()).optional(),
     order: z.number().min(1).optional(),
     isPublished: z.boolean().optional(),
   });

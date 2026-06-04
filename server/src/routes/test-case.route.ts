@@ -1,7 +1,5 @@
 import { Router } from 'express';
 
-import { roleMiddleware } from '../middlewares/auth.middleware';
-
 import { TestCaseController } from '../controllers/test-case.controller';
 
 export const testCaseRouter = Router();
