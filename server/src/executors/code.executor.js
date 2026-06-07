@@ -5,6 +5,35 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+const BLOCKED_MODULES = [
+  'fs',
+  'path',
+  'os',
+  'child_process',
+  'net',
+  'http',
+  'https',
+  'crypto',
+  'cluster',
+  'worker_threads',
+  'dgram',
+  'dns',
+  'tls',
+  'readline',
+  'stream',
+  'zlib',
+  'vm',
+  'v8',
+  'perf_hooks',
+  'async_hooks',
+  'inspector',
+  'module',
+  'buffer',
+  'events',
+  'util',
+  'assert',
+];
+
 process.on('message', ({ code, functionName, parameterNames, testCases }) => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mahirjs-'));
   const solutionFile = path.join(tempDir, 'solution.js');
@@ -12,6 +41,7 @@ process.on('message', ({ code, functionName, parameterNames, testCases }) => {
   const jestConfigFile = path.join(tempDir, 'jest.config.json');
 
   try {
+    // deteksi apakah student menulis full function atau hanya isi
     const hasDeclaration =
       code.includes(`function ${functionName}`) ||
       code.includes(`const ${functionName}`) ||
@@ -22,14 +52,56 @@ process.on('message', ({ code, functionName, parameterNames, testCases }) => {
       ? code
       : `function ${functionName}(${parameterNames.join(', ')}) {\n${code}\n}`;
 
+    // block require via proxy di dalam solution.js
+    const blockedModuleEntries = BLOCKED_MODULES.map(
+      (mod) => `  '${mod}': true`,
+    ).join(',\n');
+
     const wrappedCode = `
+    'use strict';
+
+    // block modul berbahaya
+    const _originalRequire = require;
+    const _blockedModules = {
+    ${blockedModuleEntries}
+    };
+
+    // override via global — tidak redeclare 'require'
+    global.require = function(mod) {
+      if (_blockedModules[mod]) {
+        throw new Error(\`Module '\${mod}' is not allowed\`);
+      }
+      if (typeof mod === 'string' && (mod.startsWith('.') || mod.startsWith('/'))) {
+        throw new Error('Relative and absolute path imports are not allowed');
+      }
+      return _originalRequire(mod);
+    };
+
+    // block akses global berbahaya
+    (function blockGlobals() {
+      const blocked = ['process', '__dirname', '__filename'];
+      for (const key of blocked) {
+        try {
+          Object.defineProperty(globalThis, key, {
+            get() { throw new Error(\`'\${key}' is not allowed\`); },
+            configurable: false,
+          });
+        } catch {}
+      }
+    })();
+
+    // ============================================================
+    // STUDENT CODE
+    // ============================================================
     ${studentCode}
-    
+    // ============================================================
+
     module.exports = { ${functionName} };
     `;
 
     fs.writeFileSync(solutionFile, wrappedCode, 'utf8');
 
+    // jest test file
     const testContent = generateJestTestFile(
       functionName,
       parameterNames,
@@ -37,6 +109,7 @@ process.on('message', ({ code, functionName, parameterNames, testCases }) => {
     );
     fs.writeFileSync(testFile, testContent, 'utf8');
 
+    // jest config — tanpa moduleNameMapper
     fs.writeFileSync(
       jestConfigFile,
       JSON.stringify({
@@ -49,6 +122,7 @@ process.on('message', ({ code, functionName, parameterNames, testCases }) => {
       'utf8',
     );
 
+    // jalankan jest
     const jestBin = path.resolve(__dirname, '../../node_modules/.bin/jest');
     let output;
 
@@ -66,7 +140,14 @@ process.on('message', ({ code, functionName, parameterNames, testCases }) => {
       output = execErr.stdout?.toString() ?? '';
 
       if (!output) {
-        throw new Error(execErr.stderr?.toString() ?? 'Jest execution failed');
+        process.send({
+          success: false,
+          error:
+            execErr.stderr?.toString() ??
+            'Jest execution failed with no output',
+        });
+        process.exit(0);
+        return;
       }
     }
 
@@ -97,29 +178,51 @@ function generateJestTestFile(functionName, parameterNames, testCases) {
       const expected = JSON.stringify(tc.expected.result);
 
       return `
-        test(${JSON.stringify(tc.description)}, () => {
-          const result = ${functionName}(${args});
-          expect(result).toEqual(${expected});
-        });
-      `;
+      test(${JSON.stringify(tc.description)}, () => {
+        const result = ${functionName}(${args});
+        expect(result).toEqual(${expected});
+      });`;
     })
     .join('\n');
 
   return `
-    'use strict';
+  'use strict';
 
-    const solution = require('./solution');
-    const ${functionName} = solution.${functionName};
+  const solution = require('./solution');
+  const ${functionName} = solution.${functionName};
 
-    describe(${JSON.stringify(functionName)}, () => {
-    ${testBlocks}
-    });
+  describe(${JSON.stringify(functionName)}, () => {
+  ${testBlocks}
+  });
   `;
 }
 
 function parseJestResults(jestResult, testCases) {
   const results = [];
 
+  // handle runtime error — test suite gagal run sama sekali
+  const suiteError = jestResult.testResults?.[0];
+  if (
+    jestResult.numRuntimeErrorTestSuites > 0 &&
+    suiteError?.assertionResults?.length === 0
+  ) {
+    const errorMessage = suiteError.message ?? 'Runtime error occurred';
+
+    for (const testCase of testCases) {
+      results.push({
+        testCaseId: testCase.id,
+        description: testCase.description,
+        status: 'ERROR',
+        expected: JSON.stringify(testCase.expected.result),
+        received: null,
+        failureMessage: errorMessage,
+      });
+    }
+
+    return results;
+  }
+
+  // map assertion results by title
   const assertionMap = new Map();
   for (const suite of jestResult.testResults ?? []) {
     for (const assertion of suite.assertionResults ?? []) {
@@ -137,7 +240,7 @@ function parseJestResults(jestResult, testCases) {
         status: 'ERROR',
         expected: JSON.stringify(testCase.expected.result),
         received: null,
-        failureMessage: `Test case "${testCase.description}" could not be matched`, // 👈
+        failureMessage: `Test case "${testCase.description}" could not be matched`,
       });
       continue;
     }
