@@ -14,9 +14,10 @@ export class TestCaseController {
         sortBy: req.query.sortBy,
         orderBy: req.query.orderBy,
         studyCaseId: req.query.studyCaseId,
+        isPublished: req.query.isPublished,
       } as unknown as TestCasePaginationRequest;
 
-      const response = await TestCaseService.getTestCases(request);
+      const response = await TestCaseService.getTestCases(req.user!, request);
 
       res.status(200).json(response);
     } catch (e) {

@@ -1,6 +1,10 @@
+import { Role } from '../../generated/prisma/enums';
+
 import { prisma } from '../applications/database';
 
 import { ResponseError } from '../errors/response.error';
+
+import { JwtPayload } from '../models/auth.model';
 
 import { Validation } from '../validations/validation';
 import { TestCaseValidation } from '../validations/test-case.validation';
@@ -13,9 +17,11 @@ import {
   toTestCaseResponse,
   UpdateTestCaseRequest,
 } from '../models/test-case.model';
+import { Prisma } from '../../generated/prisma/client';
 
 export class TestCaseService {
   static async getTestCases(
+    user: JwtPayload,
     request: TestCasePaginationRequest,
   ): Promise<TestCasePaginationResponse> {
     const data = Validation.validate(TestCaseValidation.GET, request);
@@ -25,6 +31,9 @@ export class TestCaseService {
     }
 
     const where = {
+      ...(user.role === Role.STUDENT && { isPublished: true }),
+      ...(user.role === Role.ADMIN &&
+        data.isPublished !== undefined && { isPublished: data.isPublished }),
       ...(data.studyCaseId && { studyCaseId: data.studyCaseId }),
       ...(data.search && {
         description: { contains: data.search, mode: 'insensitive' as const },
@@ -79,7 +88,13 @@ export class TestCaseService {
 
     if (!orderExists) throw new ResponseError(400, 'Order already exists');
 
-    const testCase = await prisma.testCase.create({ data });
+    const testCase = await prisma.testCase.create({
+      data: {
+        ...data,
+        input: data.input as Prisma.InputJsonValue,
+        expected: data.expected as Prisma.InputJsonValue,
+      },
+    });
 
     return toTestCaseResponse(testCase);
   }
@@ -106,7 +121,20 @@ export class TestCaseService {
       if (!orderExists) throw new ResponseError(400, 'Order already exists');
     }
 
-    const testCase = await prisma.testCase.update({ where: { id }, data });
+    const testCase = await prisma.testCase.update({
+      where: { id },
+      data: {
+        ...(data.description && { description: data.description }),
+        ...(data.order && { order: data.order }),
+        ...(data.isPublished !== undefined && {
+          isPublished: data.isPublished,
+        }),
+        ...(data.input && { input: data.input as Prisma.InputJsonValue }),
+        ...(data.expected && {
+          expected: data.expected as Prisma.InputJsonValue,
+        }),
+      },
+    });
 
     return toTestCaseResponse(testCase);
   }
