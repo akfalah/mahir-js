@@ -21,6 +21,7 @@ function runInSandbox(
   functionName: string,
   parameterNames: string[],
   testCases: TestCaseInput[],
+  syntaxRules: Record<string, string[]> | null,
 ): Promise<ExecutionResult[]> {
   return new Promise((resolve, reject) => {
     const child = fork(
@@ -52,7 +53,7 @@ function runInSandbox(
       reject(new Error('Execution timed out'));
     }, EXECUTION_TIMEOUT_MS);
 
-    child.send({ code, functionName, parameterNames, testCases });
+    child.send({ code, functionName, parameterNames, testCases, syntaxRules });
 
     child.on(
       'message',
@@ -96,7 +97,8 @@ export async function executeSubmission(submissionId: number): Promise<void> {
     include: {
       studyCase: {
         include: {
-          testCases: { orderBy: { order: 'asc' } },},
+          testCases: { orderBy: { order: 'asc' } },
+        },
       },
     },
   });
@@ -119,6 +121,7 @@ export async function executeSubmission(submissionId: number): Promise<void> {
       functionName ?? '',
       (parameterNames as string[]) ?? [],
       testCaseInputs,
+      studyCase.syntaxRules as Record<string, string[]> | null,
     );
 
     await prisma.testResult.createMany({

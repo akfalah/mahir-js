@@ -15,14 +15,12 @@ export type MaterialPaginationRequest = PaginationRequest<MaterialSortBy> & {
 
 export type CreateMaterialRequest = {
   conceptId: number;
-  slug: string;
   title: string;
   content: string;
   order: number;
 };
 
 export type UpdateMaterialRequest = {
-  slug?: string;
   title?: string;
   content?: string;
   order?: number;

@@ -7,14 +7,12 @@ export type ConceptSortBy = 'id' | 'title' | 'order' | 'createdAt';
 export type ConceptPaginationRequest = PaginationRequest<ConceptSortBy>;
 
 export type CreateConceptRequest = {
-  slug: string;
   title: string;
   description: string;
   order: number;
 };
 
 export type UpdateConceptRequest = {
-  slug?: string;
   title?: string;
   description?: string;
   order?: number;

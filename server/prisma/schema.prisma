@@ -86,6 +86,7 @@ model StudyCase {
   description    String
   starterCode    String   @map("starter_code")
   order          Int
+  syntaxRules    Json?    @map("syntax_rules")
   parameterNames Json?    @map("parameter_names")
   functionName   String?  @map("function_name")
   createdAt      DateTime @default(now()) @map("created_at")

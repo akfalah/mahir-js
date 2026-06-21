@@ -13,12 +13,18 @@ export type StudyCasePaginationRequest = PaginationRequest<StudyCaeSortBy> & {
   materialId?: number;
 };
 
+export type SyntaxRules = {
+  required?: string[];
+  forbidden?: string[];
+};
+
 export type CreateStudyCaseRequest = {
   materialId: number;
   title: string;
   description: string;
   starterCode: string;
   order: number;
+  syntaxRules?: SyntaxRules;
   parameterNames?: string[];
   functionName?: string;
 };
@@ -28,6 +34,7 @@ export type UpdateStudyCaseRequest = {
   description?: string;
   starterCode?: string;
   order?: number;
+  syntaxRules?: SyntaxRules;
   parameterNames?: string[];
   functionName?: string;
 };
@@ -39,6 +46,7 @@ export type StudyCaseResponse = {
   description: string;
   starterCode: string;
   order: number;
+  syntaxRules: SyntaxRules;
   parameterNames: string[] | null;
   functionName: string | null;
   createdAt: Date;
@@ -54,6 +62,7 @@ export function toStudyCaseResponse(studyCase: StudyCase) {
     description: studyCase.description,
     starterCode: studyCase.starterCode,
     order: studyCase.order,
+    syntaxRules: studyCase.syntaxRules,
     parameterNames: studyCase.parameterNames as string[] | null,
     functionName: studyCase.functionName,
     createdAt: studyCase.createdAt,

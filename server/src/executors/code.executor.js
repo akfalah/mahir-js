@@ -41,6 +41,24 @@ process.on('message', ({ code, functionName, parameterNames, testCases }) => {
   const jestConfigFile = path.join(tempDir, 'jest.config.json');
 
   try {
+    const syntaxCheck = checkSyntax(code, syntaxRules);
+
+    if (!syntaxCheck.passed) {
+      // syntax tidak sesuai — return semua test case sebagai ERROR
+      const results = testCases.map((tc) => ({
+        testCaseId: tc.id,
+        description: tc.description,
+        status: 'ERROR',
+        expected: JSON.stringify(tc.expected.result),
+        received: null,
+        failureMessage: syntaxCheck.errors.join('\n'),
+      }));
+
+      process.send({ success: true, results });
+      process.exit(0);
+      return;
+    }
+
     // deteksi apakah student menulis full function atau hanya isi
     const hasDeclaration =
       code.includes(`function ${functionName}`) ||

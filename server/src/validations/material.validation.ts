@@ -27,14 +27,12 @@ export class MaterialValidation {
 
   static readonly CREATE: ZodType<CreateMaterialRequest> = z.object({
     conceptId: z.number().min(1),
-    slug: z.string().min(3),
     title: z.string().min(3),
     content: z.string().min(3),
     order: z.number().min(1),
   });
 
   static readonly UPDATE: ZodType<UpdateMaterialRequest> = z.object({
-    slug: z.string().min(3).optional(),
     title: z.string().min(3).optional(),
     content: z.string().min(3).optional(),
     order: z.number().min(1).optional(),

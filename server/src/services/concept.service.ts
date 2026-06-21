@@ -70,15 +70,20 @@ export class ConceptService {
   ): Promise<ConceptResponse> {
     const data = Validation.validate(ConceptValidation.CREATE, request);
 
+    const slug = data.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+
     const [slugExists, orderExists] = await Promise.all([
-      prisma.concept.count({ where: { slug: data.slug } }),
+      prisma.concept.count({ where: { slug: slug } }),
       prisma.concept.count({ where: { order: data.order } }),
     ]);
 
     if (slugExists) throw new ResponseError(400, 'Slug already exists');
     if (orderExists) throw new ResponseError(400, 'Order already exists');
 
-    const concept = await prisma.concept.create({ data });
+    const concept = await prisma.concept.create({ data: { ...data, slug } });
 
     return toConceptResponse(concept);
   }
@@ -93,9 +98,16 @@ export class ConceptService {
 
     if (!exists) throw new ResponseError(404, 'Concept not found');
 
-    if (data.slug) {
+    const slug = data.title
+      ? data.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+      : undefined;
+
+    if (slug) {
       const slugExists = await prisma.concept.count({
-        where: { slug: data.slug, NOT: { id } },
+        where: { slug: slug, NOT: { id } },
       });
 
       if (slugExists) throw new ResponseError(400, 'Slug already exists');
