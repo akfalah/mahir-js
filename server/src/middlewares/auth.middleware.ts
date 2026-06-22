@@ -47,3 +47,27 @@ export function roleMiddleware(...roles: Role[]) {
     next();
   };
 }
+
+export function optionalAuthMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string,
+    ) as JwtPayload;
+
+    req.user = payload;
+    next();
+  } catch (e) {
+    next(new ResponseError(401, 'Invalid or expired token'));
+  }
+}

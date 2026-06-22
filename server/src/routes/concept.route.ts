@@ -2,14 +2,18 @@ import { Router } from 'express';
 
 import { Role } from '../../generated/prisma/enums';
 
-import { authMiddleware, roleMiddleware } from '../middlewares/auth.middleware';
+import {
+  authMiddleware,
+  optionalAuthMiddleware,
+  roleMiddleware,
+} from '../middlewares/auth.middleware';
 
 import { ConceptController } from '../controllers/concept.controller';
 
 export const conceptRouter = Router();
 
-conceptRouter.get('/', ConceptController.index);
-conceptRouter.get('/:id', ConceptController.show);
+conceptRouter.get('/', optionalAuthMiddleware, ConceptController.index);
+conceptRouter.get('/:id', optionalAuthMiddleware, ConceptController.show);
 conceptRouter.post(
   '/',
   authMiddleware,

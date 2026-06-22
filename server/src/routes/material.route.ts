@@ -2,14 +2,14 @@ import { Router } from 'express';
 
 import { Role } from '../../generated/prisma/enums';
 
-import { authMiddleware, roleMiddleware } from '../middlewares/auth.middleware';
+import { authMiddleware, optionalAuthMiddleware, roleMiddleware } from '../middlewares/auth.middleware';
 
 import { MaterialController } from '../controllers/material.controller';
 
 export const materialRouter = Router();
 
-materialRouter.get('/', MaterialController.index);
-materialRouter.get('/:id', MaterialController.show);
+materialRouter.get('/', optionalAuthMiddleware, MaterialController.index);
+materialRouter.get('/:id', optionalAuthMiddleware, MaterialController.show);
 materialRouter.post(
   '/',
   authMiddleware,
