@@ -23,7 +23,10 @@ export class TestCaseValidation {
       .default('id'),
     orderBy: z.enum(['asc', 'desc']).default('asc'),
     studyCaseId: z.coerce.number().min(1).optional(),
-    isPublished: z.boolean().optional(),
+    isPublished: z
+      .enum(['true', 'false'])
+      .transform((v) => v === 'true')
+      .optional(),
   });
 
   static readonly CREATE: ZodType<CreateTestCaseRequest> = z.object({

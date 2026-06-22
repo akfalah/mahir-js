@@ -21,7 +21,7 @@ import { Prisma } from '../../generated/prisma/client';
 
 export class TestCaseService {
   static async getTestCases(
-    user: JwtPayload,
+    user: JwtPayload | undefined,
     request: TestCasePaginationRequest,
   ): Promise<TestCasePaginationResponse> {
     const data = Validation.validate(TestCaseValidation.GET, request);
@@ -30,9 +30,11 @@ export class TestCaseService {
       throw new ResponseError(400, 'sortBy order requires studyCaseId filter');
     }
 
+    const isAdmin = user?.role === Role.ADMIN;
+
     const where = {
-      ...(user.role === Role.STUDENT && { isPublished: true }),
-      ...(user.role === Role.ADMIN &&
+      ...(!isAdmin && { isPublished: true }),
+      ...(isAdmin &&
         data.isPublished !== undefined && { isPublished: data.isPublished }),
       ...(data.studyCaseId && { studyCaseId: data.studyCaseId }),
       ...(data.search && {
@@ -86,7 +88,7 @@ export class TestCaseService {
       where: { studyCaseId: data.studyCaseId, order: data.order },
     });
 
-    if (!orderExists) throw new ResponseError(400, 'Order already exists');
+    if (orderExists) throw new ResponseError(400, 'Order already exists');
 
     const testCase = await prisma.testCase.create({
       data: {

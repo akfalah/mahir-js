@@ -4,6 +4,9 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { checkSyntax } = require(
+  path.join(__dirname, './syntax-checker.executor'),
+);
 
 const BLOCKED_MODULES = [
   'fs',
@@ -34,48 +37,50 @@ const BLOCKED_MODULES = [
   'assert',
 ];
 
-process.on('message', ({ code, functionName, parameterNames, testCases }) => {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mahirjs-'));
-  const solutionFile = path.join(tempDir, 'solution.js');
-  const testFile = path.join(tempDir, 'solution.test.js');
-  const jestConfigFile = path.join(tempDir, 'jest.config.json');
+process.on(
+  'message',
+  ({ code, functionName, parameterNames, testCases, syntaxRules }) => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mahirjs-'));
+    const solutionFile = path.join(tempDir, 'solution.js');
+    const testFile = path.join(tempDir, 'solution.test.js');
+    const jestConfigFile = path.join(tempDir, 'jest.config.json');
 
-  try {
-    const syntaxCheck = checkSyntax(code, syntaxRules);
+    try {
+      const syntaxCheck = checkSyntax(code, syntaxRules);
 
-    if (!syntaxCheck.passed) {
-      // syntax tidak sesuai — return semua test case sebagai ERROR
-      const results = testCases.map((tc) => ({
-        testCaseId: tc.id,
-        description: tc.description,
-        status: 'ERROR',
-        expected: JSON.stringify(tc.expected.result),
-        received: null,
-        failureMessage: syntaxCheck.errors.join('\n'),
-      }));
+      if (!syntaxCheck.passed) {
+        // syntax tidak sesuai — return semua test case sebagai ERROR
+        const results = testCases.map((tc) => ({
+          testCaseId: tc.id,
+          description: tc.description,
+          status: 'ERROR',
+          expected: JSON.stringify(tc.expected.result),
+          received: null,
+          failureMessage: syntaxCheck.errors.join('\n'),
+        }));
 
-      process.send({ success: true, results });
-      process.exit(0);
-      return;
-    }
+        process.send({ success: true, results });
+        process.exit(0);
+        return;
+      }
 
-    // deteksi apakah student menulis full function atau hanya isi
-    const hasDeclaration =
-      code.includes(`function ${functionName}`) ||
-      code.includes(`const ${functionName}`) ||
-      code.includes(`let ${functionName}`) ||
-      code.includes(`var ${functionName}`);
+      // deteksi apakah student menulis full function atau hanya isi
+      const hasDeclaration =
+        code.includes(`function ${functionName}`) ||
+        code.includes(`const ${functionName}`) ||
+        code.includes(`let ${functionName}`) ||
+        code.includes(`var ${functionName}`);
 
-    const studentCode = hasDeclaration
-      ? code
-      : `function ${functionName}(${parameterNames.join(', ')}) {\n${code}\n}`;
+      const studentCode = hasDeclaration
+        ? code
+        : `function ${functionName}(${parameterNames.join(', ')}) {\n${code}\n}`;
 
-    // block require via proxy di dalam solution.js
-    const blockedModuleEntries = BLOCKED_MODULES.map(
-      (mod) => `  '${mod}': true`,
-    ).join(',\n');
+      // block require via proxy di dalam solution.js
+      const blockedModuleEntries = BLOCKED_MODULES.map(
+        (mod) => `  '${mod}': true`,
+      ).join(',\n');
 
-    const wrappedCode = `
+      const wrappedCode = `
     'use strict';
 
     // block modul berbahaya
@@ -117,75 +122,76 @@ process.on('message', ({ code, functionName, parameterNames, testCases }) => {
     module.exports = { ${functionName} };
     `;
 
-    fs.writeFileSync(solutionFile, wrappedCode, 'utf8');
+      fs.writeFileSync(solutionFile, wrappedCode, 'utf8');
 
-    // jest test file
-    const testContent = generateJestTestFile(
-      functionName,
-      parameterNames,
-      testCases,
-    );
-    fs.writeFileSync(testFile, testContent, 'utf8');
+      // jest test file
+      const testContent = generateJestTestFile(
+        functionName,
+        parameterNames,
+        testCases,
+      );
+      fs.writeFileSync(testFile, testContent, 'utf8');
 
-    // jest config — tanpa moduleNameMapper
-    fs.writeFileSync(
-      jestConfigFile,
-      JSON.stringify({
-        testEnvironment: 'node',
-        testMatch: ['**/*.test.js'],
-        testTimeout: 3000,
-        transform: {},
-        collectCoverage: false,
-      }),
-      'utf8',
-    );
+      // jest config — tanpa moduleNameMapper
+      fs.writeFileSync(
+        jestConfigFile,
+        JSON.stringify({
+          testEnvironment: 'node',
+          testMatch: ['**/*.test.js'],
+          testTimeout: 3000,
+          transform: {},
+          collectCoverage: false,
+        }),
+        'utf8',
+      );
 
-    // jalankan jest
-    const jestBin = path.resolve(__dirname, '../../node_modules/.bin/jest');
-    let output;
+      // jalankan jest
+      const jestBin = path.resolve(__dirname, '../../node_modules/.bin/jest');
+      let output;
 
-    try {
-      output = execSync(
-        `${jestBin} --config ${jestConfigFile} --json --no-coverage --forceExit`,
-        {
-          cwd: tempDir,
-          timeout: 10000,
-          env: { PATH: process.env.PATH },
-          stdio: ['pipe', 'pipe', 'pipe'],
-        },
-      ).toString();
-    } catch (execErr) {
-      output = execErr.stdout?.toString() ?? '';
+      try {
+        output = execSync(
+          `${jestBin} --config ${jestConfigFile} --json --no-coverage --forceExit`,
+          {
+            cwd: tempDir,
+            timeout: 10000,
+            env: { PATH: process.env.PATH },
+            stdio: ['pipe', 'pipe', 'pipe'],
+          },
+        ).toString();
+      } catch (execErr) {
+        output = execErr.stdout?.toString() ?? '';
 
-      if (!output) {
-        process.send({
-          success: false,
-          error:
-            execErr.stderr?.toString() ??
-            'Jest execution failed with no output',
-        });
-        process.exit(0);
-        return;
+        if (!output) {
+          process.send({
+            success: false,
+            error:
+              execErr.stderr?.toString() ??
+              'Jest execution failed with no output',
+          });
+          process.exit(0);
+          return;
+        }
       }
+
+      const jestResult = JSON.parse(output);
+      const results = parseJestResults(jestResult, testCases);
+
+      process.send({ success: true, results });
+    } catch (err) {
+      process.send({
+        success: false,
+        error: err.message ?? 'Unknown error',
+      });
+    } finally {
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      } catch {}
     }
 
-    const jestResult = JSON.parse(output);
-    const results = parseJestResults(jestResult, testCases);
-
-    process.send({ success: true, results });
-  } catch (err) {
-    process.send({
-      success: false,
-      error: err.message ?? 'Unknown error',
-    });
-  } finally {
-    try {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch {}
-  }
-
-  process.exit(0);
-});
+    process.exit(0);
+  },
+);
 
 function generateJestTestFile(functionName, parameterNames, testCases) {
   const testBlocks = testCases
@@ -215,6 +221,17 @@ function generateJestTestFile(functionName, parameterNames, testCases) {
   `;
 }
 
+function cleanFailureMessage(failMessage) {
+  if (!failMessage) return null;
+
+  // ambil hanya sampai baris pertama yang dimulai dengan 'at ' (stack trace)
+  const lines = failMessage.split('\n');
+  const stackIndex = lines.findIndex((line) => line.trim().startsWith('at '));
+  const relevantLines = stackIndex > 0 ? lines.slice(0, stackIndex) : lines;
+
+  return relevantLines.join('\n').trim();
+}
+
 function parseJestResults(jestResult, testCases) {
   const results = [];
 
@@ -230,10 +247,10 @@ function parseJestResults(jestResult, testCases) {
       results.push({
         testCaseId: testCase.id,
         description: testCase.description,
-        status: 'ERROR',
+        status: passed ? 'PASSED' : 'FAILED',
         expected: JSON.stringify(testCase.expected.result),
-        received: null,
-        failureMessage: errorMessage,
+        received,
+        failureMessage: passed ? null : cleanFailureMessage(failMessage),
       });
     }
 
