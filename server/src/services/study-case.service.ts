@@ -1,10 +1,12 @@
 import { prisma } from '../applications/database';
+import { Role } from '../../generated/prisma/enums';
 
 import { ResponseError } from '../errors/response.error';
 
 import { Validation } from '../validations/validation';
 import { StudyCaseValidation } from '../validations/study-case.validation';
 
+import { JwtPayload } from '../models/auth.model';
 import {
   CreateStudyCaseRequest,
   StudyCasePaginationRequest,
@@ -16,6 +18,7 @@ import {
 
 export class StudyCaseService {
   static async getStudyCases(
+    user: JwtPayload | undefined,
     request: StudyCasePaginationRequest,
   ): Promise<StudyCasePaginationResponse> {
     const data = Validation.validate(StudyCaseValidation.GET, request);
@@ -24,7 +27,12 @@ export class StudyCaseService {
       throw new ResponseError(400, 'sortBy order requires materialId filter');
     }
 
+    const isAdmin = user?.role === Role.ADMIN;
+
     const where = {
+      ...(!isAdmin && { isPublished: true }),
+      ...(isAdmin &&
+        data.isPublished !== undefined && { isPublished: data.isPublished }),
       ...(data.materialId && { materialId: data.materialId }),
       ...(data.search && {
         OR: [
@@ -62,8 +70,15 @@ export class StudyCaseService {
     };
   }
 
-  static async getStudyCaseById(id: number): Promise<StudyCaseResponse> {
-    const studyCase = await prisma.studyCase.findUnique({ where: { id } });
+  static async getStudyCaseById(
+    user: JwtPayload | undefined,
+    id: number,
+  ): Promise<StudyCaseResponse> {
+    const isAdmin = user?.role === Role.ADMIN;
+
+    const studyCase = await prisma.studyCase.findUnique({
+      where: { id, ...(!isAdmin && { isPublished: true }) },
+    });
 
     if (!studyCase) throw new ResponseError(404, 'Study case not found');
 

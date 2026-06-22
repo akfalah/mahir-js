@@ -14,9 +14,10 @@ export class StudyCaseController {
         sortBy: req.query.sortBy,
         orderBy: req.query.orderBy,
         materialId: req.query.materialId,
+        isPublished: req.query.isPublished,
       } as unknown as StudyCasePaginationRequest;
 
-      const response = await StudyCaseService.getStudyCases(request);
+      const response = await StudyCaseService.getStudyCases(req.user, request);
 
       res.status(200).json(response);
     } catch (e) {
@@ -27,6 +28,7 @@ export class StudyCaseController {
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
       const response = await StudyCaseService.getStudyCaseById(
+        req.user,
         Number(req.params.id),
       );
 

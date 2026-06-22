@@ -23,6 +23,10 @@ export class StudyCaseValidation {
       .default('id'),
     orderBy: z.enum(['asc', 'desc']).default('asc'),
     materialId: z.coerce.number().min(1).optional(),
+    isPublished: z
+      .enum(['true', 'false'])
+      .transform((v) => v === 'true')
+      .optional(),
   });
 
   static readonly CREATE: ZodType<CreateStudyCaseRequest> = z.object({
@@ -39,6 +43,7 @@ export class StudyCaseValidation {
       .optional(),
     parameterNames: z.array(z.string()).optional(),
     functionName: z.string().min(1).optional(),
+    isPublished: z.boolean().optional(),
   });
 
   static readonly UPDATE: ZodType<UpdateStudyCaseRequest> = z.object({
@@ -54,5 +59,6 @@ export class StudyCaseValidation {
       .optional(),
     parameterNames: z.array(z.string()).optional(),
     functionName: z.string().min(1).optional(),
+    isPublished: z.boolean().optional(),
   });
 }

@@ -7,10 +7,12 @@ export type MaterialSortBy =
   | 'conceptId'
   | 'title'
   | 'order'
+  | 'isPublished'
   | 'createdAt';
 
 export type MaterialPaginationRequest = PaginationRequest<MaterialSortBy> & {
   conceptId?: number;
+  isPublished?: boolean;
 };
 
 export type CreateMaterialRequest = {
@@ -18,12 +20,14 @@ export type CreateMaterialRequest = {
   title: string;
   content: string;
   order: number;
+  isPublished?: boolean;
 };
 
 export type UpdateMaterialRequest = {
   title?: string;
   content?: string;
   order?: number;
+  isPublished?: boolean;
 };
 
 export type MaterialResponse = {
@@ -33,6 +37,7 @@ export type MaterialResponse = {
   title: string;
   content: string;
   order: number;
+  isPublished: boolean;
   createdAt: Date;
 };
 
@@ -46,6 +51,7 @@ export function toMaterialResponse(material: Material) {
     title: material.title,
     content: material.content,
     order: material.order,
+    isPublished: material.isPublished,
     createdAt: material.createdAt,
   };
 }

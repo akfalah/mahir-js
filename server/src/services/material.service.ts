@@ -1,10 +1,12 @@
 import { prisma } from '../applications/database';
+import { Role } from '../../generated/prisma/enums';
 
 import { ResponseError } from '../errors/response.error';
 
 import { Validation } from '../validations/validation';
 import { MaterialValidation } from '../validations/material.validation';
 
+import { JwtPayload } from '../models/auth.model';
 import {
   CreateMaterialRequest,
   MaterialPaginationRequest,
@@ -16,6 +18,7 @@ import {
 
 export class MaterialService {
   static async getMaterials(
+    user: JwtPayload | undefined,
     request: MaterialPaginationRequest,
   ): Promise<MaterialPaginationResponse> {
     const data = Validation.validate(MaterialValidation.GET, request);
@@ -23,8 +26,12 @@ export class MaterialService {
     if (data.sortBy === 'order' && !data.conceptId) {
       throw new ResponseError(400, 'sortBy order requires conceptId filter');
     }
+    const isAdmin = user?.role === Role.ADMIN;
 
     const where = {
+      ...(!isAdmin && { isPublished: true }),
+      ...(isAdmin &&
+        data.isPublished !== undefined && { isPublished: data.isPublished }),
       ...(data.conceptId && { conceptId: data.conceptId }),
       ...(data.search && {
         OR: [
@@ -57,8 +64,15 @@ export class MaterialService {
     };
   }
 
-  static async getMaterialById(id: number): Promise<MaterialResponse> {
-    const material = await prisma.material.findUnique({ where: { id } });
+  static async getMaterialById(
+    user: JwtPayload | undefined,
+    id: number,
+  ): Promise<MaterialResponse> {
+    const isAdmin = user?.role === Role.ADMIN;
+
+    const material = await prisma.material.findUnique({
+      where: { id, ...(!isAdmin && { isPublished: true }) },
+    });
 
     if (!material) throw new ResponseError(404, 'Material not found');
 

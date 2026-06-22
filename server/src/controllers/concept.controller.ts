@@ -13,9 +13,10 @@ export class ConceptController {
         search: req.query.search,
         sortBy: req.query.sortBy,
         orderBy: req.query.orderBy,
+        isPublished: req.query.isPublished,
       } as unknown as ConceptPaginationRequest;
 
-      const response = await ConceptService.getConcepts(request);
+      const response = await ConceptService.getConcepts(req.user, request);
 
       res.status(200).json(response);
     } catch (e) {
@@ -26,6 +27,7 @@ export class ConceptController {
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
       const response = await ConceptService.getConceptById(
+        req.user,
         Number(req.params.id),
       );
 

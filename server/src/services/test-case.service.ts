@@ -1,14 +1,14 @@
+import { Prisma } from '../../generated/prisma/client';
 import { Role } from '../../generated/prisma/enums';
 
 import { prisma } from '../applications/database';
 
 import { ResponseError } from '../errors/response.error';
 
-import { JwtPayload } from '../models/auth.model';
-
 import { Validation } from '../validations/validation';
 import { TestCaseValidation } from '../validations/test-case.validation';
 
+import { JwtPayload } from '../models/auth.model';
 import {
   CreateTestCaseRequest,
   TestCasePaginationRequest,
@@ -17,7 +17,6 @@ import {
   toTestCaseResponse,
   UpdateTestCaseRequest,
 } from '../models/test-case.model';
-import { Prisma } from '../../generated/prisma/client';
 
 export class TestCaseService {
   static async getTestCases(
@@ -65,8 +64,15 @@ export class TestCaseService {
     };
   }
 
-  static async getTestCaseById(id: number): Promise<TestCaseResponse> {
-    const testCase = await prisma.testCase.findUnique({ where: { id } });
+  static async getTestCaseById(
+    user: JwtPayload | undefined,
+    id: number,
+  ): Promise<TestCaseResponse> {
+    const isAdmin = user?.role === Role.ADMIN;
+
+    const testCase = await prisma.testCase.findUnique({
+      where: { id, ...(!isAdmin && { isPublished: true }) },
+    });
 
     if (!testCase) throw new ResponseError(404, 'Test case not found');
 

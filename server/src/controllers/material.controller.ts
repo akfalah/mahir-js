@@ -14,9 +14,10 @@ export class MaterialController {
         sortBy: req.query.sortBy,
         orderBy: req.query.orderBy,
         conceptId: req.query.conceptId,
+        isPublished: req.query.isPublished,
       } as unknown as MaterialPaginationRequest;
 
-      const response = await MaterialService.getMaterials(request);
+      const response = await MaterialService.getMaterials(req.user, request);
 
       res.status(200).json(response);
     } catch (e) {
@@ -27,6 +28,7 @@ export class MaterialController {
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
       const response = await MaterialService.getMaterialById(
+        req.user,
         Number(req.params.id),
       );
 

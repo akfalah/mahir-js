@@ -1,10 +1,9 @@
 import { prisma } from '../applications/database';
+import { Role } from '../../generated/prisma/enums';
 
 import { ResponseError } from '../errors/response.error';
 
-import { Validation } from '../validations/validation';
-import { ConceptValidation } from '../validations/concept.validation';
-
+import { JwtPayload } from '../models/auth.model';
 import {
   ConceptPaginationRequest,
   ConceptPaginationResponse,
@@ -14,13 +13,22 @@ import {
   UpdateConceptRequest,
 } from '../models/concept.model';
 
+import { Validation } from '../validations/validation';
+import { ConceptValidation } from '../validations/concept.validation';
+
 export class ConceptService {
   static async getConcepts(
+    user: JwtPayload | undefined,
     request: ConceptPaginationRequest,
   ): Promise<ConceptPaginationResponse> {
     const data = Validation.validate(ConceptValidation.GET, request);
 
+    const isAdmin = user?.role === Role.ADMIN;
+    
     const where = {
+      ...(!isAdmin && { isPublished: true }),
+      ...(isAdmin &&
+        data.isPublished !== undefined && { isPublished: data.isPublished }),
       ...(data.search && {
         OR: [
           { title: { contains: data.search, mode: 'insensitive' as const } },
@@ -57,8 +65,15 @@ export class ConceptService {
     };
   }
 
-  static async getConceptById(id: number): Promise<ConceptResponse> {
-    const concept = await prisma.concept.findUnique({ where: { id } });
+  static async getConceptById(
+    user: JwtPayload | undefined,
+    id: number,
+  ): Promise<ConceptResponse> {
+    const isAdmin = user?.role === Role.ADMIN;
+
+    const concept = await prisma.concept.findUnique({
+      where: { id, ...(!isAdmin && { isPublished: true }) },
+    });
 
     if (!concept) throw new ResponseError(404, 'Concept not found');
 

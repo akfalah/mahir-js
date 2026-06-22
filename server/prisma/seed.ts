@@ -50,6 +50,7 @@ async function main() {
       description:
         'Learn how to make decisions in your code using if, else, and switch statements.',
       order: 1,
+      isPublished: true,
     },
   });
 
@@ -62,6 +63,7 @@ async function main() {
       description:
         'Learn how to repeat actions using for, while, and do-while loops.',
       order: 2,
+      isPublished: true,
     },
   });
 
@@ -74,6 +76,7 @@ async function main() {
       description:
         'Learn how to write reusable blocks of code using functions.',
       order: 3,
+      isPublished: true,
     },
   });
 
@@ -115,6 +118,7 @@ async function main() {
         \`\`\`
       `.trim(),
       order: 1,
+      isPublished: true,
     },
   });
 
@@ -141,6 +145,7 @@ async function main() {
         \`\`\`
       `.trim(),
       order: 2,
+      isPublished: true,
     },
   });
 
@@ -166,6 +171,7 @@ async function main() {
         \`\`\`
       `.trim(),
       order: 1,
+      isPublished: true,
     },
   });
 
@@ -190,6 +196,7 @@ async function main() {
         \`\`\`
       `.trim(),
       order: 2,
+      isPublished: true,
     },
   });
 
@@ -217,6 +224,7 @@ async function main() {
         \`\`\`
       `.trim(),
       order: 1,
+      isPublished: true,
     },
   });
 
@@ -237,6 +245,7 @@ async function main() {
         \`\`\`
       `.trim(),
       order: 2,
+      isPublished: true,
     },
   });
 
@@ -261,6 +270,7 @@ async function main() {
       functionName: 'isAdult',
       parameterNames: ['age'],
       order: 1,
+      isPublished: true,
     },
   });
 
@@ -280,6 +290,7 @@ async function main() {
       functionName: 'maxOfTwo',
       parameterNames: ['a', 'b'],
       order: 2,
+      isPublished: true,
     },
   });
 
@@ -302,6 +313,7 @@ async function main() {
       functionName: 'getDayName',
       parameterNames: ['day'],
       order: 1,
+      isPublished: true,
     },
   });
 
@@ -324,6 +336,7 @@ async function main() {
       functionName: 'sumArray',
       parameterNames: ['numbers'],
       order: 1,
+      isPublished: true,
     },
   });
 
@@ -343,6 +356,7 @@ async function main() {
       functionName: 'fizzBuzz',
       parameterNames: ['n'],
       order: 2,
+      isPublished: true,
     },
   });
 
@@ -365,6 +379,7 @@ async function main() {
       functionName: 'countdown',
       parameterNames: ['n'],
       order: 1,
+      isPublished: true,
     },
   });
 
@@ -389,6 +404,7 @@ async function main() {
       functionName: 'greet',
       parameterNames: ['name'],
       order: 1,
+      isPublished: true,
     },
   });
 
@@ -413,6 +429,7 @@ async function main() {
       functionName: 'double',
       parameterNames: ['n'],
       order: 1,
+      isPublished: true,
     },
   });
 

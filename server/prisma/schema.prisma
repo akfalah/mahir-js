@@ -51,6 +51,7 @@ model Concept {
   title       String
   description String
   order       Int      @unique
+  isPublished Boolean  @default(false) @map("is_published")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -61,14 +62,15 @@ model Concept {
 }
 
 model Material {
-  id        Int      @id @default(autoincrement())
-  conceptId Int      @map("concept_id")
-  slug      String   @unique
-  title     String
-  content   String
-  order     Int
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          Int      @id @default(autoincrement())
+  conceptId   Int      @map("concept_id")
+  slug        String   @unique
+  title       String
+  content     String
+  order       Int
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   concept Concept @relation(fields: [conceptId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 
@@ -89,6 +91,7 @@ model StudyCase {
   syntaxRules    Json?    @map("syntax_rules")
   parameterNames Json?    @map("parameter_names")
   functionName   String?  @map("function_name")
+  isPublished    Boolean  @default(false) @map("is_published")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -159,7 +162,6 @@ model StudyCaseProgress {
   userId      Int       @map("user_id")
   studyCaseId Int       @map("study_case_id")
   isCompleted Boolean   @default(false) @map("is_completed")
-  isUnlocked  Boolean   @default(false) @map("is_unlocked")
   completedAt DateTime? @map("completed_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
@@ -176,7 +178,6 @@ model MaterialProgress {
   userId      Int       @map("user_id")
   materialId  Int       @map("material_id")
   isCompleted Boolean   @default(false) @map("is_completed")
-  isUnlocked  Boolean   @default(false) @map("is_unlocked")
   completedAt DateTime? @map("completed_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
@@ -193,7 +194,6 @@ model ConceptProgress {
   userId      Int       @map("user_id")
   conceptId   Int       @map("concept_id")
   isCompleted Boolean   @default(false) @map("is_completed")
-  isUnlocked  Boolean   @default(false) @map("is_unlocked")
   completedAt DateTime? @map("completed_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 

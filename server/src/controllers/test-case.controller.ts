@@ -28,6 +28,7 @@ export class TestCaseController {
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
       const response = await TestCaseService.getTestCaseById(
+        req.user,
         Number(req.params.id),
       );
 

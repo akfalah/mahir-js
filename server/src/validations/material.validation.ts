@@ -23,6 +23,10 @@ export class MaterialValidation {
       .default('id'),
     orderBy: z.enum(['asc', 'desc']).default('asc'),
     conceptId: z.coerce.number().min(1).optional(),
+    isPublished: z
+      .enum(['true', 'false'])
+      .transform((v) => v === 'true')
+      .optional(),
   });
 
   static readonly CREATE: ZodType<CreateMaterialRequest> = z.object({
@@ -30,11 +34,13 @@ export class MaterialValidation {
     title: z.string().min(3),
     content: z.string().min(3),
     order: z.number().min(1),
+    isPublished: z.boolean().optional(),
   });
 
   static readonly UPDATE: ZodType<UpdateMaterialRequest> = z.object({
     title: z.string().min(3).optional(),
     content: z.string().min(3).optional(),
     order: z.number().min(1).optional(),
+    isPublished: z.boolean().optional(),
   });
 }
