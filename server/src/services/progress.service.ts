@@ -63,7 +63,6 @@ export class ProgressService {
         userId,
         studyCaseId,
         isCompleted: true,
-        isUnlocked: true,
         completedAt: now,
       },
     });
@@ -85,8 +84,8 @@ export class ProgressService {
           where: {
             userId_studyCaseId: { userId, studyCaseId: nextStudyCase.id },
           },
-          update: { isUnlocked: true },
-          create: { userId, studyCaseId: nextStudyCase.id, isUnlocked: true },
+          update: {},
+          create: { userId, studyCaseId: nextStudyCase.id },
         });
       } else {
         await prisma.materialProgress.upsert({
@@ -101,7 +100,6 @@ export class ProgressService {
             userId,
             materialId: currentStudyCase.materialId,
             isCompleted: true,
-            isUnlocked: true,
             completedAt: now,
           },
         });
@@ -123,8 +121,8 @@ export class ProgressService {
               where: {
                 userId_materialId: { userId, materialId: nextMaterial.id },
               },
-              update: { isUnlocked: true },
-              create: { userId, materialId: nextMaterial.id, isUnlocked: true },
+              update: {},
+              create: { userId, materialId: nextMaterial.id },
             });
 
             const firstStudyCase = await prisma.studyCase.findFirst({
@@ -140,11 +138,10 @@ export class ProgressService {
                     studyCaseId: firstStudyCase.id,
                   },
                 },
-                update: { isUnlocked: true },
+                update: {},
                 create: {
                   userId,
                   studyCaseId: firstStudyCase.id,
-                  isUnlocked: true,
                 },
               });
             }
@@ -161,7 +158,6 @@ export class ProgressService {
                 userId,
                 conceptId: currentMaterial.conceptId,
                 isCompleted: true,
-                isUnlocked: true,
                 completedAt: now,
               },
             });
@@ -180,11 +176,10 @@ export class ProgressService {
                   where: {
                     userId_conceptId: { userId, conceptId: nextConcept.id },
                   },
-                  update: { isUnlocked: true },
+                  update: {},
                   create: {
                     userId,
                     conceptId: nextConcept.id,
-                    isUnlocked: true,
                   },
                 });
 
@@ -201,11 +196,10 @@ export class ProgressService {
                         materialId: firstMaterial.id,
                       },
                     },
-                    update: { isUnlocked: true },
+                    update: {},
                     create: {
                       userId,
                       materialId: firstMaterial.id,
-                      isUnlocked: true,
                     },
                   });
 
@@ -222,11 +216,10 @@ export class ProgressService {
                           studyCaseId: firstStudyCase.id,
                         },
                       },
-                      update: { isUnlocked: true },
+                      update: {},
                       create: {
                         userId,
                         studyCaseId: firstStudyCase.id,
-                        isUnlocked: true,
                       },
                     });
                   }

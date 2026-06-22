@@ -9,7 +9,6 @@ export type StudyCaseProgressResponse = {
   userId: number;
   studyCaseId: number;
   isCompleted: boolean;
-  isUnlocked: boolean;
   completedAt: Date | null;
   updatedAt: Date;
 };
@@ -19,7 +18,6 @@ export type MaterialProgressResponse = {
   userId: number;
   materialId: number;
   isCompleted: boolean;
-  isUnlocked: boolean;
   completedAt: Date | null;
   updatedAt: Date;
 };
@@ -29,7 +27,6 @@ export type ConceptProgressResponse = {
   userId: number;
   conceptId: number;
   isCompleted: boolean;
-  isUnlocked: boolean;
   completedAt: Date | null;
   updatedAt: Date;
 };
@@ -42,7 +39,6 @@ export function toStudyCaseProgressResponse(
     userId: progress.userId,
     studyCaseId: progress.studyCaseId,
     isCompleted: progress.isCompleted,
-    isUnlocked: progress.isUnlocked,
     completedAt: progress.completedAt,
     updatedAt: progress.updatedAt,
   };
@@ -56,7 +52,6 @@ export function toMaterialProgressResponse(
     userId: progress.userId,
     materialId: progress.materialId,
     isCompleted: progress.isCompleted,
-    isUnlocked: progress.isUnlocked,
     completedAt: progress.completedAt,
     updatedAt: progress.updatedAt,
   };
@@ -70,7 +65,6 @@ export function toConceptProgressResponse(
     userId: progress.userId,
     conceptId: progress.conceptId,
     isCompleted: progress.isCompleted,
-    isUnlocked: progress.isUnlocked,
     completedAt: progress.completedAt,
     updatedAt: progress.updatedAt,
   };
