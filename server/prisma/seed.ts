@@ -695,10 +695,9 @@ async function main() {
       {
         userId: student.id,
         conceptId: conceptConditional.id,
-        isUnlocked: true,
       },
-      { userId: student.id, conceptId: conceptLooping.id, isUnlocked: false },
-      { userId: student.id, conceptId: conceptFunction.id, isUnlocked: false },
+      { userId: student.id, conceptId: conceptLooping.id },
+      { userId: student.id, conceptId: conceptFunction.id },
     ],
   });
 
@@ -706,8 +705,8 @@ async function main() {
   await prisma.materialProgress.createMany({
     skipDuplicates: true,
     data: [
-      { userId: student.id, materialId: materialIfElse.id, isUnlocked: true },
-      { userId: student.id, materialId: materialSwitch.id, isUnlocked: false },
+      { userId: student.id, materialId: materialIfElse.id },
+      { userId: student.id, materialId: materialSwitch.id },
     ],
   });
 
@@ -715,11 +714,10 @@ async function main() {
   await prisma.materialProgress.createMany({
     skipDuplicates: true,
     data: [
-      { userId: student.id, materialId: materialForLoop.id, isUnlocked: false },
+      { userId: student.id, materialId: materialForLoop.id },
       {
         userId: student.id,
         materialId: materialWhileLoop.id,
-        isUnlocked: false,
       },
     ],
   });
@@ -731,12 +729,10 @@ async function main() {
       {
         userId: student.id,
         materialId: materialFunctionBasics.id,
-        isUnlocked: false,
       },
       {
         userId: student.id,
         materialId: materialArrowFunction.id,
-        isUnlocked: false,
       },
     ],
   });
@@ -745,46 +741,42 @@ async function main() {
   await prisma.studyCaseProgress.createMany({
     skipDuplicates: true,
     data: [
-      { userId: student.id, studyCaseId: scCheckAdult.id, isUnlocked: true },
-      { userId: student.id, studyCaseId: scMaxOfTwo.id, isUnlocked: false },
+      { userId: student.id, studyCaseId: scCheckAdult.id },
+      { userId: student.id, studyCaseId: scMaxOfTwo.id },
     ],
   });
 
   // Study case progresses — Switch
   await prisma.studyCaseProgress.createMany({
     skipDuplicates: true,
-    data: [
-      { userId: student.id, studyCaseId: scDayName.id, isUnlocked: false },
-    ],
+    data: [{ userId: student.id, studyCaseId: scDayName.id }],
   });
 
   // Study case progresses — For Loop
   await prisma.studyCaseProgress.createMany({
     skipDuplicates: true,
     data: [
-      { userId: student.id, studyCaseId: scSumArray.id, isUnlocked: false },
-      { userId: student.id, studyCaseId: scFizzBuzz.id, isUnlocked: false },
+      { userId: student.id, studyCaseId: scSumArray.id },
+      { userId: student.id, studyCaseId: scFizzBuzz.id },
     ],
   });
 
   // Study case progresses — While Loop
   await prisma.studyCaseProgress.createMany({
     skipDuplicates: true,
-    data: [
-      { userId: student.id, studyCaseId: scCountdown.id, isUnlocked: false },
-    ],
+    data: [{ userId: student.id, studyCaseId: scCountdown.id }],
   });
 
   // Study case progresses — Function Basics
   await prisma.studyCaseProgress.createMany({
     skipDuplicates: true,
-    data: [{ userId: student.id, studyCaseId: scGreet.id, isUnlocked: false }],
+    data: [{ userId: student.id, studyCaseId: scGreet.id }],
   });
 
   // Study case progresses — Arrow Function
   await prisma.studyCaseProgress.createMany({
     skipDuplicates: true,
-    data: [{ userId: student.id, studyCaseId: scDouble.id, isUnlocked: false }],
+    data: [{ userId: student.id, studyCaseId: scDouble.id }],
   });
 
   console.log('✅ Progress records seeded');

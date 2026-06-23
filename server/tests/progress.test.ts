@@ -62,19 +62,19 @@ describe('progress test', () => {
     await prisma.conceptProgress.upsert({
       where: { userId_conceptId: { userId: studentId, conceptId } },
       update: {},
-      create: { userId: studentId, conceptId, isUnlocked: true },
+      create: { userId: studentId, conceptId },
     });
 
     await prisma.materialProgress.upsert({
       where: { userId_materialId: { userId: studentId, materialId } },
       update: {},
-      create: { userId: studentId, materialId, isUnlocked: true },
+      create: { userId: studentId, materialId },
     });
 
     await prisma.studyCaseProgress.upsert({
       where: { userId_studyCaseId: { userId: studentId, studyCaseId } },
       update: {},
-      create: { userId: studentId, studyCaseId, isUnlocked: true },
+      create: { userId: studentId, studyCaseId },
     });
   });
 
