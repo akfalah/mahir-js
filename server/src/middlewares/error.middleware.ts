@@ -11,9 +11,14 @@ export const errorMiddleware = async (
   next: NextFunction,
 ) => {
   if (error instanceof ZodError) {
-    res
-      .status(400)
-      .json({ errors: `Validation error: ${JSON.stringify(error)}` });
+    const messages = error.issues.map((issue) => {
+      const field = issue.path.join('.');
+      return field ? `${field}: ${issue.message}` : issue.message;
+    });
+
+    res.status(400).json({
+      errors: messages.length === 1 ? messages[0] : messages,
+    });
   } else if (error instanceof ResponseError) {
     res.status(error.status).json({
       errors: error.message,
