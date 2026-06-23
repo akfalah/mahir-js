@@ -28,7 +28,7 @@ export type CreateStudyCaseRequest = {
   description: string;
   starterCode: string;
   order: number;
-  syntaxRules?: SyntaxRules;
+  syntaxRules: SyntaxRules;
   parameterNames?: string[];
   functionName?: string;
   isPublished?: boolean;

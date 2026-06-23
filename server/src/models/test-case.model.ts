@@ -40,6 +40,7 @@ export type TestCaseResponse = {
   order: number;
   isPublished: boolean;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type TestCaseInput = {
@@ -61,5 +62,6 @@ export function toTestCaseResponse(testCase: TestCase) {
     order: testCase.order,
     isPublished: testCase.isPublished,
     createdAt: testCase.createdAt,
+    updatedAt: testCase.updatedAt,
   };
 }

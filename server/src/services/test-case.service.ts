@@ -126,7 +126,7 @@ export class TestCaseService {
         },
       });
 
-      if (!orderExists) throw new ResponseError(400, 'Order already exists');
+      if (orderExists) throw new ResponseError(400, 'Order already exists');
     }
 
     const testCase = await prisma.testCase.update({

@@ -32,7 +32,7 @@ export class TestCaseController {
         Number(req.params.id),
       );
 
-      res.status(200).json(response);
+      res.status(200).json({ data: response });
     } catch (e) {
       next(e);
     }
@@ -42,7 +42,7 @@ export class TestCaseController {
     try {
       const response = await TestCaseService.createTestCase(req.body);
 
-      res.status(201).json(response);
+      res.status(201).json({ data: response });
     } catch (e) {
       next(e);
     }
@@ -55,7 +55,7 @@ export class TestCaseController {
         req.body,
       );
 
-      res.status(200).json(response);
+      res.status(200).json({ data: response });
     } catch (e) {
       next(e);
     }

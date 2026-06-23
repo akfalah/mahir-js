@@ -108,13 +108,21 @@ export class ConceptService {
 
     if (!exists) throw new ResponseError(404, 'Concept not found');
 
-    const [slugExists, orderExists] = await Promise.all([
-      prisma.concept.count({ where: { slug: data.slug, NOT: { id } } }),
-      prisma.concept.count({ where: { order: data.order, NOT: { id } } }),
-    ]);
+    if (data.slug) {
+      const slugExists = await prisma.concept.count({
+        where: { slug: data.slug, NOT: { id } },
+      });
 
-    if (slugExists) throw new ResponseError(400, 'Slug already exists');
-    if (orderExists) throw new ResponseError(400, 'Order already exists');
+      if (slugExists) throw new ResponseError(400, 'Slug already exists');
+    }
+
+    if (data.order) {
+      const orderExists = await prisma.concept.count({
+        where: { order: data.order, NOT: { id } },
+      });
+
+      if (orderExists) throw new ResponseError(400, 'Order already exists');
+    }
 
     const concept = await prisma.concept.update({ where: { id }, data });
 

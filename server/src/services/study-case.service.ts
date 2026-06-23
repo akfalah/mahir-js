@@ -121,19 +121,25 @@ export class StudyCaseService {
 
     if (!exists) throw new ResponseError(404, 'Study case not found');
 
-    const [slugExists, orderExists] = await Promise.all([
-      prisma.studyCase.count({ where: { slug: data.slug, NOT: { id } } }),
-      prisma.studyCase.count({
+    if (data.slug) {
+      const slugExists = await prisma.studyCase.count({
+        where: { slug: data.slug, NOT: { id } },
+      });
+
+      if (slugExists) throw new ResponseError(400, 'Slug already exists');
+    }
+
+    if (data.order) {
+      const orderExists = await prisma.studyCase.count({
         where: {
           materialId: exists.materialId,
           order: data.order,
           NOT: { id },
         },
-      }),
-    ]);
+      });
 
-    if (slugExists) throw new ResponseError(400, 'Slug already exists');
-    if (orderExists) throw new ResponseError(400, 'Order already exists');
+      if (orderExists) throw new ResponseError(400, 'Order already exists');
+    }
 
     const studyCase = await prisma.studyCase.update({ where: { id }, data });
 
