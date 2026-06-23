@@ -20,7 +20,7 @@ export class MaterialValidation {
         'order',
         'createdAt',
       ] as const satisfies readonly MaterialSortBy[])
-      .default('id'),
+      .default('createdAt'),
     orderBy: z.enum(['asc', 'desc']).default('asc'),
     conceptId: z.coerce.number().min(1).optional(),
     isPublished: z
@@ -31,6 +31,7 @@ export class MaterialValidation {
 
   static readonly CREATE: ZodType<CreateMaterialRequest> = z.object({
     conceptId: z.number().min(1),
+    slug: z.string().min(3),
     title: z.string().min(3),
     content: z.string().min(3),
     order: z.number().min(1),
@@ -38,6 +39,7 @@ export class MaterialValidation {
   });
 
   static readonly UPDATE: ZodType<UpdateMaterialRequest> = z.object({
+    slug: z.string().min(3).optional(),
     title: z.string().min(3).optional(),
     content: z.string().min(3).optional(),
     order: z.number().min(1).optional(),

@@ -20,7 +20,7 @@ export class StudyCaseValidation {
         'order',
         'createdAt',
       ] as const satisfies readonly StudyCaeSortBy[])
-      .default('id'),
+      .default('createdAt'),
     orderBy: z.enum(['asc', 'desc']).default('asc'),
     materialId: z.coerce.number().min(1).optional(),
     isPublished: z
@@ -31,6 +31,7 @@ export class StudyCaseValidation {
 
   static readonly CREATE: ZodType<CreateStudyCaseRequest> = z.object({
     materialId: z.number().min(1),
+    slug: z.string().min(3),
     title: z.string().min(3),
     description: z.string().min(3),
     starterCode: z.string().min(1),
@@ -47,6 +48,7 @@ export class StudyCaseValidation {
   });
 
   static readonly UPDATE: ZodType<UpdateStudyCaseRequest> = z.object({
+    slug: z.string().min(3).optional(),
     title: z.string().min(3).optional(),
     description: z.string().min(3).optional(),
     starterCode: z.string().min(1).optional(),

@@ -27,9 +27,9 @@ export class StudyCaseController {
 
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await StudyCaseService.getStudyCaseById(
+      const response = await StudyCaseService.getStudyCaseBySlug(
         req.user,
-        Number(req.params.id),
+        req.params.slug.toString(),
       );
 
       res.status(200).json({ data: response });

@@ -259,6 +259,7 @@ async function main() {
     update: {},
     create: {
       materialId: materialIfElse.id,
+      slug: 'check-adult',
       title: 'Check Adult',
       description:
         'Write a function `isAdult` that receives a number `age` and returns `true` if age is 18 or above, otherwise `false`.',
@@ -279,6 +280,7 @@ async function main() {
     update: {},
     create: {
       materialId: materialIfElse.id,
+      slug: 'max-of-two-numbers',
       title: 'Max of Two Numbers',
       description:
         'Write a function `maxOfTwo` that receives two numbers `a` and `b` and returns the larger one.',
@@ -302,6 +304,7 @@ async function main() {
     update: {},
     create: {
       materialId: materialSwitch.id,
+      slug: 'day-name',
       title: 'Day Name',
       description:
         "Write a function `getDayName` that receives a number (1–7) and returns the day name. 1 = Monday, 7 = Sunday. Return 'Invalid' for other numbers.",
@@ -325,6 +328,7 @@ async function main() {
     update: {},
     create: {
       materialId: materialForLoop.id,
+      slug: 'sum-of-array',
       title: 'Sum of Array',
       description:
         'Write a function `sumArray` that receives an array of numbers and returns the total sum.',
@@ -345,6 +349,7 @@ async function main() {
     update: {},
     create: {
       materialId: materialForLoop.id,
+      slug: 'fizz-buzz',
       title: 'FizzBuzz',
       description:
         "Write a function `fizzBuzz` that receives a number `n` and returns an array from 1 to n. Replace multiples of 3 with 'Fizz', multiples of 5 with 'Buzz', and multiples of both with 'FizzBuzz'.",
@@ -368,6 +373,7 @@ async function main() {
     update: {},
     create: {
       materialId: materialWhileLoop.id,
+      slug: 'count-down',
       title: 'Countdown',
       description:
         'Write a function `countdown` that receives a number `n` and returns an array counting down from n to 1.',
@@ -393,6 +399,7 @@ async function main() {
     update: {},
     create: {
       materialId: materialFunctionBasics.id,
+      slug: 'greet-user',
       title: 'Greet User',
       description:
         "Write a function `greet` that receives a `name` string and returns 'Hello, {name}!'.",
@@ -418,6 +425,7 @@ async function main() {
     update: {},
     create: {
       materialId: materialArrowFunction.id,
+      slug: 'double-the-number',
       title: 'Double the Number',
       description:
         'Write an arrow function `double` that receives a number `n` and returns n multiplied by 2.',

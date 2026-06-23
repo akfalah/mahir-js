@@ -26,9 +26,9 @@ export class ConceptController {
 
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await ConceptService.getConceptById(
+      const response = await ConceptService.getConceptBySlug(
         req.user,
-        Number(req.params.id),
+        req.params.slug.toString(),
       );
 
       res.status(200).json({ data: response });

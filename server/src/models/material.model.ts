@@ -17,6 +17,7 @@ export type MaterialPaginationRequest = PaginationRequest<MaterialSortBy> & {
 
 export type CreateMaterialRequest = {
   conceptId: number;
+  slug: string;
   title: string;
   content: string;
   order: number;
@@ -24,6 +25,7 @@ export type CreateMaterialRequest = {
 };
 
 export type UpdateMaterialRequest = {
+  slug?: string;
   title?: string;
   content?: string;
   order?: number;
@@ -39,6 +41,7 @@ export type MaterialResponse = {
   order: number;
   isPublished: boolean;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type MaterialPaginationResponse = PaginationResponse<MaterialResponse>;
@@ -53,5 +56,6 @@ export function toMaterialResponse(material: Material) {
     order: material.order,
     isPublished: material.isPublished,
     createdAt: material.createdAt,
+    updatedAt: material.updatedAt,
   };
 }

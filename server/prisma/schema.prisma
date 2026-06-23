@@ -84,6 +84,7 @@ model Material {
 model StudyCase {
   id             Int      @id @default(autoincrement())
   materialId     Int      @map("material_id")
+  slug           String   @unique
   title          String
   description    String
   starterCode    String   @map("starter_code")

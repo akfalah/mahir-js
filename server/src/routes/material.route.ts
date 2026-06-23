@@ -9,7 +9,7 @@ import { MaterialController } from '../controllers/material.controller';
 export const materialRouter = Router();
 
 materialRouter.get('/', optionalAuthMiddleware, MaterialController.index);
-materialRouter.get('/:id', optionalAuthMiddleware, MaterialController.show);
+materialRouter.get('/:slug', optionalAuthMiddleware, MaterialController.show);
 materialRouter.post(
   '/',
   authMiddleware,

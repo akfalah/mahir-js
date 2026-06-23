@@ -4,6 +4,7 @@ import { PaginationRequest, PaginationResponse } from './paginations.model';
 
 export type StudyCaeSortBy =
   | 'id'
+  | 'slug'
   | 'materialId'
   | 'title'
   | 'order'
@@ -22,6 +23,7 @@ export type SyntaxRules = {
 
 export type CreateStudyCaseRequest = {
   materialId: number;
+  slug: string;
   title: string;
   description: string;
   starterCode: string;
@@ -33,6 +35,7 @@ export type CreateStudyCaseRequest = {
 };
 
 export type UpdateStudyCaseRequest = {
+  slug?: string;
   title?: string;
   description?: string;
   starterCode?: string;
@@ -46,6 +49,7 @@ export type UpdateStudyCaseRequest = {
 export type StudyCaseResponse = {
   id: number;
   materialId: number;
+  slug: string;
   title: string;
   description: string;
   starterCode: string;
@@ -55,6 +59,7 @@ export type StudyCaseResponse = {
   functionName: string | null;
   isPublished: boolean;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type StudyCasePaginationResponse = PaginationResponse<StudyCaseResponse>;
@@ -63,6 +68,7 @@ export function toStudyCaseResponse(studyCase: StudyCase) {
   return {
     id: studyCase.id,
     materialId: studyCase.materialId,
+    slug: studyCase.slug,
     title: studyCase.title,
     description: studyCase.description,
     starterCode: studyCase.starterCode,
@@ -72,5 +78,6 @@ export function toStudyCaseResponse(studyCase: StudyCase) {
     functionName: studyCase.functionName,
     isPublished: studyCase.isPublished,
     createdAt: studyCase.createdAt,
+    updatedAt: studyCase.updatedAt,
   };
 }

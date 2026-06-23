@@ -13,7 +13,7 @@ import { StudyCaseController } from '../controllers/study-case.controller';
 export const studyCaseRouter = Router();
 
 studyCaseRouter.get('/', optionalAuthMiddleware, StudyCaseController.index);
-studyCaseRouter.get('/:id', optionalAuthMiddleware, StudyCaseController.show);
+studyCaseRouter.get('/:slug', optionalAuthMiddleware, StudyCaseController.show);
 studyCaseRouter.post(
   '/',
   authMiddleware,

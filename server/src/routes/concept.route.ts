@@ -13,7 +13,7 @@ import { ConceptController } from '../controllers/concept.controller';
 export const conceptRouter = Router();
 
 conceptRouter.get('/', optionalAuthMiddleware, ConceptController.index);
-conceptRouter.get('/:id', optionalAuthMiddleware, ConceptController.show);
+conceptRouter.get('/:slug', optionalAuthMiddleware, ConceptController.show);
 conceptRouter.post(
   '/',
   authMiddleware,

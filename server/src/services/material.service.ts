@@ -64,14 +64,14 @@ export class MaterialService {
     };
   }
 
-  static async getMaterialById(
+  static async getMaterialBySlug(
     user: JwtPayload | undefined,
-    id: number,
+    slug: string,
   ): Promise<MaterialResponse> {
     const isAdmin = user?.role === Role.ADMIN;
 
     const material = await prisma.material.findUnique({
-      where: { id, ...(!isAdmin && { isPublished: true }) },
+      where: { slug, ...(!isAdmin && { isPublished: true }) },
     });
 
     if (!material) throw new ResponseError(404, 'Material not found');
@@ -90,15 +90,8 @@ export class MaterialService {
 
     if (!concept) throw new ResponseError(404, 'Concept not found');
 
-    const slug = data.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
     const [slugExists, orderExists] = await Promise.all([
-      prisma.material.count({
-        where: { conceptId: data.conceptId, slug: slug },
-      }),
+      prisma.material.count({ where: { slug: data.slug } }),
       prisma.material.count({
         where: { conceptId: data.conceptId, order: data.order },
       }),
@@ -107,7 +100,7 @@ export class MaterialService {
     if (slugExists) throw new ResponseError(400, 'Slug already exists');
     if (orderExists) throw new ResponseError(400, 'Order already exists');
 
-    const material = await prisma.material.create({ data: { ...data, slug } });
+    const material = await prisma.material.create({ data });
 
     return toMaterialResponse(material);
   }
@@ -122,28 +115,15 @@ export class MaterialService {
 
     if (!exists) throw new ResponseError(404, 'Material not found');
 
-    const slug = data.title
-      ? data.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '')
-      : undefined;
-
-    if (slug) {
-      const slugExists = await prisma.material.count({
-        where: { slug: slug, NOT: { id } },
-      });
-
-      if (slugExists) throw new ResponseError(400, 'Slug already exists');
-    }
-
-    if (data.order) {
-      const orderExists = await prisma.material.count({
+    const [slugExists, orderExists] = await Promise.all([
+      prisma.material.count({ where: { slug: data.slug, NOT: { id } } }),
+      prisma.material.count({
         where: { conceptId: exists.conceptId, order: data.order, NOT: { id } },
-      });
+      }),
+    ]);
 
-      if (orderExists) throw new ResponseError(400, 'Order already exists');
-    }
+    if (slugExists) throw new ResponseError(400, 'Slug already exists');
+    if (orderExists) throw new ResponseError(400, 'Order already exists');
 
     const material = await prisma.material.update({ where: { id }, data });
 

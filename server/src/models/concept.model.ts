@@ -4,6 +4,7 @@ import { PaginationRequest, PaginationResponse } from './paginations.model';
 
 export type ConceptSortBy =
   | 'id'
+  | 'slug'
   | 'title'
   | 'order'
   | 'isPublished'
@@ -14,6 +15,7 @@ export type ConceptPaginationRequest = PaginationRequest<ConceptSortBy> & {
 };
 
 export type CreateConceptRequest = {
+  slug: string;
   title: string;
   description: string;
   order: number;
@@ -21,6 +23,7 @@ export type CreateConceptRequest = {
 };
 
 export type UpdateConceptRequest = {
+  slug?: string;
   title?: string;
   description?: string;
   order?: number;
@@ -35,6 +38,7 @@ export type ConceptResponse = {
   order: number;
   isPublished: boolean;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type ConceptPaginationResponse = PaginationResponse<ConceptResponse>;
@@ -48,5 +52,6 @@ export function toConceptResponse(concept: Concept): ConceptResponse {
     order: concept.order,
     isPublished: concept.isPublished,
     createdAt: concept.createdAt,
+    updatedAt: concept.updatedAt,
   };
 }

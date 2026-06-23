@@ -70,14 +70,14 @@ export class StudyCaseService {
     };
   }
 
-  static async getStudyCaseById(
+  static async getStudyCaseBySlug(
     user: JwtPayload | undefined,
-    id: number,
+    slug: string,
   ): Promise<StudyCaseResponse> {
     const isAdmin = user?.role === Role.ADMIN;
 
     const studyCase = await prisma.studyCase.findUnique({
-      where: { id, ...(!isAdmin && { isPublished: true }) },
+      where: { slug, ...(!isAdmin && { isPublished: true }) },
     });
 
     if (!studyCase) throw new ResponseError(404, 'Study case not found');
@@ -96,10 +96,14 @@ export class StudyCaseService {
 
     if (!material) throw new ResponseError(404, 'Material not found');
 
-    const orderExists = await prisma.studyCase.count({
-      where: { materialId: data.materialId, order: data.order },
-    });
+    const [slugExists, orderExists] = await Promise.all([
+      prisma.studyCase.count({ where: { slug: data.slug } }),
+      prisma.studyCase.count({
+        where: { materialId: data.materialId, order: data.order },
+      }),
+    ]);
 
+    if (slugExists) throw new ResponseError(400, 'Slug already exists');
     if (orderExists) throw new ResponseError(400, 'Order already exists');
 
     const studyCase = await prisma.studyCase.create({ data });
@@ -117,17 +121,19 @@ export class StudyCaseService {
 
     if (!exists) throw new ResponseError(404, 'Study case not found');
 
-    if (data.order) {
-      const orderExists = await prisma.studyCase.count({
+    const [slugExists, orderExists] = await Promise.all([
+      prisma.studyCase.count({ where: { slug: data.slug, NOT: { id } } }),
+      prisma.studyCase.count({
         where: {
           materialId: exists.materialId,
           order: data.order,
           NOT: { id },
         },
-      });
+      }),
+    ]);
 
-      if (orderExists) throw new ResponseError(400, 'Order already exists');
-    }
+    if (slugExists) throw new ResponseError(400, 'Slug already exists');
+    if (orderExists) throw new ResponseError(400, 'Order already exists');
 
     const studyCase = await prisma.studyCase.update({ where: { id }, data });
 
