@@ -87,11 +87,11 @@ model StudyCase {
   slug           String   @unique
   title          String
   description    String
-  starterCode    String   @map("starter_code")
   order          Int
-  syntaxRules    Json?    @map("syntax_rules")
+  starterCode    String   @map("starter_code")
   parameterNames Json?    @map("parameter_names")
   functionName   String?  @map("function_name")
+  syntaxRules    Json?    @map("syntax_rules")
   isPublished    Boolean  @default(false) @map("is_published")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")

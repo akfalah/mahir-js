@@ -263,6 +263,7 @@ async function main() {
       title: 'Check Adult',
       description:
         'Write a function `isAdult` that receives a number `age` and returns `true` if age is 18 or above, otherwise `false`.',
+      order: 1,
       starterCode: `
         function isAdult(age) {
           // your code here
@@ -270,7 +271,22 @@ async function main() {
       `,
       functionName: 'isAdult',
       parameterNames: ['age'],
-      order: 1,
+      syntaxRules: {
+        required: ['IfStatement'],
+        forbidden: [
+          'SwitchStatement',
+          'ForStatement',
+          'WhileStatement',
+          'DoWhileStatement',
+          'DoWhileStatement',
+          'ForInStatement',
+          'ForOfStatement',
+          'FunctionDeclaration',
+          'ArrowFunctionExpression',
+          'FunctionExpression',
+          'TryStatement',
+        ],
+      },
       isPublished: true,
     },
   });
@@ -284,6 +300,7 @@ async function main() {
       title: 'Max of Two Numbers',
       description:
         'Write a function `maxOfTwo` that receives two numbers `a` and `b` and returns the larger one.',
+      order: 2,
       starterCode: `
         function maxOfTwo(a, b) {
           // your code here
@@ -291,7 +308,22 @@ async function main() {
       `,
       functionName: 'maxOfTwo',
       parameterNames: ['a', 'b'],
-      order: 2,
+      syntaxRules: {
+        required: ['IfStatement'],
+        forbidden: [
+          'SwitchStatement',
+          'ForStatement',
+          'WhileStatement',
+          'DoWhileStatement',
+          'DoWhileStatement',
+          'ForInStatement',
+          'ForOfStatement',
+          'FunctionDeclaration',
+          'ArrowFunctionExpression',
+          'FunctionExpression',
+          'TryStatement',
+        ],
+      },
       isPublished: true,
     },
   });
@@ -308,6 +340,7 @@ async function main() {
       title: 'Day Name',
       description:
         "Write a function `getDayName` that receives a number (1–7) and returns the day name. 1 = Monday, 7 = Sunday. Return 'Invalid' for other numbers.",
+      order: 1,
       starterCode: `
         function getDayName(day) {
           // your code here
@@ -315,7 +348,22 @@ async function main() {
       `,
       functionName: 'getDayName',
       parameterNames: ['day'],
-      order: 1,
+      syntaxRules: {
+        required: ['SwitchStatement'],
+        forbidden: [
+          'IfStatement',
+          'ForStatement',
+          'WhileStatement',
+          'DoWhileStatement',
+          'DoWhileStatement',
+          'ForInStatement',
+          'ForOfStatement',
+          'FunctionDeclaration',
+          'ArrowFunctionExpression',
+          'FunctionExpression',
+          'TryStatement',
+        ],
+      },
       isPublished: true,
     },
   });
@@ -332,6 +380,7 @@ async function main() {
       title: 'Sum of Array',
       description:
         'Write a function `sumArray` that receives an array of numbers and returns the total sum.',
+      order: 1,
       starterCode: `
         function sumArray(numbers) {
           // your code here
@@ -339,7 +388,22 @@ async function main() {
       `,
       functionName: 'sumArray',
       parameterNames: ['numbers'],
-      order: 1,
+      syntaxRules: {
+        required: ['ForStatement'],
+        forbidden: [
+          'IfStatement',
+          'SwitchStatement',
+          'WhileStatement',
+          'DoWhileStatement',
+          'DoWhileStatement',
+          'ForInStatement',
+          'ForOfStatement',
+          'FunctionDeclaration',
+          'ArrowFunctionExpression',
+          'FunctionExpression',
+          'TryStatement',
+        ],
+      },
       isPublished: true,
     },
   });
@@ -353,6 +417,7 @@ async function main() {
       title: 'FizzBuzz',
       description:
         "Write a function `fizzBuzz` that receives a number `n` and returns an array from 1 to n. Replace multiples of 3 with 'Fizz', multiples of 5 with 'Buzz', and multiples of both with 'FizzBuzz'.",
+      order: 2,
       starterCode: `
         function fizzBuzz(n) {
           // your code here
@@ -360,7 +425,22 @@ async function main() {
       `,
       functionName: 'fizzBuzz',
       parameterNames: ['n'],
-      order: 2,
+      syntaxRules: {
+        required: ['ForStatement'],
+        forbidden: [
+          'IfStatement',
+          'SwitchStatement',
+          'WhileStatement',
+          'DoWhileStatement',
+          'DoWhileStatement',
+          'ForInStatement',
+          'ForOfStatement',
+          'FunctionDeclaration',
+          'ArrowFunctionExpression',
+          'FunctionExpression',
+          'TryStatement',
+        ],
+      },
       isPublished: true,
     },
   });
@@ -377,6 +457,7 @@ async function main() {
       title: 'Countdown',
       description:
         'Write a function `countdown` that receives a number `n` and returns an array counting down from n to 1.',
+      order: 1,
       starterCode: `
         function countdown(n) {
           // your code here
@@ -384,7 +465,22 @@ async function main() {
       `,
       functionName: 'countdown',
       parameterNames: ['n'],
-      order: 1,
+      syntaxRules: {
+        required: ['WhileStatement'],
+        forbidden: [
+          'IfStatement',
+          'SwitchStatement',
+          'ForStatement',
+          'DoWhileStatement',
+          'DoWhileStatement',
+          'ForInStatement',
+          'ForOfStatement',
+          'FunctionDeclaration',
+          'ArrowFunctionExpression',
+          'FunctionExpression',
+          'TryStatement',
+        ],
+      },
       isPublished: true,
     },
   });
@@ -403,6 +499,7 @@ async function main() {
       title: 'Greet User',
       description:
         "Write a function `greet` that receives a `name` string and returns 'Hello, {name}!'.",
+      order: 1,
       starterCode: `
         function greet(name) {
           // your code here
@@ -410,7 +507,22 @@ async function main() {
       `,
       functionName: 'greet',
       parameterNames: ['name'],
-      order: 1,
+      syntaxRules: {
+        required: ['FunctionDeclaration'],
+        forbidden: [
+          'IfStatement',
+          'SwitchStatement',
+          'ForStatement',
+          'WhileStatement',
+          'DoWhileStatement',
+          'DoWhileStatement',
+          'ForInStatement',
+          'ForOfStatement',
+          'ArrowFunctionExpression',
+          'FunctionExpression',
+          'TryStatement',
+        ],
+      },
       isPublished: true,
     },
   });
@@ -429,6 +541,7 @@ async function main() {
       title: 'Double the Number',
       description:
         'Write an arrow function `double` that receives a number `n` and returns n multiplied by 2.',
+      order: 1,
       starterCode: `
         const double = (n) => {
           // your code here
@@ -436,7 +549,22 @@ async function main() {
       `,
       functionName: 'double',
       parameterNames: ['n'],
-      order: 1,
+      syntaxRules: {
+        required: ['ArrowFunctionExpression'],
+        forbidden: [
+          'IfStatement',
+          'SwitchStatement',
+          'ForStatement',
+          'WhileStatement',
+          'DoWhileStatement',
+          'DoWhileStatement',
+          'ForInStatement',
+          'ForOfStatement',
+          'FunctionDeclaration',
+          'FunctionExpression',
+          'TryStatement',
+        ],
+      },
       isPublished: true,
     },
   });
