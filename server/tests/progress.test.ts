@@ -26,8 +26,10 @@ describe('progress test', () => {
         title: 'Test',
         description: 'Test',
         order: 95,
+        isPublished: true,
       },
     });
+
     conceptId = concept.id;
 
     const material = await prisma.material.upsert({
@@ -39,8 +41,10 @@ describe('progress test', () => {
         title: 'Test',
         content: 'Test',
         order: 1,
+        isPublished: true,
       },
     });
+
     materialId = material.id;
 
     const studyCase = await prisma.studyCase.upsert({
@@ -48,17 +52,19 @@ describe('progress test', () => {
       update: { updatedAt: new Date() },
       create: {
         materialId,
+        slug: 'test-sc',
         title: 'Test SC',
         description: 'Test',
         starterCode: 'function test() {}',
         order: 1,
         functionName: 'test',
         parameterNames: [],
+        isPublished: true,
       },
     });
+
     studyCaseId = studyCase.id;
 
-    // seed initial progress
     await prisma.conceptProgress.upsert({
       where: { userId_conceptId: { userId: studentId, conceptId } },
       update: {},
