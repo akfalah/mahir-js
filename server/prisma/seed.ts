@@ -92,6 +92,8 @@ async function main() {
       conceptId: conceptConditional.id,
       slug: 'if-else',
       title: 'If & Else',
+      description:
+        'Learn how to control the flow of your code by executing different blocks based on conditions using if and else statements.',
       content: `
         # If & Else
 
@@ -129,6 +131,8 @@ async function main() {
       conceptId: conceptConditional.id,
       slug: 'switch',
       title: 'Switch Statement',
+      description:
+        'Learn how to simplify multiple condition checks by matching a value against specific cases using the switch statement.',
       content: `
         # Switch Statement
 
@@ -159,6 +163,8 @@ async function main() {
       conceptId: conceptLooping.id,
       slug: 'for-loop',
       title: 'For Loop',
+      description:
+        'Learn how to repeat a block of code a specific number of times using the for loop.',
       content: `
         # For Loop
 
@@ -182,6 +188,8 @@ async function main() {
       conceptId: conceptLooping.id,
       slug: 'while-loop',
       title: 'While Loop',
+      description:
+        'Learn how to repeat a block of code as long as a condition remains true using the while loop.',
       content: `
         # While Loop
 
@@ -210,6 +218,8 @@ async function main() {
       conceptId: conceptFunction.id,
       slug: 'function-basics',
       title: 'Function Basics',
+      description:
+        'Learn how to write reusable blocks of code by declaring and calling functions with parameters and return values.',
       content: `
         # Function Basics
 
@@ -235,6 +245,8 @@ async function main() {
       conceptId: conceptFunction.id,
       slug: 'arrow-function',
       title: 'Arrow Function',
+      description:
+        'Learn a concise syntax for writing functions using arrow functions, a modern JavaScript feature.',
       content: `
         # Arrow Function
 

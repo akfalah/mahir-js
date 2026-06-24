@@ -19,6 +19,7 @@ export type CreateMaterialRequest = {
   conceptId: number;
   slug: string;
   title: string;
+  description: string;
   content: string;
   order: number;
   isPublished?: boolean;
@@ -27,6 +28,7 @@ export type CreateMaterialRequest = {
 export type UpdateMaterialRequest = {
   slug?: string;
   title?: string;
+  description?: string;
   content?: string;
   order?: number;
   isPublished?: boolean;
@@ -37,6 +39,7 @@ export type MaterialResponse = {
   conceptId: number;
   slug: string;
   title: string;
+  description: string;
   content: string;
   order: number;
   isPublished: boolean;
@@ -52,6 +55,7 @@ export function toMaterialResponse(material: Material) {
     conceptId: material.conceptId,
     slug: material.slug,
     title: material.title,
+    description: material.description,
     content: material.content,
     order: material.order,
     isPublished: material.isPublished,

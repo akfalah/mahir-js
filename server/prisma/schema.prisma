@@ -66,6 +66,7 @@ model Material {
   conceptId   Int      @map("concept_id")
   slug        String   @unique
   title       String
+  description String
   content     String
   order       Int
   isPublished Boolean  @default(false) @map("is_published")
