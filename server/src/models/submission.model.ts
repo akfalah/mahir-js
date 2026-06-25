@@ -1,9 +1,17 @@
 import { Submission } from '../../generated/prisma/client';
-import { SubmissionStatus } from '../../generated/prisma/enums';
+import {
+  SubmissionStatus,
+  TestResultStatus,
+} from '../../generated/prisma/enums';
 
 import { PaginationRequest, PaginationResponse } from './paginations.model';
 
-export type SubmissionSortBy = 'id' | 'status' | 'createdAt';
+export type SubmissionSortBy =
+  | 'id'
+  | 'userId'
+  | 'studyCaseId'
+  | 'status'
+  | 'createdAt';
 
 export type SubmissionPaginationRequest =
   PaginationRequest<SubmissionSortBy> & {
@@ -25,6 +33,21 @@ export type SubmissionResponse = {
   status: SubmissionStatus;
   errorMessage: string | null;
   createdAt: Date;
+};
+
+export type RunSubmissionTestResultResponse = {
+  testCaseId: number;
+  description: string;
+  status: TestResultStatus;
+  expected: string;
+  received: string | null;
+  failureMessage: string | null;
+};
+
+export type RunSubmissionResponse = {
+  status: SubmissionStatus;
+  testResults: RunSubmissionTestResultResponse[];
+  errorMessage: string | null;
 };
 
 export type SubmissionPaginationResponse =

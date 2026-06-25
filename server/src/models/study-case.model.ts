@@ -26,8 +26,9 @@ export type CreateStudyCaseRequest = {
   slug: string;
   title: string;
   description: string;
-  starterCode: string;
+  hint?: string;
   order: number;
+  starterCode: string;
   syntaxRules: SyntaxRules;
   parameterNames?: string[];
   functionName?: string;
@@ -38,8 +39,9 @@ export type UpdateStudyCaseRequest = {
   slug?: string;
   title?: string;
   description?: string;
-  starterCode?: string;
+  hint?: string;
   order?: number;
+  starterCode?: string;
   syntaxRules?: SyntaxRules;
   parameterNames?: string[];
   functionName?: string;
@@ -52,8 +54,9 @@ export type StudyCaseResponse = {
   slug: string;
   title: string;
   description: string;
-  starterCode: string;
+  hint: string | null;
   order: number;
+  starterCode: string;
   syntaxRules: SyntaxRules;
   parameterNames: string[] | null;
   functionName: string | null;
@@ -71,8 +74,9 @@ export function toStudyCaseResponse(studyCase: StudyCase) {
     slug: studyCase.slug,
     title: studyCase.title,
     description: studyCase.description,
-    starterCode: studyCase.starterCode,
+    hint: studyCase.hint,
     order: studyCase.order,
+    starterCode: studyCase.starterCode,
     syntaxRules: studyCase.syntaxRules as SyntaxRules,
     parameterNames: studyCase.parameterNames as string[] | null,
     functionName: studyCase.functionName,

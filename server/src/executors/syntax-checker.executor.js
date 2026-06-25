@@ -52,6 +52,7 @@ function checkSyntax(code, syntaxRules) {
     ast = acorn.parse(code, {
       ecmaVersion: 2020,
       sourceType: 'script',
+      allowReturnOutsideFunction: true,
     });
   } catch (parseErr) {
     return {

@@ -21,7 +21,7 @@ export class ConceptValidation {
         'createdAt',
       ] as const satisfies readonly ConceptSortBy[])
       .default('createdAt'),
-    orderBy: z.enum(['asc', 'desc']).default('asc'),
+    orderBy: z.enum(['asc', 'desc']).default('desc'),
     isPublished: z
       .enum(['true', 'false'])
       .transform((v) => v === 'true')

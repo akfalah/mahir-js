@@ -21,7 +21,7 @@ export class TestCaseValidation {
         'createdAt',
       ] as const satisfies readonly TestCaseSortBy[])
       .default('createdAt'),
-    orderBy: z.enum(['asc', 'desc']).default('asc'),
+    orderBy: z.enum(['asc', 'desc']).default('desc'),
     studyCaseId: z.coerce.number().min(1).optional(),
     isPublished: z
       .enum(['true', 'false'])

@@ -1,4 +1,8 @@
-import { Role } from '../../generated/prisma/enums';
+import {
+  Role,
+  SubmissionStatus,
+  TestResultStatus,
+} from '../../generated/prisma/enums';
 
 import { prisma } from '../applications/database';
 
@@ -10,6 +14,7 @@ import { SubmissionValidation } from '../validations/submission.validation';
 import { JwtPayload } from '../models/auth.model';
 import {
   CreateSubmissionRequest,
+  RunSubmissionResponse,
   SubmissionPaginationRequest,
   SubmissionPaginationResponse,
   SubmissionResponse,
@@ -19,7 +24,10 @@ import {
   TestResultResponse,
   toTestResultResponse,
 } from '../models/test-result.model';
+
 import { submissionQueue } from '../queues/submission.queue';
+
+import { runSubmissionCode } from '../workers/submission.worker';
 
 export class SubmissionService {
   static async getSubmissions(
@@ -77,6 +85,92 @@ export class SubmissionService {
       ...toSubmissionResponse(submission),
       testResults: submission.testResults.map(toTestResultResponse),
     };
+  }
+
+  static async runSubmission(
+    user: JwtPayload,
+    request: CreateSubmissionRequest,
+  ): Promise<RunSubmissionResponse> {
+    const data = Validation.validate(SubmissionValidation.CREATE, request);
+
+    const studyCase = await prisma.studyCase.findUnique({
+      where: { id: data.studyCaseId },
+      include: {
+        testCases: {
+          where: {
+            isPublished: true,
+          },
+          orderBy: {
+            order: 'asc',
+          },
+        },
+      },
+    });
+
+    if (!studyCase) {
+      throw new ResponseError(404, 'Study case not found');
+    }
+
+    if (!studyCase.isPublished && user.role === Role.STUDENT) {
+      throw new ResponseError(404, 'Study case not found');
+    }
+
+    const testCaseInputs = studyCase.testCases.map((tc) => ({
+      id: tc.id,
+      description: tc.description,
+      input: tc.input as Record<string, unknown>,
+      expected: tc.expected as Record<string, unknown>,
+    }));
+
+    try {
+      const results = await runSubmissionCode(
+        data.code,
+        studyCase.functionName ?? '',
+        (studyCase.parameterNames as string[]) ?? [],
+        testCaseInputs,
+        studyCase.syntaxRules as Record<string, string[]> | null,
+      );
+
+      const allPassed = results.every(
+        (result) => result.status === TestResultStatus.PASSED,
+      );
+
+      const hasError = results.some(
+        (result) => result.status === TestResultStatus.ERROR,
+      );
+
+      const status = allPassed
+        ? SubmissionStatus.PASSED
+        : hasError
+          ? SubmissionStatus.ERROR
+          : SubmissionStatus.FAILED;
+
+      return {
+        status,
+        errorMessage: null,
+        testResults: results.map((result) => ({
+          testCaseId: result.testCaseId,
+          description: result.description,
+          status: result.status,
+          expected: result.expected,
+          received: result.received,
+          failureMessage: result.failureMessage,
+        })),
+      };
+    } catch (e) {
+      return {
+        status: SubmissionStatus.ERROR,
+        errorMessage: e instanceof Error ? e.message : 'Unknown error',
+        testResults: testCaseInputs.map((testCase) => ({
+          testCaseId: testCase.id,
+          description: testCase.description,
+          status: TestResultStatus.ERROR,
+          expected: JSON.stringify(testCase.expected.result),
+          received: null,
+          failureMessage: e instanceof Error ? e.message : 'Unknown error',
+        })),
+      };
+    }
   }
 
   static async createSubmission(

@@ -16,7 +16,7 @@ import { ProgressService } from '../services/progress.service';
 
 const EXECUTION_TIMEOUT_MS = 15000;
 
-function runInSandbox(
+export function runSubmissionCode(
   code: string,
   functionName: string,
   parameterNames: string[],
@@ -53,7 +53,13 @@ function runInSandbox(
       reject(new Error('Execution timed out'));
     }, EXECUTION_TIMEOUT_MS);
 
-    child.send({ code, functionName, parameterNames, testCases, syntaxRules });
+    child.send({
+      code,
+      functionName,
+      parameterNames,
+      testCases,
+      syntaxRules,
+    });
 
     child.on(
       'message',
@@ -79,6 +85,7 @@ function runInSandbox(
 
     child.on('exit', (code) => {
       clearTimeout(timeout);
+
       if (code !== 0 && code !== null) {
         reject(new Error(`Child process exited with code ${code}`));
       }
@@ -116,7 +123,7 @@ export async function executeSubmission(submissionId: number): Promise<void> {
       expected: tc.expected as Record<string, unknown>,
     }));
 
-    const results = await runInSandbox(
+    const results = await runSubmissionCode(
       code,
       functionName ?? '',
       (parameterNames as string[]) ?? [],

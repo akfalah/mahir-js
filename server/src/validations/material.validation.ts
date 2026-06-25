@@ -21,7 +21,7 @@ export class MaterialValidation {
         'createdAt',
       ] as const satisfies readonly MaterialSortBy[])
       .default('createdAt'),
-    orderBy: z.enum(['asc', 'desc']).default('asc'),
+    orderBy: z.enum(['asc', 'desc']).default('desc'),
     conceptId: z.coerce.number().min(1).optional(),
     isPublished: z
       .enum(['true', 'false'])

@@ -21,7 +21,7 @@ export class StudyCaseValidation {
         'createdAt',
       ] as const satisfies readonly StudyCaeSortBy[])
       .default('createdAt'),
-    orderBy: z.enum(['asc', 'desc']).default('asc'),
+    orderBy: z.enum(['asc', 'desc']).default('desc'),
     materialId: z.coerce.number().min(1).optional(),
     isPublished: z
       .enum(['true', 'false'])
@@ -34,8 +34,9 @@ export class StudyCaseValidation {
     slug: z.string().min(3),
     title: z.string().min(3),
     description: z.string().min(3),
-    starterCode: z.string().min(1),
+    hint: z.string().trim().min(1).optional(),
     order: z.number().min(1),
+    starterCode: z.string().min(1),
     syntaxRules: z.object({
       required: z.array(z.string()).optional(),
       forbidden: z.array(z.string()).optional(),
@@ -49,8 +50,9 @@ export class StudyCaseValidation {
     slug: z.string().min(3).optional(),
     title: z.string().min(3).optional(),
     description: z.string().min(3).optional(),
-    starterCode: z.string().min(1).optional(),
+    hint: z.string().trim().min(1).optional(),
     order: z.number().min(1).optional(),
+    starterCode: z.string().min(1).optional(),
     syntaxRules: z
       .object({
         required: z.array(z.string()).optional(),

@@ -1,4 +1,4 @@
-import { NextFunction, Request, response, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 import { SubmissionPaginationRequest } from '../models/submission.model';
 
@@ -50,6 +50,19 @@ export class SubmissionController {
       );
 
       res.status(201).json({ data: response });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  static async run(req: Request, res: Response, next: NextFunction) {
+    try {
+      const response = await SubmissionService.runSubmission(
+        req.user!,
+        req.body,
+      );
+
+      res.status(200).json({ data: response });
     } catch (e) {
       next(e);
     }

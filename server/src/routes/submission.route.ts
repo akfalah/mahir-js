@@ -16,3 +16,4 @@ submissionRouter.post(
   roleMiddleware(Role.STUDENT),
   SubmissionController.store,
 );
+submissionRouter.post('/run', authMiddleware, SubmissionController.run);

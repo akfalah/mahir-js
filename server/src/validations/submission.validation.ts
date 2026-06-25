@@ -19,7 +19,7 @@ export class SubmissionValidation {
         'createdAt',
       ] as const satisfies readonly SubmissionSortBy[])
       .default('createdAt'),
-    orderBy: z.enum(['asc', 'desc']).default('asc'),
+    orderBy: z.enum(['asc', 'desc']).default('desc'),
     userId: z.coerce.number().min(1).optional(),
     studyCaseId: z.coerce.number().min(1).optional(),
     status: z.enum(SubmissionStatus).optional(),

@@ -247,10 +247,10 @@ function parseJestResults(jestResult, testCases) {
       results.push({
         testCaseId: testCase.id,
         description: testCase.description,
-        status: passed ? 'PASSED' : 'FAILED',
+        status: 'ERROR',
         expected: JSON.stringify(testCase.expected.result),
-        received,
-        failureMessage: passed ? null : cleanFailureMessage(failMessage),
+        received: null,
+        failureMessage: cleanFailureMessage(errorMessage),
       });
     }
 
