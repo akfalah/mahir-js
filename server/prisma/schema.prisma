@@ -89,6 +89,7 @@ model StudyCase {
   title          String
   description    String
   order          Int
+  hint           String?
   starterCode    String   @map("starter_code")
   parameterNames Json?    @map("parameter_names")
   functionName   String?  @map("function_name")

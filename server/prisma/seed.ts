@@ -264,6 +264,38 @@ async function main() {
   console.log('✅ Materials seeded');
 
   // ============================================================
+  // STUDY CASE RULE HELPERS
+  // ============================================================
+  const bodyOnlyForbiddenNodes = [
+    'FunctionDeclaration',
+    'ArrowFunctionExpression',
+    'FunctionExpression',
+    'TryStatement',
+  ];
+  const forLoopAlternativeForbiddenNodes = [
+    'WhileStatement',
+    'DoWhileStatement',
+    'ForInStatement',
+    'ForOfStatement',
+  ];
+  const whileLoopAlternativeForbiddenNodes = [
+    'ForStatement',
+    'DoWhileStatement',
+    'ForInStatement',
+    'ForOfStatement',
+  ];
+  const functionDeclarationForbiddenNodes = [
+    'ArrowFunctionExpression',
+    'FunctionExpression',
+    'TryStatement',
+  ];
+  const arrowFunctionForbiddenNodes = [
+    'FunctionDeclaration',
+    'FunctionExpression',
+    'TryStatement',
+  ];
+
+  // ============================================================
   // STUDY CASES — IF & ELSE
   // ============================================================
   const scCheckAdult = await prisma.studyCase.upsert({
@@ -274,30 +306,19 @@ async function main() {
       slug: 'check-adult',
       title: 'Check Adult',
       description:
-        'Write a function `isAdult` that receives a number `age` and returns `true` if age is 18 or above, otherwise `false`.',
+        'Use the available variable `age`. Return `true` if age is 18 or above, otherwise return `false`.',
+      hint: 'Compare the value of `age` with 18. If the condition is true, return `true`; otherwise, return `false`.',
       order: 1,
-      starterCode: `
-        function isAdult(age) {
-          // your code here
-        }
-      `,
+      starterCode: `if (/* write your condition here */) {
+  return /* value */;
+} else {
+  return /* value */;
+}`,
       functionName: 'isAdult',
       parameterNames: ['age'],
       syntaxRules: {
         required: ['IfStatement'],
-        forbidden: [
-          'SwitchStatement',
-          'ForStatement',
-          'WhileStatement',
-          'DoWhileStatement',
-          'DoWhileStatement',
-          'ForInStatement',
-          'ForOfStatement',
-          'FunctionDeclaration',
-          'ArrowFunctionExpression',
-          'FunctionExpression',
-          'TryStatement',
-        ],
+        forbidden: ['SwitchStatement', ...bodyOnlyForbiddenNodes],
       },
       isPublished: true,
     },
@@ -311,30 +332,19 @@ async function main() {
       slug: 'max-of-two-numbers',
       title: 'Max of Two Numbers',
       description:
-        'Write a function `maxOfTwo` that receives two numbers `a` and `b` and returns the larger one.',
+        'Use the available variables `a` and `b`. Return the larger number.',
+      hint: 'Use an if statement to compare `a` and `b`. Return `a` when it is greater than `b`, otherwise return `b`.',
       order: 2,
-      starterCode: `
-        function maxOfTwo(a, b) {
-          // your code here
-        }
-      `,
+      starterCode: `if (/* write your condition here */) {
+  return /* value */;
+} else {
+  return /* value */;
+}`,
       functionName: 'maxOfTwo',
       parameterNames: ['a', 'b'],
       syntaxRules: {
         required: ['IfStatement'],
-        forbidden: [
-          'SwitchStatement',
-          'ForStatement',
-          'WhileStatement',
-          'DoWhileStatement',
-          'DoWhileStatement',
-          'ForInStatement',
-          'ForOfStatement',
-          'FunctionDeclaration',
-          'ArrowFunctionExpression',
-          'FunctionExpression',
-          'TryStatement',
-        ],
+        forbidden: ['SwitchStatement', ...bodyOnlyForbiddenNodes],
       },
       isPublished: true,
     },
@@ -351,30 +361,17 @@ async function main() {
       slug: 'day-name',
       title: 'Day Name',
       description:
-        "Write a function `getDayName` that receives a number (1–7) and returns the day name. 1 = Monday, 7 = Sunday. Return 'Invalid' for other numbers.",
+        "Use the available variable `day`. Return the day name for numbers 1–7 and return 'Invalid' for other numbers.",
+      hint: 'Use `switch (day)` and create cases from 1 to 7. Each case should return the correct day name.',
       order: 1,
-      starterCode: `
-        function getDayName(day) {
-          // your code here
-        }
-      `,
+      starterCode: `switch (day) {
+  // write your cases here default: return 'Invalid';
+}`,
       functionName: 'getDayName',
       parameterNames: ['day'],
       syntaxRules: {
         required: ['SwitchStatement'],
-        forbidden: [
-          'IfStatement',
-          'ForStatement',
-          'WhileStatement',
-          'DoWhileStatement',
-          'DoWhileStatement',
-          'ForInStatement',
-          'ForOfStatement',
-          'FunctionDeclaration',
-          'ArrowFunctionExpression',
-          'FunctionExpression',
-          'TryStatement',
-        ],
+        forbidden: ['IfStatement', ...bodyOnlyForbiddenNodes],
       },
       isPublished: true,
     },
@@ -391,29 +388,22 @@ async function main() {
       slug: 'sum-of-array',
       title: 'Sum of Array',
       description:
-        'Write a function `sumArray` that receives an array of numbers and returns the total sum.',
+        'Use the available variable `numbers`. Return the total sum of all numbers in the array.',
+      hint: 'Create a total variable, loop through `numbers`, add each item to total, then return total after the loop finishes.',
       order: 1,
-      starterCode: `
-        function sumArray(numbers) {
-          // your code here
-        }
-      `,
+      starterCode: `let total = 0;
+for (let i = 0; i < numbers.length; i++) {
+  // add each number to total 
+}
+
+return total;`,
       functionName: 'sumArray',
       parameterNames: ['numbers'],
       syntaxRules: {
         required: ['ForStatement'],
         forbidden: [
-          'IfStatement',
-          'SwitchStatement',
-          'WhileStatement',
-          'DoWhileStatement',
-          'DoWhileStatement',
-          'ForInStatement',
-          'ForOfStatement',
-          'FunctionDeclaration',
-          'ArrowFunctionExpression',
-          'FunctionExpression',
-          'TryStatement',
+          ...forLoopAlternativeForbiddenNodes,
+          ...bodyOnlyForbiddenNodes,
         ],
       },
       isPublished: true,
@@ -428,29 +418,22 @@ async function main() {
       slug: 'fizz-buzz',
       title: 'FizzBuzz',
       description:
-        "Write a function `fizzBuzz` that receives a number `n` and returns an array from 1 to n. Replace multiples of 3 with 'Fizz', multiples of 5 with 'Buzz', and multiples of both with 'FizzBuzz'.",
+        "Use the available variable `n`. Return an array from 1 to n. Replace multiples of 3 with 'Fizz', multiples of 5 with 'Buzz', and multiples of both with 'FizzBuzz'.",
+      hint: 'Inside the loop, check multiples of both 3 and 5 first. Then check multiples of 3, then multiples of 5, otherwise add the number.',
       order: 2,
-      starterCode: `
-        function fizzBuzz(n) {
-          // your code here
-        }
-      `,
+      starterCode: `const result = [];
+for (let i = 1; i <= n; i++) {
+  // add Fizz, Buzz, FizzBuzz, or the number 
+} 
+
+return result; `,
       functionName: 'fizzBuzz',
       parameterNames: ['n'],
       syntaxRules: {
         required: ['ForStatement'],
         forbidden: [
-          'IfStatement',
-          'SwitchStatement',
-          'WhileStatement',
-          'DoWhileStatement',
-          'DoWhileStatement',
-          'ForInStatement',
-          'ForOfStatement',
-          'FunctionDeclaration',
-          'ArrowFunctionExpression',
-          'FunctionExpression',
-          'TryStatement',
+          ...forLoopAlternativeForbiddenNodes,
+          ...bodyOnlyForbiddenNodes,
         ],
       },
       isPublished: true,
@@ -468,29 +451,22 @@ async function main() {
       slug: 'count-down',
       title: 'Countdown',
       description:
-        'Write a function `countdown` that receives a number `n` and returns an array counting down from n to 1.',
+        'Use the available variable `n`. Return an array counting down from n to 1.',
+      hint: 'Start with an empty array. While `n` is greater than 0, push `n` into the array, then decrease `n`.',
       order: 1,
-      starterCode: `
-        function countdown(n) {
-          // your code here
-        }
-      `,
+      starterCode: `const result = [];
+while (n > 0) {
+  // add n to result 
+  // decrease n 
+}
+return result; `,
       functionName: 'countdown',
       parameterNames: ['n'],
       syntaxRules: {
         required: ['WhileStatement'],
         forbidden: [
-          'IfStatement',
-          'SwitchStatement',
-          'ForStatement',
-          'DoWhileStatement',
-          'DoWhileStatement',
-          'ForInStatement',
-          'ForOfStatement',
-          'FunctionDeclaration',
-          'ArrowFunctionExpression',
-          'FunctionExpression',
-          'TryStatement',
+          ...whileLoopAlternativeForbiddenNodes,
+          ...bodyOnlyForbiddenNodes,
         ],
       },
       isPublished: true,
@@ -511,29 +487,14 @@ async function main() {
       title: 'Greet User',
       description:
         "Write a function `greet` that receives a `name` string and returns 'Hello, {name}!'.",
+      hint: 'Define a function named `greet` with one parameter `name`. Return a string using the format `Hello, {name}!`.',
       order: 1,
-      starterCode: `
-        function greet(name) {
-          // your code here
-        }
-      `,
+      starterCode: `// write your code here`,
       functionName: 'greet',
       parameterNames: ['name'],
       syntaxRules: {
         required: ['FunctionDeclaration'],
-        forbidden: [
-          'IfStatement',
-          'SwitchStatement',
-          'ForStatement',
-          'WhileStatement',
-          'DoWhileStatement',
-          'DoWhileStatement',
-          'ForInStatement',
-          'ForOfStatement',
-          'ArrowFunctionExpression',
-          'FunctionExpression',
-          'TryStatement',
-        ],
+        forbidden: functionDeclarationForbiddenNodes,
       },
       isPublished: true,
     },
@@ -553,29 +514,14 @@ async function main() {
       title: 'Double the Number',
       description:
         'Write an arrow function `double` that receives a number `n` and returns n multiplied by 2.',
+      hint: 'Define an arrow function named `double`. It should receive `n` and return `n * 2`.',
       order: 1,
-      starterCode: `
-        const double = (n) => {
-          // your code here
-        }
-      `,
+      starterCode: `// write your code here`,
       functionName: 'double',
       parameterNames: ['n'],
       syntaxRules: {
         required: ['ArrowFunctionExpression'],
-        forbidden: [
-          'IfStatement',
-          'SwitchStatement',
-          'ForStatement',
-          'WhileStatement',
-          'DoWhileStatement',
-          'DoWhileStatement',
-          'ForInStatement',
-          'ForOfStatement',
-          'FunctionDeclaration',
-          'FunctionExpression',
-          'TryStatement',
-        ],
+        forbidden: arrowFunctionForbiddenNodes,
       },
       isPublished: true,
     },

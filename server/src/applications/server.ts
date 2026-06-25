@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 
 import { errorMiddleware } from '../middlewares/error.middleware';
 
@@ -14,6 +15,14 @@ import { progressRouter } from '../routes/progress.route';
 import '../queues/submission.queue';
 
 export const server = express();
+
+server.use(
+  cors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
 
 server.use(express.json());
 
