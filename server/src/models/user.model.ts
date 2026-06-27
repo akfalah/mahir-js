@@ -35,6 +35,7 @@ export type UserResponse = {
   imageUrl: string | null;
   bio: string | null;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type UserPaginationResponse = PaginationResponse<UserResponse>;
@@ -48,5 +49,6 @@ export function toUserResponse(user: User): UserResponse {
     imageUrl: user.imageUrl,
     bio: user.bio,
     createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
   };
 }
