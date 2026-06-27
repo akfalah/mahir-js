@@ -22,6 +22,7 @@ export class AuthValidation {
   static readonly UPDATE_PROFILE: ZodType<UpdateProfileRequest> = z.object({
     email: z.email().optional(),
     name: z.string().min(3).optional(),
+    imageUrl: z.string().max(300).optional(),
     bio: z.string().max(300).optional(),
   });
 
