@@ -20,7 +20,7 @@ export type UpdateProfileRequest = {
   name?: string;
   email?: string;
   bio?: string;
-  image?: string;
+  imageUrl?: string;
 };
 
 export type UpdatePasswordRequest = {
