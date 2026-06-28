@@ -104,7 +104,14 @@ export async function executeSubmission(submissionId: number): Promise<void> {
     include: {
       studyCase: {
         include: {
-          testCases: { orderBy: { order: 'asc' } },
+          testCases: {
+            where: {
+              isPublished: true,
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
     },
@@ -131,6 +138,12 @@ export async function executeSubmission(submissionId: number): Promise<void> {
       studyCase.syntaxRules as Record<string, string[]> | null,
     );
 
+    await prisma.testResult.deleteMany({
+      where: {
+        submissionId,
+      },
+    });
+
     await prisma.testResult.createMany({
       data: results.map((r) => ({
         submissionId,
@@ -147,12 +160,13 @@ export async function executeSubmission(submissionId: number): Promise<void> {
       (r) => r.status === TestResultStatus.PASSED,
     );
 
-    await prisma.submission.update({
-      where: { id: submissionId },
-      data: {
-        status: allPassed ? SubmissionStatus.PASSED : SubmissionStatus.FAILED,
-      },
-    });
+    const hasError = results.some((r) => r.status === TestResultStatus.ERROR);
+
+    const status = allPassed
+      ? SubmissionStatus.PASSED
+      : hasError
+        ? SubmissionStatus.ERROR
+        : SubmissionStatus.FAILED;
 
     if (allPassed) {
       await ProgressService.updateOnSubmissionPassed(
@@ -160,6 +174,14 @@ export async function executeSubmission(submissionId: number): Promise<void> {
         submission.studyCaseId,
       );
     }
+
+    await prisma.submission.update({
+      where: { id: submissionId },
+      data: {
+        status,
+        errorMessage: null,
+      },
+    });
   } catch (e) {
     await prisma.submission.update({
       where: { id: submissionId },
