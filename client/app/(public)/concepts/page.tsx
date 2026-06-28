@@ -1,77 +1,62 @@
-import Link from 'next/link';
-
-import { Button } from '@/components/ui/button';
+import { Layers3 } from 'lucide-react';
 
 import { fetchConcepts } from '@/lib/fetch';
 
-import { ArrowRight, Code2, GitBranch, Repeat2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
-const iconMap = [Code2, GitBranch, Repeat2];
+import PublicBreadcrumb from '@/components/shared/PublicBreadcrumb';
+import ConceptGrid from './ConceptGrid';
+
+const pageContent = {
+  badge: 'Learning Path',
+  title: 'Choose your JavaScript concept.',
+  description:
+    'Start with the first concept and continue step by step. Each concept contains short materials and practice challenges.',
+};
 
 export default async function ConceptsPage() {
   const { data: concepts } = await fetchConcepts();
 
   return (
-    <div className='max-w-6xl mx-auto space-y-12'>
-      {/* Header */}
-      <div className='py-12 space-y-3'>
-        <h1 className='text-4xl font-bold tracking-tight'>
-          Core JavaScript Concepts
-        </h1>
+    <div className='container mx-auto px-4 py-10 md:py-12 flex flex-col gap-y-8'>
+      <PublicBreadcrumb items={[{ label: 'Concepts' }]} />
 
-        <p className='text-muted-foreground text-lg'>
-          Master the fundamental building blocks of JavaScript. Complete each
-          concept to track your progress.
-        </p>
-      </div>
+      <section className='flex max-w-3xl flex-col gap-y-4'>
+        <Badge
+          variant='secondary'
+          className='w-fit rounded-full px-3 py-1'
+        >
+          {pageContent.badge}
+        </Badge>
 
-      {/* Concept Grid */}
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-        {concepts.map((concept, index) => {
-          const Icon = iconMap[index] || Code2;
+        <div className='flex flex-col gap-y-3'>
+          <h1 className='text-3xl font-bold tracking-tight md:text-5xl'>
+            {pageContent.title}
+          </h1>
 
-          return (
-            <div
-              key={concept.id}
-              className='rounded-xl border p-6 flex flex-col gap-4 transition-all duration-200 bg-card hover:bg-primary/5 border-border hover:border-primary/50 hover:shadow-md'
-            >
-              {/* Icon + Lock */}
-              <div className='flex items-start justify-between'>
-                <div className='h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center'>
-                  <Icon className='h-6 w-6 text-primary' />
-                </div>
-              </div>
+          <p className='text-base leading-relaxed text-muted-foreground md:text-lg'>
+            {pageContent.description}
+          </p>
+        </div>
+      </section>
 
-              {/* Content */}
-              <div className='flex-1 space-y-2'>
-                <h2 className='text-xl font-bold'>{concept.title}</h2>
-                <p className='text-sm text-muted-foreground leading-relaxed'>
-                  {concept.description}
-                </p>
-              </div>
+      {concepts.length > 0 ? (
+        <ConceptGrid concepts={concepts} />
+      ) : (
+        <section className='rounded-2xl border border-dashed bg-card p-10 text-center'>
+          <div className='mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground'>
+            <Layers3 className='size-6' />
+          </div>
 
-              {/* Progress bar placeholder */}
-              <div className='space-y-1'>
-                <div className='flex items-center justify-between text-xs text-muted-foreground'>
-                  <span>Progress</span>
-                  <span>0%</span>
-                </div>
-                <div className='w-full bg-muted rounded-full h-1.5'>
-                  <div className='bg-primary h-1.5 rounded-full w-0 transition-all duration-300' />
-                </div>
-              </div>
+          <div className='flex flex-col gap-y-2 pt-4'>
+            <h2 className='font-bold'>No concepts yet</h2>
 
-              {/* Button */}
-              <Link href={`/concepts/${concept.id}`}>
-                <Button className='w-full gap-2'>
-                  Explore
-                  <ArrowRight className='h-4 w-4' />
-                </Button>
-              </Link>
-            </div>
-          );
-        })}
-      </div>
+            <p className='text-sm text-muted-foreground'>
+              Published concepts will appear here.
+            </p>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

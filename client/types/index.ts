@@ -1,6 +1,17 @@
 // ===== Auth =====
 export type Role = 'ADMIN' | 'STUDENT';
 
+export type SignUpPayload = {
+  email: string;
+  name: string;
+  password: string;
+};
+
+export type SignInPayload = {
+  email: string;
+  password: string;
+};
+
 export type User = {
   id: number;
   email: string;
@@ -9,9 +20,12 @@ export type User = {
   imageUrl?: string;
   bio?: string;
   createdAt: string;
+  updatedAt: string;
 };
 
-// ===== Pagination =====
+// ===== API Response =====
+export type FetchParams = Record<string, string | number | boolean | undefined>;
+
 export type PaginationMeta = {
   page: number;
   limit: number;
@@ -19,9 +33,9 @@ export type PaginationMeta = {
   totalPages: number;
 };
 
-export type PaginatedResponse<T> = {
-  data: T[];
-  pagination: PaginationMeta;
+export type ApiResponse<T> = {
+  data: T;
+  pagination?: PaginationMeta;
 };
 
 // ===== Concept =====
@@ -31,7 +45,9 @@ export type Concept = {
   title: string;
   description: string;
   order: number;
+  isPublished: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 // ===== Material =====
@@ -40,22 +56,35 @@ export type Material = {
   conceptId: number;
   slug: string;
   title: string;
+  description: string;
   content: string;
   order: number;
+  isPublished: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 // ===== Study Case =====
+export type SyntaxRules = {
+  required?: string[];
+  forbidden?: string[];
+};
+
 export type StudyCase = {
   id: number;
   materialId: number;
+  slug: string;
   title: string;
   description: string;
-  starterCode: string;
+  hint: string | null;
   order: number;
-  parameterNames: string[];
-  functionName: string;
+  starterCode: string;
+  syntaxRules: SyntaxRules;
+  parameterNames: string[] | null;
+  functionName: string | null;
+  isPublished: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 // ===== Test Case =====
@@ -68,6 +97,7 @@ export type TestCase = {
   order: number;
   isPublished: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 // ===== Submission =====
@@ -112,8 +142,8 @@ export type ConceptProgress = {
   userId: number;
   conceptId: number;
   isCompleted: boolean;
-  isUnlocked: boolean;
   completedAt: string | null;
+  updatedAt: string;
 };
 
 export type MaterialProgress = {
@@ -121,8 +151,8 @@ export type MaterialProgress = {
   userId: number;
   materialId: number;
   isCompleted: boolean;
-  isUnlocked: boolean;
   completedAt: string | null;
+  updatedAt: string;
 };
 
 export type StudyCaseProgress = {
@@ -130,6 +160,6 @@ export type StudyCaseProgress = {
   userId: number;
   studyCaseId: number;
   isCompleted: boolean;
-  isUnlocked: boolean;
   completedAt: string | null;
+  updatedAt: string;
 };

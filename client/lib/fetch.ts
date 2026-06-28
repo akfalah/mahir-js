@@ -1,19 +1,28 @@
-const API_URL = process.env.API_URL || 'http://localhost:3000';
+import { ApiResponse, FetchParams } from '@/types';
 
-type FetchParams = Record<string, string | number | boolean | undefined>;
+const SERVER_API_URL =
+  process.env.SERVER_API_URL || 'http://localhost:8888/api';
 
 async function fetchAPI<T>(
   path: string,
   token?: string,
   params?: FetchParams,
-): Promise<{ data: T; pagination?: import('@/types').PaginationMeta }> {
-  const headers: HeadersInit = {};
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+): Promise<ApiResponse<T>> {
+  const headers: HeadersInit = {
+    Accept: 'application/json',
+  };
 
-  const url = new URL(`${API_URL}/api${path}`);
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const url = new URL(`${SERVER_API_URL}${path}`);
+
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) url.searchParams.set(key, String(value));
+      if (value !== undefined && value !== '') {
+        url.searchParams.set(key, String(value));
+      }
     });
   }
 
@@ -22,47 +31,77 @@ async function fetchAPI<T>(
     headers,
   });
 
-  const json = await res.json();
-  return { data: json.data, pagination: json.pagination };
+  const text = await res.text();
+
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    console.error('API returned non-JSON response', {
+      url: url.toString(),
+      status: res.status,
+      body: text.slice(0, 300),
+    });
+
+    throw new Error(`API returned non-JSON response: ${url.toString()}`);
+  }
+
+  if (!res.ok) {
+    console.error('API error', {
+      url: url.toString(),
+      status: res.status,
+      body: json,
+    });
+
+    throw new Error(json.errors || json.message || 'Failed to fetch API');
+  }
+
+  return {
+    data: json.data,
+    pagination: json.pagination,
+  };
 }
 
 export const fetchConcepts = (token?: string, params?: FetchParams) =>
   fetchAPI<import('@/types').Concept[]>('/concepts', token, {
-    sortBy: 'createdAt',
+    sortBy: 'order',
     orderBy: 'asc',
-    limit: 10,
+    limit: 100,
     ...params,
   });
 
-export const fetchConceptById = (id: string, token?: string) =>
-  fetchAPI<import('@/types').Concept>(`/concepts/${id}`, token);
+export const fetchConceptBySlug = (slug: string, token?: string) =>
+  fetchAPI<import('@/types').Concept>(`/concepts/${slug}`, token);
 
 export const fetchMaterials = (token?: string, params?: FetchParams) =>
   fetchAPI<import('@/types').Material[]>('/materials', token, {
-    limit: 10,
+    sortBy: 'order',
+    orderBy: 'asc',
+    limit: 100,
     ...params,
   });
 
-export const fetchMaterialById = (id: string, token?: string) =>
-  fetchAPI<import('@/types').Material>(`/materials/${id}`, token);
+export const fetchMaterialBySlug = (slug: string, token?: string) =>
+  fetchAPI<import('@/types').Material>(`/materials/${slug}`, token);
 
 export const fetchStudyCases = (token?: string, params?: FetchParams) =>
   fetchAPI<import('@/types').StudyCase[]>('/study-cases', token, {
-    limit: 10,
+    sortBy: 'order',
+    orderBy: 'asc',
+    limit: 100,
     ...params,
   });
 
-export const fetchStudyCaseById = (id: string, token?: string) =>
-  fetchAPI<import('@/types').StudyCase>(`/study-cases/${id}`, token);
+export const fetchStudyCaseBySlug = (slug: string, token?: string) =>
+  fetchAPI<import('@/types').StudyCase>(`/study-cases/${slug}`, token);
 
 export const fetchTestCases = (token?: string, params?: FetchParams) =>
   fetchAPI<import('@/types').TestCase[]>('/test-cases', token, {
-    limit: 10,
+    sortBy: 'order',
+    orderBy: 'asc',
+    limit: 100,
     ...params,
   });
-
-export const fetchTestCaseById = (id: string, token?: string) =>
-  fetchAPI<import('@/types').TestCase>(`/test-cases/${id}`, token);
 
 export const fetchSubmissions = (token: string, params?: FetchParams) =>
   fetchAPI<import('@/types').Submission[]>('/submissions', token, {
@@ -74,15 +113,3 @@ export const fetchSubmissions = (token: string, params?: FetchParams) =>
 
 export const fetchSubmissionById = (id: string, token: string) =>
   fetchAPI<import('@/types').SubmissionDetail>(`/submissions/${id}`, token);
-
-export const fetchConceptProgresses = (token: string) =>
-  fetchAPI<import('@/types').ConceptProgress[]>('/progress/concepts', token);
-
-export const fetchMaterialProgresses = (token: string) =>
-  fetchAPI<import('@/types').MaterialProgress[]>('/progress/materials', token);
-
-export const fetchStudyCaseProgresses = (token: string) =>
-  fetchAPI<import('@/types').StudyCaseProgress[]>(
-    '/progress/study-cases',
-    token,
-  );

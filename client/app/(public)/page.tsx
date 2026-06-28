@@ -1,183 +1,154 @@
-import { cookies } from 'next/headers';
 import Link from 'next/link';
 
-import { fetchConcepts } from '@/lib/fetch';
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  Code2,
+  Sparkles,
+} from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import PublicLandingActions from '@/components/shared/PublicLandingActions';
 
-import { BookOpen, Code2, Trophy, Zap } from 'lucide-react';
-
-const stats = [
-  { icon: BookOpen, label: 'Concepts', value: '3' },
-  { icon: Code2, label: 'Exercises', value: '9+' },
-  { icon: Zap, label: 'Instant Feedback', value: '100%' },
-  { icon: Trophy, label: 'Free Forever', value: '∞' },
+const learningSteps = [
+  {
+    title: 'Read',
+    description:
+      'Start with short materials that explain one JavaScript concept at a time.',
+    icon: BookOpen,
+  },
+  {
+    title: 'Practice',
+    description:
+      'Write JavaScript code directly in the browser using a guided editor.',
+    icon: Code2,
+  },
+  {
+    title: 'Test',
+    description:
+      'Run test cases, see which ones pass or fail, then improve your code.',
+    icon: CheckCircle2,
+  },
 ];
 
-export default async function HomePage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value || '';
-  const isLoggedIn = !!token;
+const ctaHighlights = [
+  'Beginner-friendly materials',
+  'Practice with code editor',
+  'Clear test feedback',
+];
 
-  const { data: concepts } = await fetchConcepts();
-
+export default function LandingPage() {
   return (
-    <div className='min-h-screen bg-linear-to-br from-background via-background to-primary/5'>
-      {/* Decorative blur */}
-      <div className='fixed inset-0 overflow-hidden pointer-events-none -z-10'>
-        <div className='absolute top-0 right-0 w-125 h-125 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4' />
+    <div>
+      <section className='relative isolate overflow-hidden bg-background'>
+        <div className='absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,var(--primary),transparent_32%)] opacity-20' />
 
-        <div className='absolute bottom-0 left-0 w-125 h-125 bg-primary/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4' />
-      </div>
+        <div className='container mx-auto px-4 py-20 md:py-28'>
+          <div className='mx-auto max-w-4xl flex flex-col items-center gap-y-8 text-center'>
+            <Badge variant='secondary'>
+              <Code2 />
 
-      {/* Hero */}
-      <section className='relative px-4 py-24 text-center'>
-        <div className='mx-auto max-w-3xl space-y-6'>
-          <div className='inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5'>
-            <Code2 className='h-4 w-4 text-primary' />
+              <span>Beginner Friendly JavaScript Practice</span>
+            </Badge>
 
-            <span className='text-sm font-medium text-primary'>
-              Interactive JavaScript Learning Platform
-            </span>
-          </div>
+            <h1 className='text-4xl font-bold tracking-tight md:text-6xl'>
+              Learn JavaScript by testing your code step by step.
+            </h1>
 
-          <h1 className='text-5xl font-extrabold tracking-tight leading-tight'>
-            Master JavaScript{' '}
-            <span className='bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent'>
-              From the Ground Up
-            </span>
-          </h1>
+            <p className='mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg'>
+              Mahir.js helps beginners learn basic concepts of JavaScript
+              through short materials, guided coding challenges, and clear test
+              feedback.
+            </p>
 
-          <p className='text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed'>
-            Learn JavaScript through interactive exercises with instant
-            feedback. From Conditionals to Loops to Functions — free, no
-            installation required.
-          </p>
-
-          <div className='flex items-center justify-center gap-3 pt-2'>
-            <Button
-              size='lg'
-              asChild
-            >
-              <Link href='/concepts'>Start Learning</Link>
-            </Button>
-
-            {isLoggedIn ? (
-              <Button
-                size='lg'
-                variant='outline'
-                asChild
-              >
-                <Link href='/learn'>Check Your Progress</Link>
-              </Button>
-            ) : (
-              <Button
-                size='lg'
-                variant='outline'
-                asChild
-              >
-                <Link href='/sign-up'>Sign Up Free</Link>
-              </Button>
-            )}
+            <PublicLandingActions />
           </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className='mx-auto max-w-5xl px-4 py-8'>
-        <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className='rounded-xl border bg-card/50 backdrop-blur-sm p-5 hover:bg-card hover:border-primary/30 transition-all'
-            >
-              <div className='flex items-center gap-3 mb-2'>
-                <div className='p-2 rounded-lg bg-primary/10'>
-                  <stat.icon className='h-5 w-5 text-primary' />
-                </div>
+      <section className='container mx-auto px-4 py-14 md:py-16 flex flex-col gap-y-8 border-y'>
+        <div className='mx-auto max-w-2xl flex flex-col items-center gap-y-4 text-center'>
+          <Badge variant='outline'>How it works</Badge>
 
-                <span className='text-2xl font-bold'>{stat.value}</span>
-              </div>
-              <p className='text-sm text-muted-foreground'>{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Concepts */}
-      <section className='mx-auto max-w-5xl px-4 py-16'>
-        <div className='mb-10'>
-          <h2 className='text-2xl font-bold mb-2'>Start Here</h2>
+          <h2 className='text-3xl font-bold tracking-tight'>
+            A simple learning flow for beginners.
+          </h2>
 
           <p className='text-muted-foreground'>
-            Three essential JavaScript concepts you need to master.
+            You do not need to guess what to do next. Each step guides you from
+            reading, practicing, testing, and improving.
           </p>
         </div>
 
         <div className='grid gap-5 md:grid-cols-3'>
-          {concepts.map((concept, index) => (
-            <Link
-              key={concept.id}
-              href={`/concepts/${concept.id}`}
-            >
-              <div className='group relative rounded-xl border bg-card/30 backdrop-blur-sm p-6 hover:bg-card hover:border-primary/50 hover:shadow-md transition-all duration-300 overflow-hidden h-full'>
-                <div className='absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300' />
+          {learningSteps.map((step) => {
+            const Icon = step.icon;
 
-                <div className='relative space-y-3'>
-                  <div className='flex items-center justify-between'>
-                    <div className='h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center'>
-                      <span className='text-primary font-bold'>
-                        {index + 1}
-                      </span>
-                    </div>
-
-                    <Badge
-                      variant='outline'
-                      className='text-xs'
-                    >
-                      Concept
-                    </Badge>
+            return (
+              <Card key={step.title}>
+                <CardContent className='p-6 flex flex-col gap-y-4'>
+                  <div className='flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
+                    <Icon className='size-6' />
                   </div>
 
-                  <h3 className='font-bold text-lg group-hover:text-primary transition-colors'>
-                    {concept.title}
-                  </h3>
+                  <div className='space-y-2'>
+                    <h3 className='text-lg font-bold'>{step.title}</h3>
 
-                  <p className='text-sm text-muted-foreground leading-relaxed'>
-                    {concept.description}
-                  </p>
-
-                  <p className='text-sm text-primary font-medium group-hover:translate-x-1 transition-transform inline-flex'>
-                    Explore →
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))}
+                    <p className='text-sm leading-relaxed text-muted-foreground'>
+                      {step.description}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
-      {/* CTA */}
-      {!isLoggedIn && (
-        <section className='mx-auto max-w-3xl px-4 py-16 text-center'>
-          <div className='rounded-2xl border bg-linear-to-br from-primary/10 to-primary/5 p-12 space-y-4'>
-            <h2 className='text-2xl font-bold'>Ready to Get Started?</h2>
+      <section>
+        <div className='container mx-auto px-4 py-14 md:py-16'>
+          <div className='mx-auto flex max-w-3xl p-8 md:p-10 flex-col items-center gap-y-6 text-center bg-card/70 border rounded-3xl shadow-sm'>
+            <div className='mx-auto flex size-12 items-center justify-center text-primary bg-primary/10 rounded-2xl'>
+              <Sparkles className='size-6' />
+            </div>
 
-            <p className='text-muted-foreground max-w-md mx-auto'>
-              Sign up now and start your JavaScript learning journey. Free,
-              forever.
-            </p>
+            <div className='mt-6 flex flex-col items-center gap-y-3'>
+              <h2 className='text-3xl font-bold tracking-tight'>
+                Ready to start your JavaScript journey?
+              </h2>
+
+              <p className='max-w-2xl text-muted-foreground'>
+                Explore the concepts, read the first material, and practice with
+                test cases directly in your browser.
+              </p>
+            </div>
+
+            <div className='flex flex-wrap justify-center gap-2'>
+              {ctaHighlights.map((highlight) => (
+                <Badge
+                  key={highlight}
+                  variant='secondary'
+                >
+                  {highlight}
+                </Badge>
+              ))}
+            </div>
 
             <Button
-              size='lg'
               asChild
+              className='gap-2'
             >
-              <Link href='/sign-up'>Create Account</Link>
+              <Link href='/concepts'>
+                Explore Concepts
+                <ArrowRight className='h-4 w-4' />
+              </Link>
             </Button>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
     </div>
   );
 }

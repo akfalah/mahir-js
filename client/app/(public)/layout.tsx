@@ -1,17 +1,18 @@
-'use client';
+import PublicFooter from '@/components/shared/PublicFooter';
+import PublicNavbar from '@/components/shared/PublicNavbar';
 
-import Navbar from '@/components/shared/Navbar';
-
-export default function DashboardLayout({
+export default function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className='min-h-screen flex flex-col'>
-      <Navbar />
-      
-      <main className='flex-1 container mx-auto px-4 py-8'>{children}</main>
+    <div className='min-h-screen flex flex-col bg-background'>
+      <PublicNavbar />
+
+      <main className='flex-1'>{children}</main>
+
+      <PublicFooter />
     </div>
   );
 }

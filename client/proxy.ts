@@ -1,24 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const authRoutes = ['/sign-in'];
+const authRoutes = ['/sign-in', '/sign-up'];
 const adminRoutes = ['/admin'];
 const studentRoutes = ['/learn'];
-const protectedRoutes = ['/learn', '/admin'];
+const protectedRoutes = ['/learn', '/profile', '/admin'];
+
+function getRedirectPath(role?: string) {
+  if (role === 'ADMIN') return '/admin';
+  if (role === 'STUDENT') return '/learn';
+
+  return '/';
+}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
   const token = request.cookies.get('token')?.value;
   const role = request.cookies.get('role')?.value;
 
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
-  const isProtectedRoute = protectedRoutes.some((route) => {
-    pathname.startsWith(route);
-  });
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
+
   const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
-  const isStudentRoute = studentRoutes.some((route) => pathname.startsWith(route));
+  const isStudentRoute = studentRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
 
   if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL('/learn', request.url));
+    return NextResponse.redirect(new URL(getRedirectPath(role), request.url));
   }
 
   if (isProtectedRoute && !token) {
@@ -28,9 +39,13 @@ export function proxy(request: NextRequest) {
   if (isAdminRoute && role !== 'ADMIN') {
     return NextResponse.redirect(new URL('/learn', request.url));
   }
-  
+
   if (isStudentRoute && role !== 'STUDENT') {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/admin', request.url));
+  }
+
+  if (pathname.startsWith('/profile') && !token) {
+    return NextResponse.redirect(new URL('/sign-in', request.url));
   }
 
   return NextResponse.next();

@@ -2,140 +2,100 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarHeader,
-  SidebarFooter,
-} from '@/components/ui/sidebar';
-
-import {
-  LayoutDashboard,
   BookOpen,
-  FileText,
   Code2,
-  TestTube,
-  Users,
-  ClipboardList,
+  FileText,
+  LayoutDashboard,
+  Layers3,
+  ListChecks,
 } from 'lucide-react';
 
-const mainNavItems = [
+import { cn } from '@/lib/utils';
+
+const navItems = [
   {
-    label: 'Dashboard',
+    title: 'Dashboard',
     href: '/admin',
     icon: LayoutDashboard,
   },
   {
-    label: 'Users',
-    href: '/admin/users',
-    icon: Users,
-  },
-  {
-    label: 'Submissions',
-    href: '/admin/submissions',
-    icon: ClipboardList,
-  },
-];
-
-const contentNavItems = [
-  {
-    label: 'Concepts',
+    title: 'Concepts',
     href: '/admin/concepts',
+    icon: Layers3,
+  },
+  {
+    title: 'Materials',
+    href: '/admin/materials',
     icon: BookOpen,
   },
   {
-    label: 'Materials',
-    href: '/admin/materials',
-    icon: FileText,
-  },
-  {
-    label: 'Study Cases',
+    title: 'Study Cases',
     href: '/admin/study-cases',
     icon: Code2,
   },
   {
-    label: 'Test Cases',
+    title: 'Test Cases',
     href: '/admin/test-cases',
-    icon: TestTube,
+    icon: ListChecks,
   },
 ];
 
-export default function AppAdminSidebar() {
+export default function AdminSidebar() {
   const pathname = usePathname();
 
-  const isActive = (href: string) => pathname === href;
-
   return (
-    <Sidebar>
-      <SidebarHeader className='h-12 border-b px-4 py-2.5'>
-        <p className='font-bold text-lg tracking-tight'>
-          Mahir<span className='text-primary'>.js</span>
-        </p>
-      </SidebarHeader>
-
-      <SidebarContent>
-        {/* Main */}
-        <SidebarGroup>
-          <SidebarGroupLabel>General</SidebarGroupLabel>
-
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.href)}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className='h-4 w-4' />
-                      {item.label}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Content Management */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Content</SidebarGroupLabel>
-
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {contentNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className='h-4 w-4' />
-                      {item.label}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      <SidebarFooter className='border-t px-4 py-3'>
+    <aside className='hidden border-r bg-background lg:block'>
+      <div className='sticky top-0 flex h-screen flex-col gap-y-6 p-5'>
         <Link
-          href='/'
-          className='text-xs text-muted-foreground hover:text-foreground transition-colors'
+          href='/admin'
+          className='flex items-center gap-3 rounded-xl border bg-card p-4'
         >
-          ← Back to Student View
+          <div className='flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground'>
+            <FileText className='size-5' />
+          </div>
+
+          <div className='flex flex-col'>
+            <span className='font-bold leading-none'>Mahir.js</span>
+            <span className='text-xs text-muted-foreground'>Admin Panel</span>
+          </div>
         </Link>
-      </SidebarFooter>
-    </Sidebar>
+
+        <nav className='flex flex-col gap-y-2'>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+
+            const isActive =
+              item.href === '/admin'
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                  isActive &&
+                    'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
+                )}
+              >
+                <Icon className='size-5' />
+                {item.title}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className='flex flex-1 flex-col justify-end'>
+          <Link
+            href='/'
+            className='rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground transition-colors hover:text-foreground'
+          >
+            Back to public site
+          </Link>
+        </div>
+      </div>
+    </aside>
   );
 }
