@@ -32,7 +32,7 @@ import {
 
 import api from '@/lib/api';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';

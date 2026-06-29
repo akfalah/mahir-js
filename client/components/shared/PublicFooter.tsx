@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { Code2 } from 'lucide-react';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/use-auth-store';
 import { Skeleton } from '../ui/skeleton';
 import { Separator } from '../ui/separator';
 

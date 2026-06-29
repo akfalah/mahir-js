@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 export default function AuthProvider({
   children,

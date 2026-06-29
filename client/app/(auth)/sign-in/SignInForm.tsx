@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { Code2, LogIn } from 'lucide-react';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 import { signInSchema } from '@/lib/validations/auth';
 import { getFieldErrors } from '@/lib/validations/get-field-errors';

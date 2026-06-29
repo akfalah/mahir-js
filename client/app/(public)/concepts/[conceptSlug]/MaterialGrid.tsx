@@ -7,7 +7,7 @@ import { ArrowRight, BookOpen } from 'lucide-react';
 
 import api from '@/lib/api';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 import { Concept, Material, StudyCase, StudyCaseProgress } from '@/types';
 

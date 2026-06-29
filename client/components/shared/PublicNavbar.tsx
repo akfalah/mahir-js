@@ -7,7 +7,7 @@ import { Code2, Menu } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -92,7 +92,8 @@ export default function PublicNavbar() {
                 variant='ghost'
                 asChild
                 className={cn(
-                  isActive && 'bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] text-primary',
+                  isActive &&
+                    'bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] text-primary',
                 )}
               >
                 <Link href={item.href}>{item.label}</Link>

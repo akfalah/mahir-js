@@ -15,7 +15,7 @@ import {
 
 import api from '@/lib/api';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 import {
   Concept,

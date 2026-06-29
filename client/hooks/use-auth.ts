@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 
 import { Role } from '@/types';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 export const useAuth = (requiredRole?: Role) => {
   const { user, isLoading, isInitialized, fetchUser } = useAuthStore();
