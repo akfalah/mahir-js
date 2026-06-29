@@ -447,7 +447,7 @@ greet('Ani');</code></pre>
 }`,
       functionName: 'isAdult',
       parameterNames: ['age'],
-      syntaxRules: cloneSyntaxRules(SYNTAX_RULE_PRESETS.CONDITIONAL_BODY_ONLY),
+      syntaxRules: cloneSyntaxRules(SYNTAX_RULE_PRESETS.IF_BODY_ONLY),
       isPublished: true,
     },
     create: {
@@ -465,7 +465,7 @@ greet('Ani');</code></pre>
 }`,
       functionName: 'isAdult',
       parameterNames: ['age'],
-      syntaxRules: cloneSyntaxRules(SYNTAX_RULE_PRESETS.CONDITIONAL_BODY_ONLY),
+      syntaxRules: cloneSyntaxRules(SYNTAX_RULE_PRESETS.IF_BODY_ONLY),
       isPublished: true,
     },
   });
@@ -490,7 +490,7 @@ greet('Ani');</code></pre>
 }`,
       functionName: 'maxOfTwo',
       parameterNames: ['a', 'b'],
-      syntaxRules: cloneSyntaxRules(SYNTAX_RULE_PRESETS.CONDITIONAL_BODY_ONLY),
+      syntaxRules: cloneSyntaxRules(SYNTAX_RULE_PRESETS.IF_BODY_ONLY),
       isPublished: true,
     },
     create: {
@@ -508,7 +508,7 @@ greet('Ani');</code></pre>
 }`,
       functionName: 'maxOfTwo',
       parameterNames: ['a', 'b'],
-      syntaxRules: cloneSyntaxRules(SYNTAX_RULE_PRESETS.CONDITIONAL_BODY_ONLY),
+      syntaxRules: cloneSyntaxRules(SYNTAX_RULE_PRESETS.IF_BODY_ONLY),
       isPublished: true,
     },
   });
