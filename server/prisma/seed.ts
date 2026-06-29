@@ -162,7 +162,6 @@ async function main() {
       description:
         'Learn how to execute different blocks of code based on a condition.',
       content: html(`
-        <h2>If and Else</h2>
         <p>The <strong>if</strong> statement is used when a program needs to make a decision.</p>
         <p>If the condition is true, JavaScript runs the first block. If the condition is false, JavaScript can run the <strong>else</strong> block.</p>
         <pre><code class="language-js">const age = 18;
@@ -184,7 +183,6 @@ if (age &gt;= 18) {
       description:
         'Learn how to execute different blocks of code based on a condition.',
       content: html(`
-        <h2>If and Else</h2>
         <p>The <strong>if</strong> statement is used when a program needs to make a decision.</p>
         <p>If the condition is true, JavaScript runs the first block. If the condition is false, JavaScript can run the <strong>else</strong> block.</p>
         <pre><code class="language-js">const age = 18;
@@ -214,7 +212,6 @@ if (age &gt;= 18) {
       description:
         'Learn how to match a value against several possible cases using switch.',
       content: html(`
-        <h2>Switch Statement</h2>
         <p>The <strong>switch</strong> statement is useful when you want to compare one value with many possible cases.</p>
         <pre><code class="language-js">const role = 'admin';
 
@@ -240,7 +237,6 @@ switch (role) {
       description:
         'Learn how to match a value against several possible cases using switch.',
       content: html(`
-        <h2>Switch Statement</h2>
         <p>The <strong>switch</strong> statement is useful when you want to compare one value with many possible cases.</p>
         <pre><code class="language-js">const role = 'admin';
 
@@ -274,7 +270,6 @@ switch (role) {
       description:
         'Learn how to repeat code a specific number of times using a for loop.',
       content: html(`
-        <h2>For Loop</h2>
         <p>A <strong>for loop</strong> is commonly used when you know how many times the code should run.</p>
         <pre><code class="language-js">for (let i = 0; i &lt; 5; i++) {
   console.log(i);
@@ -291,7 +286,6 @@ switch (role) {
       description:
         'Learn how to repeat code a specific number of times using a for loop.',
       content: html(`
-        <h2>For Loop</h2>
         <p>A <strong>for loop</strong> is commonly used when you know how many times the code should run.</p>
         <pre><code class="language-js">for (let i = 0; i &lt; 5; i++) {
   console.log(i);
@@ -315,7 +309,6 @@ switch (role) {
       title: 'While Loop',
       description: 'Learn how to repeat code while a condition remains true.',
       content: html(`
-        <h2>While Loop</h2>
         <p>A <strong>while loop</strong> repeats code as long as the condition is true.</p>
         <pre><code class="language-js">let count = 3;
 
@@ -334,7 +327,6 @@ while (count &gt; 0) {
       title: 'While Loop',
       description: 'Learn how to repeat code while a condition remains true.',
       content: html(`
-        <h2>While Loop</h2>
         <p>A <strong>while loop</strong> repeats code as long as the condition is true.</p>
         <pre><code class="language-js">let count = 3;
 
@@ -362,7 +354,6 @@ while (count &gt; 0) {
       description:
         'Learn how to declare and call reusable JavaScript functions.',
       content: html(`
-        <h2>Function Basics</h2>
         <p>A <strong>function</strong> is a reusable block of code that performs a specific task.</p>
         <pre><code class="language-js">function greet(name) {
   return 'Hello, ' + name + '!';
@@ -381,7 +372,6 @@ greet('Ani');</code></pre>
       description:
         'Learn how to declare and call reusable JavaScript functions.',
       content: html(`
-        <h2>Function Basics</h2>
         <p>A <strong>function</strong> is a reusable block of code that performs a specific task.</p>
         <pre><code class="language-js">function greet(name) {
   return 'Hello, ' + name + '!';
@@ -408,7 +398,6 @@ greet('Ani');</code></pre>
       description:
         'Learn a shorter function syntax using JavaScript arrow functions.',
       content: html(`
-        <h2>Arrow Function</h2>
         <p>An <strong>arrow function</strong> is a concise way to write a function.</p>
         <pre><code class="language-js">const double = (n) =&gt; {
   return n * 2;
@@ -425,7 +414,6 @@ greet('Ani');</code></pre>
       description:
         'Learn a shorter function syntax using JavaScript arrow functions.',
       content: html(`
-        <h2>Arrow Function</h2>
         <p>An <strong>arrow function</strong> is a concise way to write a function.</p>
         <pre><code class="language-js">const double = (n) =&gt; {
   return n * 2;
