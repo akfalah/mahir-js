@@ -51,9 +51,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import AdminContentPanel from '@/components/shared/AdminContentPanel';
 import AdminDialog from '@/components/shared/AdminDialog';
+import AdminDrawer from '@/components/shared/AdminDrawer';
+import AdminJsonEditor from '@/components/shared/AdminJsonEditox';
 import AdminPageHeader from '@/components/shared/AdminPageHeader';
 import AdminPagination from '@/components/shared/AdminPagination';
-import AdminDrawer from '@/components/shared/AdminDrawer';
 import AdminStatusMessage from '@/components/shared/AdminStatusMessage';
 import AdminToolbar from '@/components/shared/AdminToolbar';
 
@@ -341,6 +342,44 @@ export default function TestCaseListClient() {
     });
   };
 
+  const handleStudyCaseChange = (value: string) => {
+    setStudyCaseId(value);
+    setErrors((prev) => ({
+      ...prev,
+      studyCaseId: undefined,
+    }));
+
+    const selected = studyCases.find(
+      (studyCase) => studyCase.id === Number(value),
+    );
+
+    if (!selected) {
+      return;
+    }
+
+    if (selected.parameterNames?.length) {
+      const nextInput = selected.parameterNames.reduce<Record<string, unknown>>(
+        (acc, parameterName) => {
+          acc[parameterName] = '';
+          return acc;
+        },
+        {},
+      );
+
+      setInput(JSON.stringify(nextInput, null, 2));
+    }
+
+    setExpected(
+      JSON.stringify(
+        {
+          result: '',
+        },
+        null,
+        2,
+      ),
+    );
+  };
+
   const handleSubmitTestCase = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -389,7 +428,15 @@ export default function TestCaseListClient() {
       }
 
       if (drawerMode === 'edit' && selectedTestCase) {
-        await resource.updateItem(selectedTestCase.id, payload);
+        const updatePayload = {
+          description: values.description,
+          input: values.input,
+          expected: values.expected,
+          order: values.order,
+          isPublished: values.isPublished,
+        };
+
+        await resource.updateItem(selectedTestCase.id, updatePayload);
         resource.setMessage('Test case updated successfully.');
       }
 
@@ -766,13 +813,8 @@ export default function TestCaseListClient() {
 
                 <Select
                   value={studyCaseId || undefined}
-                  onValueChange={(value) => {
-                    setStudyCaseId(value);
-                    setErrors((prev) => ({
-                      ...prev,
-                      studyCaseId: undefined,
-                    }));
-                  }}
+                  disabled={drawerMode === 'edit'}
+                  onValueChange={handleStudyCaseChange}
                 >
                   <SelectTrigger aria-invalid={Boolean(errors.studyCaseId)}>
                     <SelectValue placeholder='Choose study case' />
@@ -794,7 +836,9 @@ export default function TestCaseListClient() {
                   <FieldError>{errors.studyCaseId}</FieldError>
                 ) : (
                   <FieldDescription>
-                    Choose the study case for this test case.
+                    {drawerMode === 'edit'
+                      ? 'Study case cannot be changed after test case is created.'
+                      : 'Choose the study case for this test case.'}
                   </FieldDescription>
                 )}
               </Field>
@@ -828,18 +872,22 @@ export default function TestCaseListClient() {
               <Field data-invalid={Boolean(errors.input)}>
                 <FieldLabel htmlFor='input'>Input</FieldLabel>
 
-                <Textarea
-                  id='input'
+                <AdminJsonEditor
                   value={input}
-                  onChange={(event) => {
-                    setInput(event.target.value);
+                  height='220px'
+                  onChange={(value) => {
+                    setInput(value);
                     setErrors((prev) => ({
                       ...prev,
                       input: undefined,
                     }));
                   }}
-                  className='min-h-40 font-mono text-sm'
-                  aria-invalid={Boolean(errors.input)}
+                  onError={(message) => {
+                    setErrors((prev) => ({
+                      ...prev,
+                      input: message || undefined,
+                    }));
+                  }}
                 />
 
                 {errors.input ? (
@@ -854,18 +902,22 @@ export default function TestCaseListClient() {
               <Field data-invalid={Boolean(errors.expected)}>
                 <FieldLabel htmlFor='expected'>Expected</FieldLabel>
 
-                <Textarea
-                  id='expected'
+                <AdminJsonEditor
                   value={expected}
-                  onChange={(event) => {
-                    setExpected(event.target.value);
+                  height='220px'
+                  onChange={(value) => {
+                    setExpected(value);
                     setErrors((prev) => ({
                       ...prev,
                       expected: undefined,
                     }));
                   }}
-                  className='min-h-40 font-mono text-sm'
-                  aria-invalid={Boolean(errors.expected)}
+                  onError={(message) => {
+                    setErrors((prev) => ({
+                      ...prev,
+                      expected: message || undefined,
+                    }));
+                  }}
                 />
 
                 {errors.expected ? (
@@ -877,55 +929,53 @@ export default function TestCaseListClient() {
                 )}
               </Field>
 
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                <Field data-invalid={Boolean(errors.order)}>
-                  <FieldLabel htmlFor='order'>Order</FieldLabel>
+              <Field data-invalid={Boolean(errors.order)}>
+                <FieldLabel htmlFor='order'>Order</FieldLabel>
 
-                  <Input
-                    id='order'
-                    type='number'
-                    min={1}
-                    value={order}
-                    onChange={(event) => {
-                      setOrder(event.target.value);
-                      setErrors((prev) => ({
-                        ...prev,
-                        order: undefined,
-                      }));
-                    }}
-                    aria-invalid={Boolean(errors.order)}
-                  />
+                <Input
+                  id='order'
+                  type='number'
+                  min={1}
+                  value={order}
+                  onChange={(event) => {
+                    setOrder(event.target.value);
+                    setErrors((prev) => ({
+                      ...prev,
+                      order: undefined,
+                    }));
+                  }}
+                  aria-invalid={Boolean(errors.order)}
+                />
 
-                  {errors.order ? (
-                    <FieldError>{errors.order}</FieldError>
-                  ) : (
-                    <FieldDescription>
-                      Determines test case order inside the study case.
-                    </FieldDescription>
-                  )}
-                </Field>
+                {errors.order ? (
+                  <FieldError>{errors.order}</FieldError>
+                ) : (
+                  <FieldDescription>
+                    Determines test case order inside the study case.
+                  </FieldDescription>
+                )}
+              </Field>
 
-                <Field>
-                  <FieldLabel>Published</FieldLabel>
+              <Field>
+                <FieldLabel>Published</FieldLabel>
 
-                  <div className='flex items-center justify-between rounded-2xl border px-4 py-3'>
-                    <div className='flex flex-col gap-y-1'>
-                      <p className='text-sm font-medium'>
-                        {isPublished ? 'Published' : 'Draft'}
-                      </p>
+                <div className='flex items-center justify-between rounded-2xl border px-4 py-3'>
+                  <div className='flex flex-col gap-y-1'>
+                    <p className='text-sm font-medium'>
+                      {isPublished ? 'Published' : 'Draft'}
+                    </p>
 
-                      <p className='text-xs text-muted-foreground'>
-                        Published test cases are used by the grader.
-                      </p>
-                    </div>
-
-                    <Switch
-                      checked={isPublished}
-                      onCheckedChange={setIsPublished}
-                    />
+                    <p className='text-xs text-muted-foreground'>
+                      Published test cases are used by the grader.
+                    </p>
                   </div>
-                </Field>
-              </div>
+
+                  <Switch
+                    checked={isPublished}
+                    onCheckedChange={setIsPublished}
+                  />
+                </div>
+              </Field>
             </FieldGroup>
           </div>
 

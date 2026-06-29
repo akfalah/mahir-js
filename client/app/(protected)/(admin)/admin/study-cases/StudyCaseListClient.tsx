@@ -5,7 +5,13 @@ import { CheckCircle2, Code2, Edit, Plus, Trash2, XCircle } from 'lucide-react';
 
 import api from '@/lib/api';
 
-import { ApiResponse, Concept, Material, StudyCase } from '@/types';
+import {
+  ApiResponse,
+  Concept,
+  Material,
+  StudyCase,
+  SyntaxRules,
+} from '@/types';
 
 import { useAdminResource } from '@/hooks/use-admin-resource';
 
@@ -43,12 +49,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import AdminCodeEditor from '@/components/shared/AdminCodeEditor';
 import AdminContentPanel from '@/components/shared/AdminContentPanel';
 import AdminDialog from '@/components/shared/AdminDialog';
+import AdminDrawer from '@/components/shared/AdminDrawer';
 import AdminPageHeader from '@/components/shared/AdminPageHeader';
 import AdminPagination from '@/components/shared/AdminPagination';
-import AdminDrawer from '@/components/shared/AdminDrawer';
 import AdminStatusMessage from '@/components/shared/AdminStatusMessage';
+import AdminSyntaxRulesSelect from '@/components/shared/AdminSyntaxRulesSelect';
 import AdminToolbar from '@/components/shared/AdminToolbar';
 
 type DrawerMode = 'create' | 'edit' | null;
@@ -66,14 +74,6 @@ type StudyCaseFormErrors = {
   syntaxRules?: string;
   isPublished?: string;
 };
-
-function stringifySyntaxRules(value: StudyCase['syntaxRules']) {
-  try {
-    return JSON.stringify(value ?? {}, null, 2);
-  } catch {
-    return '{}';
-  }
-}
 
 function stringifyParameterNames(value: string[] | null) {
   return value?.join(', ') ?? '';
@@ -126,16 +126,10 @@ export default function StudyCaseListClient() {
   const [order, setOrder] = useState('1');
   const [functionName, setFunctionName] = useState('');
   const [parameterNames, setParameterNames] = useState('');
-  const [syntaxRules, setSyntaxRules] = useState(
-    JSON.stringify(
-      {
-        required: [],
-        forbidden: [],
-      },
-      null,
-      2,
-    ),
-  );
+  const [syntaxRules, setSyntaxRules] = useState<SyntaxRules>({
+    required: [],
+    forbidden: [],
+  });
   const [isPublished, setIsPublished] = useState(true);
 
   const [errors, setErrors] = useState<StudyCaseFormErrors>({});
@@ -228,16 +222,10 @@ export default function StudyCaseListClient() {
       stringifyParameterNames(studyCase?.parameterNames ?? null),
     );
     setSyntaxRules(
-      studyCase
-        ? stringifySyntaxRules(studyCase.syntaxRules)
-        : JSON.stringify(
-            {
-              required: [],
-              forbidden: [],
-            },
-            null,
-            2,
-          ),
+      studyCase?.syntaxRules ?? {
+        required: [],
+        forbidden: [],
+      },
     );
     setIsPublished(studyCase?.isPublished ?? true);
     setErrors({});
@@ -370,7 +358,21 @@ export default function StudyCaseListClient() {
       }
 
       if (drawerMode === 'edit' && selectedStudyCase) {
-        await resource.updateItem(selectedStudyCase.id, payload);
+        const updatePayload = {
+          title: values.title,
+          slug: values.slug,
+          description: values.description,
+          hint: values.hint || null,
+          starterCode: values.starterCode,
+          order: values.order,
+          functionName: values.functionName || null,
+          parameterNames:
+            values.parameterNames.length > 0 ? values.parameterNames : null,
+          syntaxRules: values.syntaxRules,
+          isPublished: values.isPublished,
+        };
+
+        await resource.updateItem(selectedStudyCase.id, updatePayload);
         resource.setMessage('Study case updated successfully.');
       }
 
@@ -754,6 +756,7 @@ export default function StudyCaseListClient() {
 
                 <Select
                   value={materialId || undefined}
+                  disabled={drawerMode === 'edit'}
                   onValueChange={(value) => {
                     setMaterialId(value);
                     setErrors((prev) => ({
@@ -782,7 +785,9 @@ export default function StudyCaseListClient() {
                   <FieldError>{errors.materialId}</FieldError>
                 ) : (
                   <FieldDescription>
-                    Choose the material for this study case.
+                    {drawerMode === 'edit'
+                      ? 'Material cannot be changed after study case is created.'
+                      : 'Choose the material for this study case.'}
                   </FieldDescription>
                 )}
               </Field>
@@ -900,26 +905,24 @@ export default function StudyCaseListClient() {
               <Field data-invalid={Boolean(errors.starterCode)}>
                 <FieldLabel htmlFor='starterCode'>Starter Code</FieldLabel>
 
-                <Textarea
-                  id='starterCode'
+                <AdminCodeEditor
                   value={starterCode}
-                  onChange={(event) => {
-                    setStarterCode(event.target.value);
+                  language='javascript'
+                  height='280px'
+                  onChange={(value) => {
+                    setStarterCode(value);
                     setErrors((prev) => ({
                       ...prev,
                       starterCode: undefined,
                     }));
                   }}
-                  placeholder='// write your code here'
-                  className='min-h-44 font-mono text-sm'
-                  aria-invalid={Boolean(errors.starterCode)}
                 />
 
                 {errors.starterCode ? (
                   <FieldError>{errors.starterCode}</FieldError>
                 ) : (
                   <FieldDescription>
-                    Initial code displayed in the editor.
+                    Initial JavaScript code displayed in the student editor.
                   </FieldDescription>
                 )}
               </Field>
@@ -981,27 +984,25 @@ export default function StudyCaseListClient() {
               </div>
 
               <Field data-invalid={Boolean(errors.syntaxRules)}>
-                <FieldLabel htmlFor='syntaxRules'>Syntax Rules</FieldLabel>
+                <FieldLabel>Syntax Rules</FieldLabel>
 
-                <Textarea
-                  id='syntaxRules'
+                <AdminSyntaxRulesSelect
                   value={syntaxRules}
-                  onChange={(event) => {
-                    setSyntaxRules(event.target.value);
+                  onChange={(value) => {
+                    setSyntaxRules(value);
                     setErrors((prev) => ({
                       ...prev,
                       syntaxRules: undefined,
                     }));
                   }}
-                  className='min-h-40 font-mono text-sm'
-                  aria-invalid={Boolean(errors.syntaxRules)}
                 />
 
                 {errors.syntaxRules ? (
                   <FieldError>{errors.syntaxRules}</FieldError>
                 ) : (
                   <FieldDescription>
-                    JSON format. Example: {'{ "required": ["IfStatement"] }'}
+                    Choose a preset to control required or forbidden JavaScript
+                    syntax.
                   </FieldDescription>
                 )}
               </Field>

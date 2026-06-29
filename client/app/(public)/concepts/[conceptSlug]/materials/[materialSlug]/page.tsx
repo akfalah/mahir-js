@@ -89,13 +89,13 @@ export default async function MaterialDetailPage({ params }: Props) {
             Part {material.order} of {materials.length}
           </Badge>
         </div>
+      </section>
 
+      <article className='flex flex-col gap-y-8 rounded-3xl border bg-card p-6 shadow-sm md:p-8'>
         <h1 className='text-3xl md:text-5xl font-bold tracking-tight'>
           {material.title}
         </h1>
-      </section>
-
-      <article className='rounded-3xl border bg-card p-6 shadow-sm md:p-8'>
+        
         <MaterialContent content={material.content} />
       </article>
 

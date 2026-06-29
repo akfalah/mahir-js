@@ -1,4 +1,6 @@
-import { ReactNode } from 'react';
+import { CSSProperties, ReactNode } from 'react';
+
+import { cn } from '@/lib/utils';
 
 import {
   Drawer,
@@ -8,12 +10,23 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 
+type DrawerSize = 'md' | 'lg' | 'xl' | 'full';
+
 type Props = {
   open: boolean;
   title: string;
   description: string;
   children: ReactNode;
+  size?: DrawerSize;
+  className?: string;
   onOpenChange: (open: boolean) => void;
+};
+
+const drawerWidth: Record<DrawerSize, string> = {
+  md: 'min(100vw, 36rem)',
+  lg: 'min(100vw, 48rem)',
+  xl: 'min(100vw, 72rem)',
+  full: '100vw',
 };
 
 export default function AdminDrawer({
@@ -21,6 +34,8 @@ export default function AdminDrawer({
   title,
   description,
   children,
+  size = 'md',
+  className,
   onOpenChange,
 }: Props) {
   return (
@@ -29,7 +44,18 @@ export default function AdminDrawer({
       onOpenChange={onOpenChange}
       direction='right'
     >
-      <DrawerContent className='inset-x-auto bottom-auto right-0 top-0 flex h-dvh max-h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-l p-0'>
+      <DrawerContent
+        className={cn(
+          'right-0 top-0 flex h-dvh max-h-dvh flex-col overflow-hidden rounded-none border-l p-0',
+          className,
+        )}
+        style={
+          {
+            width: drawerWidth[size],
+            maxWidth: '100vw',
+          } as CSSProperties
+        }
+      >
         <DrawerHeader className='shrink-0 border-b'>
           <DrawerTitle>{title}</DrawerTitle>
           <DrawerDescription>{description}</DrawerDescription>

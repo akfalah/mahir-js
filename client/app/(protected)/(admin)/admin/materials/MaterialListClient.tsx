@@ -57,6 +57,7 @@ import AdminDrawer from '@/components/shared/AdminDrawer';
 import AdminPageHeader from '@/components/shared/AdminPageHeader';
 import AdminPagination from '@/components/shared/AdminPagination';
 import AdminStatusMessage from '@/components/shared/AdminStatusMessage';
+import AdminTextEditor from '@/components/shared/AdminTextEditor';
 import AdminToolbar from '@/components/shared/AdminToolbar';
 
 type DrawerMode = 'create' | 'edit' | null;
@@ -268,14 +269,22 @@ export default function MaterialListClient() {
     }
 
     try {
-      const payload = validationResult.data;
+      const values = validationResult.data;
 
       if (drawerMode === 'create') {
-        await resource.createItem(payload);
+        await resource.createItem(values);
         resource.setMessage('Material created successfully.');
       }
 
       if (drawerMode === 'edit' && selectedMaterial) {
+        const payload = {
+          title: values.title,
+          slug: values.slug,
+          description: values.description,
+          content: values.content,
+          order: values.order,
+        };
+
         await resource.updateItem(selectedMaterial.id, payload);
         resource.setMessage('Material updated successfully.');
       }
@@ -648,6 +657,7 @@ export default function MaterialListClient() {
 
                 <Select
                   value={conceptId || undefined}
+                  disabled={drawerMode === 'edit'}
                   onValueChange={(value) => {
                     setConceptId(value);
                     setErrors((prev) => ({
@@ -676,7 +686,9 @@ export default function MaterialListClient() {
                   <FieldError>{errors.conceptId}</FieldError>
                 ) : (
                   <FieldDescription>
-                    Choose the concept for this material.
+                    {drawerMode === 'edit'
+                      ? 'Concept cannot be changed after material is created.'
+                      : 'Choose the concept for this material.'}
                   </FieldDescription>
                 )}
               </Field>
@@ -766,28 +778,25 @@ export default function MaterialListClient() {
               </Field>
 
               <Field data-invalid={Boolean(errors.content)}>
-                <FieldLabel htmlFor='content'>Content</FieldLabel>
+                <FieldLabel>Content</FieldLabel>
 
-                <Textarea
-                  id='content'
+                <AdminTextEditor
                   value={content}
-                  onChange={(event) => {
-                    setContent(event.target.value);
+                  placeholder='Write the learning material content here...'
+                  onChange={(value) => {
+                    setContent(value);
                     setErrors((prev) => ({
                       ...prev,
                       content: undefined,
                     }));
                   }}
-                  placeholder='Write the learning material content here...'
-                  className='min-h-56 font-mono text-sm'
-                  aria-invalid={Boolean(errors.content)}
                 />
 
                 {errors.content ? (
                   <FieldError>{errors.content}</FieldError>
                 ) : (
                   <FieldDescription>
-                    Write the learning content. Plain text or Markdown is okay.
+                    Write formatted learning content for students.
                   </FieldDescription>
                 )}
               </Field>

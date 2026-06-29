@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+function getPlainTextFromHtml(value: string) {
+  return value
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+}
+
 export const materialSchema = z.object({
   conceptId: z.coerce
     .number()
@@ -17,11 +24,17 @@ export const materialSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(3, 'Description must be at least 3 characters.'),
-  content: z.string().trim().min(3, 'Content must be at least 3 characters.'),
+    .min(10, 'Description must be at least 10 characters.'),
+
+  content: z
+    .string()
+    .min(1, 'Content is required.')
+    .refine((value) => getPlainTextFromHtml(value).length >= 3, {
+      message: 'Content must contain at least 3 readable characters.',
+    }),
+
   order: z.coerce
     .number()
     .int('Order must be an integer.')
     .min(1, 'Order must be at least 1.'),
-  isPublished: z.boolean(),
 });
