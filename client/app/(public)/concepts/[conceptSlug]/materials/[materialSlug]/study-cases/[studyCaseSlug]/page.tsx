@@ -80,13 +80,6 @@ export default async function StudyCaseDetailPage({ params }: Props) {
           >
             Challenge {studyCase.order}
           </Badge>
-
-          <Badge
-            variant='outline'
-            className='w-fit rounded-full px-3 py-1'
-          >
-            TDD Practice
-          </Badge>
         </div>
 
         <div className='flex flex-col gap-y-3'>

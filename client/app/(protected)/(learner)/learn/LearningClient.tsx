@@ -6,10 +6,8 @@ import Link from 'next/link';
 import {
   BookOpenCheck,
   CheckCircle2,
-  Circle,
   Code2,
   Layers3,
-  Play,
   Trophy,
 } from 'lucide-react';
 
@@ -44,7 +42,7 @@ type LearningDashboard = {
 type ContinueTarget = {
   concept: Concept;
   material: Material;
-  studyCase: StudyCase;
+  nextStudyCase: StudyCase | null;
   href: string;
 };
 
@@ -54,6 +52,7 @@ type MaterialGroup = {
   completedStudyCases: number;
   totalStudyCases: number;
   isCompleted: boolean;
+  href: string;
 };
 
 type ConceptGroup = {
@@ -65,12 +64,8 @@ type ConceptGroup = {
   isCompleted: boolean;
 };
 
-function buildStudyCaseHref(
-  concept: Concept,
-  material: Material,
-  studyCase: StudyCase,
-) {
-  return `/concepts/${concept.slug}/materials/${material.slug}/study-cases/${studyCase.slug}`;
+function buildMaterialHref(concept: Concept, material: Material) {
+  return `/concepts/${concept.slug}/materials/${material.slug}`;
 }
 
 function MyLearningSkeleton() {
@@ -236,6 +231,7 @@ export default function LearningClient() {
           completedStudyCases,
           totalStudyCases: materialStudyCases.length,
           isCompleted: completedMaterialIds.has(material.id),
+          href: buildMaterialHref(concept, material),
         };
       });
 
@@ -281,25 +277,28 @@ export default function LearningClient() {
       );
 
       for (const material of conceptMaterials) {
-        const materialStudyCases = dashboard.studyCases.filter(
-          (studyCase) => studyCase.materialId === material.id,
-        );
+        if (!completedMaterialIds.has(material.id)) {
+          const materialStudyCases = dashboard.studyCases.filter(
+            (studyCase) => studyCase.materialId === material.id,
+          );
 
-        for (const studyCase of materialStudyCases) {
-          if (!completedStudyCaseIds.has(studyCase.id)) {
-            return {
-              concept,
-              material,
-              studyCase,
-              href: buildStudyCaseHref(concept, material, studyCase),
-            };
-          }
+          const nextStudyCase =
+            materialStudyCases.find(
+              (studyCase) => !completedStudyCaseIds.has(studyCase.id),
+            ) ?? null;
+
+          return {
+            concept,
+            material,
+            nextStudyCase,
+            href: buildMaterialHref(concept, material),
+          };
         }
       }
     }
 
     return null;
-  }, [completedStudyCaseIds, dashboard]);
+  }, [completedMaterialIds, completedStudyCaseIds, dashboard]);
 
   if (!hasHydrated || isLoading) {
     return <MyLearningSkeleton />;
@@ -354,8 +353,8 @@ export default function LearningClient() {
           </h1>
 
           <p className='text-base md:text-lg leading-relaxed text-muted-foreground'>
-            Lanjutkan latihan dari study case berikutnya dan lihat progres
-            belajar Anda berdasarkan konsep.
+            Pelajari materi konsep terlebih dahulu, lalu lanjutkan ke study case
+            untuk menguji pemahaman melalui automated grading.
           </p>
         </div>
       </section>
@@ -405,27 +404,39 @@ export default function LearningClient() {
                   {continueTarget ? (
                     <div className='flex flex-col gap-y-3'>
                       <h2 className='text-2xl md:text-4xl font-bold tracking-tight'>
-                        {continueTarget.studyCase.title}
+                        {continueTarget.material.title}
                       </h2>
 
                       <p className='max-w-2xl leading-relaxed text-muted-foreground'>
-                        Anda sedang berada di materi{' '}
+                        Anda sedang berada pada konsep{' '}
                         <span className='font-medium text-foreground'>
-                          {continueTarget.material.title}
+                          {continueTarget.concept.title}
                         </span>
-                        . Lanjutkan study case berikutnya untuk meneruskan
-                        progres belajar.
+                        . Baca dan pahami materi terlebih dahulu sebelum
+                        mengerjakan study case.
                       </p>
+
+                      {continueTarget.nextStudyCase && (
+                        <div className='rounded-2xl border bg-background/70 p-4'>
+                          <p className='text-sm font-medium text-foreground'>
+                            Next practice after reading
+                          </p>
+
+                          <p className='pt-1 text-sm text-muted-foreground'>
+                            {continueTarget.nextStudyCase.title}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className='flex flex-col gap-y-3'>
                       <h2 className='text-2xl md:text-4xl font-bold tracking-tight'>
-                        All challenges completed.
+                        All materials completed.
                       </h2>
 
                       <p className='max-w-2xl leading-relaxed text-muted-foreground'>
-                        Semua study case yang tersedia sudah selesai. Anda bisa
-                        membuka kembali konsep untuk melakukan review.
+                        Semua materi dan study case yang tersedia sudah selesai.
+                        Anda bisa membuka kembali konsep untuk melakukan review.
                       </p>
                     </div>
                   )}
@@ -438,8 +449,8 @@ export default function LearningClient() {
                       className='gap-2'
                     >
                       <Link href={continueTarget.href}>
-                        Continue Practice
-                        <Play className='size-4' />
+                        Continue Reading
+                        <BookOpenCheck className='size-4' />
                       </Link>
                     </Button>
                   ) : (
@@ -574,25 +585,27 @@ export default function LearningClient() {
                         key={materialGroup.material.id}
                         className='rounded-2xl border bg-card p-4 md:p-5'
                       >
-                        <div className='flex flex-col gap-y-4'>
-                          <div className='flex flex-col gap-y-2 md:flex-row md:items-center md:justify-between'>
-                            <div className='flex items-center gap-3'>
-                              <div className='flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground'>
-                                <BookOpenCheck className='size-5' />
-                              </div>
-
-                              <div className='flex flex-col'>
-                                <p className='font-semibold'>
-                                  {materialGroup.material.title}
-                                </p>
-
-                                <p className='text-sm text-muted-foreground'>
-                                  {materialGroup.completedStudyCases} of{' '}
-                                  {materialGroup.totalStudyCases} study cases
-                                </p>
-                              </div>
+                        <div className='flex flex-col gap-y-4 md:flex-row md:items-center md:justify-between'>
+                          <div className='flex items-center gap-3'>
+                            <div className='flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground'>
+                              <BookOpenCheck className='size-5' />
                             </div>
 
+                            <div className='flex flex-col gap-y-1'>
+                              <p className='font-semibold'>
+                                {materialGroup.material.title}
+                              </p>
+
+                              <p className='text-sm text-muted-foreground'>
+                                Read material first, then continue to{' '}
+                                {materialGroup.totalStudyCases} study case
+                                {materialGroup.totalStudyCases === 1 ? '' : 's'}
+                                .
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className='flex flex-wrap items-center gap-2'>
                             <Badge
                               variant={
                                 materialGroup.isCompleted
@@ -603,67 +616,26 @@ export default function LearningClient() {
                             >
                               {materialGroup.isCompleted
                                 ? 'Completed'
-                                : 'In Progress'}
+                                : 'Read First'}
                             </Badge>
-                          </div>
 
-                          <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-                            {materialGroup.studyCases.map((studyCase) => {
-                              const isCompleted = completedStudyCaseIds.has(
-                                studyCase.id,
-                              );
-
-                              const href = buildStudyCaseHref(
-                                conceptGroup.concept,
-                                materialGroup.material,
-                                studyCase,
-                              );
-
-                              return (
-                                <Link
-                                  key={studyCase.id}
-                                  href={href}
-                                  className='group rounded-2xl border p-4 transition-all hover:border-primary/50 hover:bg-primary/5'
-                                >
-                                  <div className='flex items-start justify-between gap-4'>
-                                    <div className='flex items-start gap-3'>
-                                      <div
-                                        className={
-                                          isCompleted
-                                            ? 'flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground'
-                                            : 'flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground'
-                                        }
-                                      >
-                                        {isCompleted ? (
-                                          <CheckCircle2 className='size-4' />
-                                        ) : (
-                                          <Circle className='size-4' />
-                                        )}
-                                      </div>
-
-                                      <div className='flex flex-col gap-y-1'>
-                                        <p className='font-medium transition-colors group-hover:text-primary'>
-                                          {studyCase.title}
-                                        </p>
-
-                                        <p className='line-clamp-2 text-sm leading-relaxed text-muted-foreground'>
-                                          {studyCase.description}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    <Badge
-                                      variant={
-                                        isCompleted ? 'default' : 'secondary'
-                                      }
-                                      className='shrink-0'
-                                    >
-                                      {isCompleted ? 'Done' : 'Start'}
-                                    </Badge>
-                                  </div>
-                                </Link>
-                              );
-                            })}
+                            <Button
+                              asChild
+                              size='sm'
+                              variant={
+                                materialGroup.isCompleted
+                                  ? 'secondary'
+                                  : 'default'
+                              }
+                              className='gap-2'
+                            >
+                              <Link href={materialGroup.href}>
+                                {materialGroup.isCompleted
+                                  ? 'Review Material'
+                                  : 'Read Material'}
+                                <BookOpenCheck className='size-4' />
+                              </Link>
+                            </Button>
                           </div>
                         </div>
                       </div>
