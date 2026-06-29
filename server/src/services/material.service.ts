@@ -16,6 +16,11 @@ import {
   UpdateMaterialRequest,
 } from '../models/material.model';
 
+import {
+  getPlainTextFromHtml,
+  sanitizeMaterialContent,
+} from '../utils/sanitize-material-content';
+
 export class MaterialService {
   static async getMaterials(
     user: JwtPayload | undefined,
@@ -100,7 +105,16 @@ export class MaterialService {
     if (slugExists) throw new ResponseError(400, 'Slug already exists');
     if (orderExists) throw new ResponseError(400, 'Order already exists');
 
-    const material = await prisma.material.create({ data });
+    const cleanContent = sanitizeMaterialContent(data.content);
+    const plainTextContent = getPlainTextFromHtml(cleanContent);
+
+    if (plainTextContent.length < 3) {
+      throw new ResponseError(400, 'Material content is too short.');
+    }
+
+    const material = await prisma.material.create({
+      data: { ...data, content: cleanContent },
+    });
 
     return toMaterialResponse(material);
   }
@@ -131,7 +145,23 @@ export class MaterialService {
       if (orderExists) throw new ResponseError(400, 'Order already exists');
     }
 
-    const material = await prisma.material.update({ where: { id }, data });
+    const cleanContent =
+      data.content !== undefined
+        ? sanitizeMaterialContent(data.content)
+        : undefined;
+
+    if (cleanContent !== undefined) {
+      const plainTextContent = getPlainTextFromHtml(cleanContent);
+
+      if (plainTextContent.length < 3) {
+        throw new ResponseError(400, 'Material content is too short.');
+      }
+    }
+
+    const material = await prisma.material.update({
+      where: { id },
+      data: { ...data, content: cleanContent },
+    });
 
     return toMaterialResponse(material);
   }
