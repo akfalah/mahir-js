@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
-  Code2,
   Lightbulb,
   LockKeyhole,
   RotateCcw,
@@ -710,11 +709,7 @@ export default function StudyCaseEditor({
             </div>
 
             {isFetchingTests ? (
-              <div className='flex flex-col gap-y-3'>
-                <Skeleton className='h-32 w-full rounded-2xl' />
-                <Skeleton className='h-32 w-full rounded-2xl' />
-                <Skeleton className='h-32 w-full rounded-2xl' />
-              </div>
+              <Skeleton className='h-32 w-full rounded-2xl' />
             ) : displayedTestCases.length > 0 ? (
               <div className='flex flex-col gap-y-3'>
                 <section className='flex flex-col gap-y-4'>
@@ -793,22 +788,8 @@ export default function StudyCaseEditor({
       </section>
 
       <section className='flex min-w-0 flex-col rounded-3xl border bg-card shadow-sm'>
-        <Card className='flex min-h-[calc(100dvh-9rem)] flex-col overflow-hidden rounded-3xl border-0 shadow-none'>
-          <CardHeader className='flex flex-row items-center justify-between gap-4 border-b bg-muted/30 p-4 md:p-5'>
-            <div className='flex items-center gap-3'>
-              <div className='flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
-                <Code2 className='size-5' />
-              </div>
-
-              <div className='flex flex-col gap-y-1'>
-                <p className='text-sm font-semibold'>Code Editor</p>
-
-                <p className='text-xs text-muted-foreground'>
-                  JavaScript function solution
-                </p>
-              </div>
-            </div>
-
+        <Card className='flex flex-col overflow-hidden rounded-3xl border-0 shadow-none'>
+          <CardHeader className='flex items-center justify-end gap-4 border-b p-4 md:p-5'>
             <div className='flex items-center gap-2'>
               <Badge variant='outline'>JavaScript</Badge>
 
