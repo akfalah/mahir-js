@@ -9,7 +9,7 @@ import {
 
 import PublicBreadcrumb from '@/components/shared/PublicBreadcrumb';
 
-import StudyCaseEditor from './StudyCaseEditor';
+import StudyCaseEditor from './components/StudyCaseEditor';
 
 type Props = {
   params: Promise<{
