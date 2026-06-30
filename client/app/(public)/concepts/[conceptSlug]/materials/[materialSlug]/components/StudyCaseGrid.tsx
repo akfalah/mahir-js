@@ -1,9 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-
-import { ArrowRight } from 'lucide-react';
 
 import api from '@/lib/api';
 
@@ -11,9 +8,7 @@ import { useAuthStore } from '@/stores/use-auth-store';
 
 import { Concept, Material, StudyCase, StudyCaseProgress } from '@/types';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import PublicLearningCard from '@/components/shared/PublicLearningCard';
 
 type Props = {
   concept: Concept;
@@ -28,6 +23,9 @@ export default function StudyCaseGrid({
 }: Props) {
   const { user, hasHydrated } = useAuthStore();
 
+  const userRole = user?.role;
+  const shouldShowProgress = hasHydrated && userRole === 'STUDENT';
+
   const [studyCaseProgresses, setStudyCaseProgresses] = useState<
     StudyCaseProgress[]
   >([]);
@@ -36,7 +34,7 @@ export default function StudyCaseGrid({
     let isActive = true;
 
     const fetchStudyCaseProgresses = async () => {
-      if (!hasHydrated || !user) {
+      if (!hasHydrated || userRole !== 'STUDENT') {
         return;
       }
 
@@ -64,7 +62,7 @@ export default function StudyCaseGrid({
     return () => {
       isActive = false;
     };
-  }, [hasHydrated, user]);
+  }, [hasHydrated, userRole]);
 
   const completedStudyCaseIds = useMemo(() => {
     return new Set(
@@ -75,60 +73,34 @@ export default function StudyCaseGrid({
   }, [studyCaseProgresses]);
 
   return (
-    <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+    <section className='grid grid-cols-1 items-stretch gap-4 md:grid-cols-2'>
       {studyCases.map((studyCase, index) => {
-        const isCompleted = completedStudyCaseIds.has(studyCase.id);
+        const isCompleted =
+          shouldShowProgress && completedStudyCaseIds.has(studyCase.id);
 
         return (
-          <Card
+          <PublicLearningCard
             key={studyCase.id}
-            className='group flex h-full flex-col shadow-sm transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-md'
-          >
-            <CardContent className='flex flex-1 flex-col gap-y-4 p-4 md:p-5'>
-              <div className='flex items-center justify-between gap-3'>
-                <Badge
-                  variant='outline'
-                  className='rounded-full'
-                >
-                  Challenge {index + 1}
-                </Badge>
-
-                <Badge
-                  variant={isCompleted ? 'default' : 'secondary'}
-                  className='rounded-full'
-                >
-                  {isCompleted ? 'Passed' : 'Practice'}
-                </Badge>
-              </div>
-
-              <div className='flex flex-col gap-y-2'>
-                <h3 className='text-lg font-bold tracking-tight transition-colors group-hover:text-primary'>
-                  {studyCase.title}
-                </h3>
-
-                <p className='line-clamp-3 text-sm leading-relaxed text-muted-foreground'>
-                  {studyCase.description}
-                </p>
-              </div>
-            </CardContent>
-
-            <CardFooter className='p-4 md:p-5'>
-              <Button
-                asChild
-                variant={isCompleted ? 'secondary' : 'default'}
-                className='w-full gap-2'
-              >
-                <Link
-                  href={`/concepts/${concept.slug}/materials/${material.slug}/study-cases/${studyCase.slug}`}
-                >
-                  {isCompleted ? 'Review Solution' : 'Start Practice'}
-                  <ArrowRight className='size-4' />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
+            title={studyCase.title}
+            description={studyCase.description}
+            href={`/concepts/${concept.slug}/materials/${material.slug}/study-cases/${studyCase.slug}`}
+            actionLabel={isCompleted ? 'Review Solution' : 'Start Practice'}
+            actionVariant={isCompleted ? 'secondary' : 'default'}
+            primaryBadge={{
+              label: `Challenge ${index + 1}`,
+              variant: 'outline',
+            }}
+            secondaryBadge={
+              shouldShowProgress
+                ? {
+                    label: isCompleted ? 'Passed' : 'Practice',
+                    variant: isCompleted ? 'default' : 'secondary',
+                  }
+                : undefined
+            }
+          />
         );
       })}
-    </div>
+    </section>
   );
 }
