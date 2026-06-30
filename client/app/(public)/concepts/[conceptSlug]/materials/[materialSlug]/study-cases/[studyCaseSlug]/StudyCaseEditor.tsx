@@ -6,17 +6,23 @@ import Editor from '@monaco-editor/react';
 
 import {
   AlertCircle,
+  BookOpenCheck,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Circle,
   Code2,
   Lightbulb,
+  LockKeyhole,
   RotateCcw,
   Send,
   TestTube2,
   XCircle,
 } from 'lucide-react';
+
+import api from '@/lib/api';
+
+import { useAuthStore } from '@/stores/use-auth-store';
 
 import {
   ApiResponse,
@@ -30,15 +36,17 @@ import {
   TestResultStatus,
 } from '@/types';
 
-import api from '@/lib/api';
-
-import { useAuthStore } from '@/stores/use-auth-store';
-
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type DisplayedTestStatus = TestResultStatus | 'PENDING';
@@ -47,9 +55,10 @@ type DisplayedTestCase = {
   id: number;
   description: string;
   status: DisplayedTestStatus;
+  input: string;
   expected: string;
   received?: string | null;
-  failureMessage?: string | null;
+  whatToCheck?: string | null;
 };
 
 type Props = {
@@ -72,12 +81,152 @@ function stringifyValue(value: unknown) {
   }
 }
 
+function formatCaseValue(value: unknown) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const entries = Object.entries(value as Record<string, unknown>);
+
+    if (entries.length === 1) {
+      return stringifyValue(entries[0][1]);
+    }
+
+    return entries
+      .map(([key, item]) => `${key}: ${stringifyValue(item)}`)
+      .join(', ');
+  }
+
+  return stringifyValue(value);
+}
+
+function formatInputValue(value: unknown) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const entries = Object.entries(value as Record<string, unknown>);
+
+    return entries
+      .map(([key, item]) => `${key}: ${stringifyValue(item)}`)
+      .join(', ');
+  }
+
+  return stringifyValue(value);
+}
+
+function cleanFailureMessage(message?: string | null) {
+  return (message ?? '')
+    .replace(/\x1b\[[0-9;]*m/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseOutputValue(value?: unknown) {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return trimmedValue;
+  }
+
+  try {
+    return JSON.parse(trimmedValue);
+  } catch {
+    return trimmedValue;
+  }
+}
+
+function getValueType(value: unknown) {
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+
+  if (value === null) {
+    return 'null';
+  }
+
+  return typeof value;
+}
+
+function getDynamicWhatToCheck({
+  status,
+  expected,
+  received,
+  failureMessage,
+}: {
+  status?: TestResultStatus;
+  expected?: unknown;
+  received?: unknown;
+  failureMessage?: string | null;
+}) {
+  if (!status || status === 'PASSED') {
+    return null;
+  }
+
+  const cleanMessage = cleanFailureMessage(failureMessage);
+  const parsedExpected = parseOutputValue(expected);
+  const parsedReceived = parseOutputValue(received);
+  const expectedType = getValueType(parsedExpected);
+
+  if (status === 'ERROR') {
+    if (cleanMessage.includes('SyntaxError')) {
+      return 'Your code has a syntax error. Check missing brackets, parentheses, keywords, or symbols.';
+    }
+
+    if (cleanMessage.includes('ReferenceError')) {
+      return 'Your code uses a variable or function that has not been defined. Check the spelling of your variable or function name.';
+    }
+
+    if (cleanMessage.includes('TypeError')) {
+      return 'Your code uses a value in the wrong way. Check the data type, function call, or returned value.';
+    }
+
+    if (cleanMessage.toLowerCase().includes('timeout')) {
+      return 'Your code took too long to run. Check whether your loop condition can stop correctly.';
+    }
+
+    return 'Your code could not run correctly. Check your syntax, function structure, and returned value.';
+  }
+
+  if (parsedReceived === undefined || parsedReceived === 'undefined') {
+    return 'Your function did not return a value. Make sure you use return and return the expected result.';
+  }
+
+  if (parsedReceived === null || parsedReceived === 'null') {
+    return 'Your function returned null. Check your condition or default return value.';
+  }
+
+  if (expectedType === 'boolean') {
+    return 'Your boolean result is not correct. Check the condition and make sure it returns true or false in the right case.';
+  }
+
+  if (expectedType === 'number') {
+    return 'Your number result is not correct. Check your calculation, operator, initial value, or loop process.';
+  }
+
+  if (expectedType === 'string') {
+    return 'Your text result is not correct. Check spelling, capitalization, spacing, or the condition that returns the text.';
+  }
+
+  if (expectedType === 'array') {
+    return 'Your array result is not correct. Check the item order, loop boundaries, and how you add values to the array.';
+  }
+
+  if (expectedType === 'object') {
+    return 'Your object result is not correct. Check the property names, property values, and returned object structure.';
+  }
+
+  return 'Your result is different from the expected output. Review your logic and return value.';
+}
+
 function getStudyCaseHint(studyCase: StudyCase) {
   if (studyCase.hint) {
     return studyCase.hint;
   }
 
-  return 'Start with the simplest solution. Run the test first, read the result, then improve your code step by step.';
+  return 'Read the task carefully, start with a simple solution, run the test, then improve your code step by step.';
 }
 
 function getTestCaseStatusStyle(status: DisplayedTestStatus = 'PENDING') {
@@ -85,15 +234,15 @@ function getTestCaseStatusStyle(status: DisplayedTestStatus = 'PENDING') {
     return {
       label: 'Passed',
       icon: CheckCircle2,
-      className: 'border-green-300 bg-green-100 text-green-800',
+      className: 'border-green-200 bg-green-50 text-green-800',
     };
   }
 
   if (status === 'FAILED') {
     return {
-      label: 'Failed',
+      label: 'Needs Fix',
       icon: XCircle,
-      className: 'border-red-300 bg-red-100 text-red-800',
+      className: 'border-red-200 bg-red-50 text-red-800',
     };
   }
 
@@ -101,15 +250,97 @@ function getTestCaseStatusStyle(status: DisplayedTestStatus = 'PENDING') {
     return {
       label: 'Error',
       icon: AlertCircle,
-      className: 'border-orange-300 bg-orange-100 text-orange-800',
+      className: 'border-orange-200 bg-orange-50 text-orange-800',
     };
   }
 
   return {
     label: 'Not Tested',
     icon: Circle,
-    className: 'border-border bg-muted/40 text-muted-foreground',
+    className: 'border-border bg-muted/30 text-muted-foreground',
   };
+}
+
+function TestCaseFeedbackCard({
+  testCase,
+  index,
+}: {
+  testCase: DisplayedTestCase;
+  index: number;
+}) {
+  const statusStyle = getTestCaseStatusStyle(testCase.status);
+  const Icon = statusStyle.icon;
+
+  return (
+    <div className={`rounded-2xl border p-4 ${statusStyle.className}`}>
+      <div className='flex flex-col gap-y-4'>
+        <div className='flex items-start justify-between gap-4'>
+          <div className='flex items-start gap-3'>
+            <Icon className='size-5 shrink-0' />
+
+            <div className='flex flex-col gap-y-1'>
+              <p className='text-sm font-semibold'>Checkpoint {index + 1}</p>
+
+              <p className='text-sm leading-relaxed opacity-90'>
+                {testCase.description}
+              </p>
+            </div>
+          </div>
+
+          <Badge
+            variant='outline'
+            className='shrink-0 bg-background/70'
+          >
+            {statusStyle.label}
+          </Badge>
+        </div>
+
+        <div className='grid gap-3 rounded-xl bg-background/70 p-3 text-sm'>
+          <div className='flex flex-col gap-y-1'>
+            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+              Input
+            </p>
+
+            <p className='rounded-lg bg-background p-2 font-medium'>
+              {testCase.input}
+            </p>
+          </div>
+
+          <div className='flex flex-col gap-y-1'>
+            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+              Expected
+            </p>
+
+            <p className='rounded-lg bg-background p-2 font-medium'>
+              {testCase.expected}
+            </p>
+          </div>
+
+          {testCase.status !== 'PENDING' && (
+            <div className='flex flex-col gap-y-1'>
+              <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+                Received
+              </p>
+
+              <p className='rounded-lg bg-background p-2 font-medium'>
+                {testCase.received ?? 'No output received'}
+              </p>
+            </div>
+          )}
+
+          {testCase.whatToCheck && (
+            <div className='rounded-lg bg-muted/60 p-3'>
+              <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+                What to check
+              </p>
+
+              <p className='pt-1 leading-relaxed'>{testCase.whatToCheck}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function wait(ms: number) {
@@ -155,6 +386,9 @@ export default function StudyCaseEditor({
   const { user, hasHydrated } = useAuthStore();
   const hasUserEditedCode = useRef(false);
 
+  const userId = user?.id;
+  const userRole = user?.role;
+
   const [code, setCode] = useState(starterCode);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [results, setResults] = useState<TestResult[]>([]);
@@ -162,6 +396,8 @@ export default function StudyCaseEditor({
   const [isTesting, setIsTesting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const canInteract = hasHydrated && userRole === 'STUDENT';
 
   const resultMap = useMemo(() => {
     return new Map(results.map((result) => [result.testCaseId, result]));
@@ -174,11 +410,19 @@ export default function StudyCaseEditor({
       id: testCase.id,
       description: result?.description ?? testCase.description,
       status: result?.status ?? 'PENDING',
-      expected: result?.expected ?? stringifyValue(testCase.expected),
+      input: formatInputValue(testCase.input),
+      expected: formatCaseValue(result?.expected ?? testCase.expected),
       received: result?.received,
-      failureMessage: result?.failureMessage,
+      whatToCheck: getDynamicWhatToCheck({
+        status: result?.status,
+        expected: result?.expected ?? testCase.expected,
+        received: result?.received,
+        failureMessage: result?.failureMessage,
+      }),
     };
   });
+
+  const sampleTestCase = displayedTestCases[0] ?? null;
 
   const totalTests = displayedTestCases.length;
 
@@ -186,10 +430,53 @@ export default function StudyCaseEditor({
     (testCase) => testCase.status === 'PASSED',
   ).length;
 
+  const failedCount = displayedTestCases.filter(
+    (testCase) => testCase.status === 'FAILED',
+  ).length;
+
+  const errorCount = displayedTestCases.filter(
+    (testCase) => testCase.status === 'ERROR',
+  ).length;
+
   const progress = totalTests > 0 ? (passedCount / totalTests) * 100 : 0;
 
   const hasResults = results.length > 0;
   const allPassed = hasResults && totalTests > 0 && passedCount === totalTests;
+
+  const isProcessingResult = isTesting || isSubmitting;
+
+  const feedbackContent = useMemo(() => {
+    if (!message) {
+      return null;
+    }
+
+    if (allPassed) {
+      return {
+        title: 'All checks passed',
+        description:
+          'Nice work. Review your code and simplify it if needed. If you make changes, run the test again before submitting.',
+        className: 'border-green-200 bg-green-50 text-green-800',
+        icon: CheckCircle2,
+      };
+    }
+
+    if (hasResults) {
+      return {
+        title: 'Keep improving your solution',
+        description:
+          'Some checks still need attention. Compare the expected and received results, then update your code.',
+        className: 'border-orange-200 bg-orange-50 text-orange-900',
+        icon: AlertCircle,
+      };
+    }
+
+    return {
+      title: 'Notice',
+      description: message,
+      className: '',
+      icon: AlertCircle,
+    };
+  }, [allPassed, hasResults, message]);
 
   useEffect(() => {
     const fetchTestCases = async () => {
@@ -213,7 +500,7 @@ export default function StudyCaseEditor({
     let isActive = true;
 
     const fetchLatestPassedSubmission = async () => {
-      if (!hasHydrated || !user) {
+      if (!hasHydrated || !userId || userRole !== 'STUDENT') {
         return;
       }
 
@@ -224,7 +511,7 @@ export default function StudyCaseEditor({
           sortBy: 'createdAt',
           orderBy: 'desc',
           limit: '1',
-          userId: String(user.id),
+          userId: String(userId),
         });
 
         const res = await api.get<ApiResponse<Submission[]>>(
@@ -250,10 +537,10 @@ export default function StudyCaseEditor({
         setCode(completedSubmission.code);
         setResults(completedSubmission.testResults ?? []);
         setMessage(
-          'You have completed this challenge. Your submitted code is loaded.',
+          'You have completed this study case. Your submitted code is loaded for review.',
         );
       } catch {
-        // tetap pakai starterCode
+        // Keep starter code.
       }
     };
 
@@ -262,7 +549,7 @@ export default function StudyCaseEditor({
     return () => {
       isActive = false;
     };
-  }, [hasHydrated, studyCase.id, user]);
+  }, [hasHydrated, studyCase.id, userId, userRole]);
 
   const handleReset = () => {
     hasUserEditedCode.current = true;
@@ -272,6 +559,11 @@ export default function StudyCaseEditor({
   };
 
   const handleRunTest = async () => {
+    if (!canInteract) {
+      setMessage('Please sign in as a student to run the test.');
+      return;
+    }
+
     setIsTesting(true);
     setMessage(null);
 
@@ -289,7 +581,9 @@ export default function StudyCaseEditor({
       setResults(data.testResults ?? []);
 
       if (data.status === 'PASSED') {
-        setMessage('Great! All tests passed. You can submit your answer now.');
+        setMessage(
+          'All tests passed. Review your code and run the test again if you make changes.',
+        );
       } else {
         setMessage(
           'Some tests are still failing. Read the feedback and improve your code.',
@@ -303,6 +597,11 @@ export default function StudyCaseEditor({
   };
 
   const handleSubmit = async () => {
+    if (!canInteract) {
+      setMessage('Please sign in as a student to submit your answer.');
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage('Your answer is being submitted and tested. Please wait...');
 
@@ -313,15 +612,18 @@ export default function StudyCaseEditor({
       });
 
       const submission = res.data.data;
-
       const submissionResult = await getSubmissionResult(submission.id);
 
       setResults(submissionResult.testResults ?? []);
 
       if (submissionResult.status === 'PASSED') {
-        setMessage('Excellent! Your answer has been submitted successfully.');
+        setMessage(
+          'Excellent. Your answer has been submitted successfully. You can continue when you are ready.',
+        );
       } else if (submissionResult.status === 'FAILED') {
-        setMessage('Your answer was submitted, but some tests still failed.');
+        setMessage(
+          'Your answer was submitted, but some checks still need attention.',
+        );
       } else {
         setMessage(
           submissionResult.errorMessage ||
@@ -336,281 +638,424 @@ export default function StudyCaseEditor({
   };
 
   return (
-    <div className='grid gap-6 lg:grid-cols-[1fr_420px]'>
-      <section className='flex flex-col gap-y-4'>
-        <Card>
-          <CardContent className='flex flex-col gap-y-4 p-6'>
-            <div className='flex flex-wrap gap-2'>
-              <Badge variant='outline'>Your Task</Badge>
+    <div className='grid min-h-[calc(100dvh-9rem)] gap-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]'>
+      <section className='flex min-w-0 h-fit flex-col overflow-hidden rounded-3xl border bg-card shadow-sm'>
+        <div className='flex flex-1 flex-col gap-y-8 overflow-y-auto p-5 md:p-7'>
+          <section className='flex flex-col gap-y-4'>
+            <div className='flex flex-wrap items-center gap-2'>
+              <Badge variant='secondary'>{concept.title}</Badge>
+
+              <Badge variant='outline'>{material.title}</Badge>
             </div>
 
-            <div className='flex flex-col gap-y-2'>
-              <h2 className='text-xl font-bold tracking-tight'>
-                Write your solution
-              </h2>
+            <div className='flex flex-col gap-y-3'>
+              <h1 className='text-2xl font-bold tracking-tight md:text-4xl'>
+                {studyCase.title}
+              </h1>
 
-              <p className='text-sm leading-relaxed text-muted-foreground'>
-                Write your code, run the tests, read the feedback, improve your
-                solution, and submit when you are ready.
+              <p className='text-sm leading-relaxed text-muted-foreground md:text-base'>
+                {studyCase.description}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </section>
 
-        <Card className='overflow-hidden'>
-          <CardHeader className='flex flex-row items-center justify-between gap-4 border-b p-4'>
-            <div className='flex items-center gap-3'>
-              <div className='flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
-                <Code2 className='size-5' />
-              </div>
+          <section className='flex flex-col gap-y-3'>
+            <h2 className='text-lg font-bold tracking-tight'>
+              Function Description
+            </h2>
 
-              <div className='flex flex-col'>
-                <p className='text-sm font-semibold'>Code Editor</p>
-                <p className='text-xs text-muted-foreground'>
-                  Write your JavaScript function here.
-                </p>
-              </div>
+            <div className='rounded-2xl border bg-muted/30 p-4'>
+              <p className='text-sm leading-relaxed text-muted-foreground'>
+                Complete the{' '}
+                <code className='rounded bg-background px-1 py-0.5 font-mono text-foreground'>
+                  {studyCase.functionName || 'solution'}
+                </code>{' '}
+                function based on the task and checkpoints below.
+              </p>
+
+              {studyCase.parameterNames &&
+                studyCase.parameterNames.length > 0 && (
+                  <div className='flex flex-col gap-y-2 pt-4'>
+                    <p className='text-sm font-semibold'>Parameters</p>
+
+                    <ul className='flex flex-col gap-y-1 text-sm text-muted-foreground'>
+                      {studyCase.parameterNames.map((parameterName) => (
+                        <li key={parameterName}>
+                          <code className='rounded bg-background px-1 py-0.5 font-mono text-foreground'>
+                            {parameterName}
+                          </code>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
             </div>
+          </section>
 
-            <Badge variant={allPassed ? 'default' : 'secondary'}>
-              {hasResults
-                ? `${passedCount}/${totalTests} passed`
-                : 'Not tested'}
-            </Badge>
-          </CardHeader>
+          <Alert className='border-yellow-200 bg-yellow-50 text-yellow-950'>
+            <Lightbulb className='size-4' />
+            <AlertTitle>Hint</AlertTitle>
+            <AlertDescription className='leading-relaxed'>
+              {getStudyCaseHint(studyCase)}
+            </AlertDescription>
+          </Alert>
 
-          <Editor
-            height='440px'
-            language='javascript'
-            theme='light'
-            value={code}
-            onChange={(value) => {
-              hasUserEditedCode.current = true;
-              setCode(value || '');
-            }}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              lineNumbers: 'on',
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              tabSize: 2,
-            }}
-          />
-        </Card>
-
-        <Card>
-          <CardContent className='flex flex-col gap-y-4 p-6'>
-            <div className='flex flex-col gap-y-2'>
-              <div className='flex items-center justify-between gap-4 text-sm'>
-                <span className='font-medium'>Test progress</span>
-
-                <span className='text-muted-foreground'>
-                  {passedCount} of {totalTests} passed
-                </span>
-              </div>
-
-              <Progress value={progress} />
-            </div>
-
-            {message && (
-              <Alert
-                className={
-                  allPassed
-                    ? 'border-green-100 bg-green-50 text-green-800'
-                    : undefined
-                }
-              >
-                <AlertCircle className='size-4' />
-                <AlertTitle>
-                  {allPassed ? 'All tests passed' : 'Feedback'}
-                </AlertTitle>
-                <AlertDescription>{message}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className='grid gap-3 sm:grid-cols-3'>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={handleReset}
-                className='gap-2'
-              >
-                <RotateCcw className='size-4' />
-                Reset Code
-              </Button>
-
-              <Button
-                type='button'
-                variant='secondary'
-                onClick={handleRunTest}
-                disabled={isTesting || isSubmitting}
-                className='gap-2'
-              >
-                <TestTube2 className='size-4' />
-                {isTesting ? 'Testing...' : 'Run Test'}
-              </Button>
-
-              <Button
-                type='button'
-                onClick={handleSubmit}
-                disabled={isTesting || isSubmitting}
-                className='gap-2'
-              >
-                <Send className='size-4' />
-                {isSubmitting ? 'Submitting...' : 'Submit'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <section className='grid grid-cols-1 md:grid-cols-3 gap-3 border-t pt-8 md:items-center'>
-          <div className='flex justify-start'>
-            {prevStudyCase && (
-              <Button
-                variant='outline'
-                asChild
-                className='gap-2'
-              >
-                <Link
-                  href={`/concepts/${concept.slug}/materials/${material.slug}/study-cases/${prevStudyCase.slug}`}
-                >
-                  <ChevronLeft className='size-4' />
-                  Previous
-                </Link>
-              </Button>
-            )}
-          </div>
-
-          <div className='flex justify-center'>
-            <Button
-              variant='secondary'
-              asChild
-            >
-              <Link
-                href={`/concepts/${concept.slug}/materials/${material.slug}`}
-              >
-                Back to Material
-              </Link>
-            </Button>
-          </div>
-
-          <div className='flex justify-end'>
-            {nextStudyCase && (
-              <Button
-                asChild
-                className='gap-2'
-              >
-                <Link
-                  href={`/concepts/${concept.slug}/materials/${material.slug}/study-cases/${nextStudyCase.slug}`}
-                >
-                  Next
-                  <ChevronRight className='size-4' />
-                </Link>
-              </Button>
-            )}
-          </div>
-        </section>
-      </section>
-
-      <aside className='flex h-fit flex-col gap-y-4 lg:sticky lg:top-24'>
-        <Alert className='border-yellow-300 bg-yellow-50 text-yellow-950'>
-          <Lightbulb className='size-4' />
-
-          <AlertTitle>Hint</AlertTitle>
-
-          <AlertDescription className='leading-relaxed'>
-            {getStudyCaseHint(studyCase)}
-          </AlertDescription>
-        </Alert>
-
-        <Card>
-          <CardContent className='flex flex-col gap-y-4 p-6'>
+          <section className='flex flex-col gap-y-4'>
             <div className='flex flex-col gap-y-1'>
-              <h2 className='text-lg font-bold tracking-tight'>Test Cases</h2>
+              <h2 className='text-lg font-bold tracking-tight'>Checkpoints</h2>
 
               <p className='text-sm text-muted-foreground'>
-                Run your code and check which cases already pass.
+                Check the input and expected output before writing your code.
               </p>
             </div>
 
             {isFetchingTests ? (
               <div className='flex flex-col gap-y-3'>
-                <Skeleton className='h-24 w-full rounded-2xl' />
-                <Skeleton className='h-24 w-full rounded-2xl' />
-                <Skeleton className='h-24 w-full rounded-2xl' />
+                <Skeleton className='h-32 w-full rounded-2xl' />
+                <Skeleton className='h-32 w-full rounded-2xl' />
+                <Skeleton className='h-32 w-full rounded-2xl' />
               </div>
             ) : displayedTestCases.length > 0 ? (
               <div className='flex flex-col gap-y-3'>
-                {displayedTestCases.map((testCase, index) => {
-                  const statusStyle = getTestCaseStatusStyle(testCase.status);
-                  const Icon = statusStyle.icon;
+                <section className='flex flex-col gap-y-4'>
+                  <div className='flex flex-col gap-y-1'>
+                    <h2 className='text-lg font-bold tracking-tight'>
+                      Sample Case
+                    </h2>
 
-                  return (
-                    <div
-                      key={testCase.id}
-                      className={`rounded-2xl border p-4 ${statusStyle.className}`}
-                    >
+                    <p className='text-sm text-muted-foreground'>
+                      Use this example to understand the input and expected
+                      output.
+                    </p>
+                  </div>
+
+                  {isFetchingTests ? (
+                    <Skeleton className='h-40 w-full rounded-2xl' />
+                  ) : sampleTestCase ? (
+                    <div className='rounded-2xl border bg-muted/30 p-4'>
                       <div className='flex flex-col gap-y-4'>
-                        <div className='flex justify-between'>
-                          <div className='flex items-start gap-x-3'>
-                            <Icon className='size-5 shrink-0' />
+                        <div className='flex flex-col gap-y-1'>
+                          <p className='text-sm font-semibold'>
+                            {sampleTestCase.description}
+                          </p>
 
-                            <div className='flex flex-col gap-y-1'>
-                              <p className='text-sm font-semibold'>
-                                Test Case {index + 1}
-                              </p>
-
-                              <p className='text-sm opacity-90'>
-                                {testCase.description}
-                              </p>
-                            </div>
-                          </div>
-
-                          <Badge variant='outline'>{statusStyle.label}</Badge>
+                          <p className='text-sm leading-relaxed text-muted-foreground'>
+                            This sample shows one possible input and the
+                            expected result.
+                          </p>
                         </div>
 
-                        <div className='flex flex-col gap-y-2'>
-                          {testCase.status !== 'PENDING' && (
-                            <div className='*:w-full flex flex-col gap-y-1 rounded-xl bg-card/70 p-3 text-sm'>
-                              <p>
-                                <span className='font-semibold'>Expected:</span>{' '}
-                                {testCase.expected}
-                              </p>
+                        <div className='grid gap-3 text-sm'>
+                          <div className='flex flex-col gap-y-1'>
+                            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+                              Sample Input
+                            </p>
 
-                              {testCase.received !== undefined && (
-                                <p>
-                                  <span className='font-semibold'>
-                                    Received:
-                                  </span>{' '}
-                                  {testCase.received}
-                                </p>
-                              )}
+                            <p className='rounded-xl bg-background p-3 font-medium'>
+                              {sampleTestCase.input}
+                            </p>
+                          </div>
 
-                              {testCase.failureMessage && (
-                                <p className='leading-relaxed'>
-                                  {testCase.failureMessage}
-                                </p>
-                              )}
-                            </div>
-                          )}
+                          <div className='flex flex-col gap-y-1'>
+                            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+                              Sample Output
+                            </p>
+
+                            <p className='rounded-xl bg-background p-3 font-medium'>
+                              {sampleTestCase.expected}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  ) : (
+                    <div className='rounded-2xl border border-dashed bg-muted/40 p-8 text-center'>
+                      <p className='text-sm font-medium'>No sample case yet</p>
+
+                      <p className='text-sm text-muted-foreground'>
+                        The first published test case will appear here.
+                      </p>
+                    </div>
+                  )}
+                </section>
               </div>
             ) : (
-              <div className='rounded-2xl border border-dashed bg-muted/40 p-6 text-center'>
-                <p className='text-sm font-medium'>No test cases yet</p>
+              <div className='rounded-2xl border border-dashed bg-muted/40 p-8 text-center'>
+                <p className='text-sm font-medium'>No checkpoints yet</p>
+
                 <p className='text-sm text-muted-foreground'>
                   Published test cases will appear here.
                 </p>
               </div>
             )}
+          </section>
+        </div>
+      </section>
+
+      <section className='flex min-w-0 flex-col rounded-3xl border bg-card shadow-sm'>
+        <Card className='flex min-h-[calc(100dvh-9rem)] flex-col overflow-hidden rounded-3xl border-0 shadow-none'>
+          <CardHeader className='flex flex-row items-center justify-between gap-4 border-b bg-muted/30 p-4 md:p-5'>
+            <div className='flex items-center gap-3'>
+              <div className='flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
+                <Code2 className='size-5' />
+              </div>
+
+              <div className='flex flex-col gap-y-1'>
+                <p className='text-sm font-semibold'>Code Editor</p>
+
+                <p className='text-xs text-muted-foreground'>
+                  JavaScript function solution
+                </p>
+              </div>
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <Badge variant='outline'>JavaScript</Badge>
+
+              <Badge variant={allPassed ? 'default' : 'secondary'}>
+                {hasResults
+                  ? `${passedCount}/${totalTests} passed`
+                  : 'Not tested'}
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className='flex min-h-0 flex-1 flex-col p-0'>
+            <div className='shrink-0 border-b'>
+              <Editor
+                height='430px'
+                language='javascript'
+                theme='light'
+                value={code}
+                onChange={(value) => {
+                  hasUserEditedCode.current = true;
+                  setCode(value || '');
+                }}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  lineNumbers: 'on',
+                  scrollBeyondLastLine: false,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                  tabSize: 2,
+                  padding: {
+                    top: 18,
+                    bottom: 18,
+                  },
+                }}
+              />
+            </div>
+
+            <section className='flex flex-col gap-y-4 p-4 md:p-5'>
+              <div className='flex w-full flex-col gap-y-2'>
+                <div className='flex items-center justify-between gap-4 text-sm'>
+                  <span className='font-medium'>Test progress</span>
+
+                  <span className='text-muted-foreground'>
+                    {passedCount} of {totalTests} passed
+                  </span>
+                </div>
+
+                <Progress value={progress} />
+
+                {hasResults && (
+                  <div className='flex flex-wrap gap-2 text-xs'>
+                    <Badge variant='secondary'>{passedCount} passed</Badge>
+
+                    {failedCount > 0 && (
+                      <Badge variant='outline'>{failedCount} need fix</Badge>
+                    )}
+
+                    {errorCount > 0 && (
+                      <Badge variant='outline'>{errorCount} error</Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {feedbackContent && (
+                <Alert className={feedbackContent.className}>
+                  {(() => {
+                    const FeedbackIcon = feedbackContent.icon;
+
+                    return <FeedbackIcon className='size-4' />;
+                  })()}
+
+                  <AlertTitle>{feedbackContent.title}</AlertTitle>
+
+                  <AlertDescription>
+                    {feedbackContent.description}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {!canInteract && hasHydrated && (
+                <Alert>
+                  <LockKeyhole className='size-4' />
+
+                  <AlertTitle>Student access required</AlertTitle>
+
+                  <AlertDescription>
+                    You can read this study case, but you need to sign in as a
+                    student to run tests and submit your answer.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className='grid w-full gap-3 sm:grid-cols-[1fr_1fr_1fr]'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={handleReset}
+                  disabled={isTesting || isSubmitting}
+                  className='gap-2'
+                >
+                  <RotateCcw className='size-4' />
+                  Reset Code
+                </Button>
+
+                <Button
+                  type='button'
+                  variant='secondary'
+                  onClick={handleRunTest}
+                  disabled={!canInteract || isTesting || isSubmitting}
+                  className='gap-2'
+                >
+                  <TestTube2 className='size-4' />
+                  {isTesting ? 'Testing...' : 'Run Test'}
+                </Button>
+
+                <Button
+                  type='button'
+                  onClick={handleSubmit}
+                  disabled={!canInteract || isTesting || isSubmitting}
+                  className='gap-2'
+                >
+                  <Send className='size-4' />
+                  {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+                </Button>
+              </div>
+            </section>
+
+            <Separator />
+
+            <section className='flex min-h-0 flex-1 flex-col gap-y-4 overflow-y-auto p-4 md:p-5'>
+              <div className='flex items-center justify-between gap-4'>
+                <div className='flex flex-col gap-y-1'>
+                  <h2 className='text-base font-bold tracking-tight'>
+                    Test Results
+                  </h2>
+
+                  <p className='text-sm text-muted-foreground'>
+                    Run the test to see all checkpoint results.
+                  </p>
+                </div>
+
+                <Badge variant={allPassed ? 'default' : 'secondary'}>
+                  {hasResults
+                    ? `${passedCount}/${totalTests} passed`
+                    : 'Not tested'}
+                </Badge>
+              </div>
+
+              {isProcessingResult ? (
+                <div className='flex flex-col gap-y-3'>
+                  <Skeleton className='h-32 w-full rounded-2xl' />
+                  <Skeleton className='h-32 w-full rounded-2xl' />
+                  <Skeleton className='h-32 w-full rounded-2xl' />
+                </div>
+              ) : hasResults && displayedTestCases.length > 0 ? (
+                <div className='flex flex-col gap-y-3'>
+                  {displayedTestCases.map((testCase, index) => (
+                    <TestCaseFeedbackCard
+                      key={testCase.id}
+                      testCase={testCase}
+                      index={index}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className='flex flex-1 items-center justify-center rounded-2xl border border-dashed bg-muted/30 p-8 text-center'>
+                  <div className='flex max-w-sm flex-col items-center gap-y-3'>
+                    <div className='flex size-12 items-center justify-center rounded-2xl bg-background text-muted-foreground'>
+                      <TestTube2 className='size-6' />
+                    </div>
+
+                    <div className='flex flex-col gap-y-1'>
+                      <p className='text-sm font-semibold'>
+                        No test result yet
+                      </p>
+
+                      <p className='text-sm leading-relaxed text-muted-foreground'>
+                        Read the problem and sample case first. Then write your
+                        solution and click Run Test to see all checkpoint
+                        results.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
           </CardContent>
+
+          <CardFooter className='flex flex-col gap-y-4 border-t bg-background p-4 md:p-5'>
+            <div className='grid w-full grid-cols-1 gap-3 md:grid-cols-3 md:items-center'>
+              <div className='flex justify-start'>
+                {prevStudyCase && (
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    asChild
+                    className='gap-2'
+                  >
+                    <Link
+                      href={`/concepts/${concept.slug}/materials/${material.slug}/study-cases/${prevStudyCase.slug}`}
+                    >
+                      <ChevronLeft className='size-4' />
+                      Previous
+                    </Link>
+                  </Button>
+                )}
+              </div>
+
+              <div className='flex justify-center'>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  asChild
+                  className='gap-2'
+                >
+                  <Link
+                    href={`/concepts/${concept.slug}/materials/${material.slug}`}
+                  >
+                    <BookOpenCheck className='size-4' />
+                    Back to Material
+                  </Link>
+                </Button>
+              </div>
+
+              <div className='flex justify-end'>
+                {nextStudyCase && (
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    asChild
+                    className='gap-2'
+                  >
+                    <Link
+                      href={`/concepts/${concept.slug}/materials/${material.slug}/study-cases/${nextStudyCase.slug}`}
+                    >
+                      Next
+                      <ChevronRight className='size-4' />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardFooter>
         </Card>
-      </aside>
+      </section>
     </div>
   );
 }

@@ -7,7 +7,6 @@ import {
   fetchStudyCases,
 } from '@/lib/fetch';
 
-import { Badge } from '@/components/ui/badge';
 import PublicBreadcrumb from '@/components/shared/PublicBreadcrumb';
 
 import StudyCaseEditor from './StudyCaseEditor';
@@ -71,27 +70,6 @@ export default async function StudyCaseDetailPage({ params }: Props) {
           { label: studyCase.title },
         ]}
       />
-
-      <section className='flex max-w-3xl flex-col gap-y-4'>
-        <div className='flex flex-wrap gap-2'>
-          <Badge
-            variant='secondary'
-            className='w-fit rounded-full px-3 py-1'
-          >
-            Challenge {studyCase.order}
-          </Badge>
-        </div>
-
-        <div className='flex flex-col gap-y-3'>
-          <h1 className='text-3xl md:text-5xl font-bold tracking-tight'>
-            {studyCase.title}
-          </h1>
-
-          <p className='text-base md:text-lg leading-relaxed text-muted-foreground'>
-            {studyCase.description}
-          </p>
-        </div>
-      </section>
 
       <StudyCaseEditor
         key={studyCase.id}
