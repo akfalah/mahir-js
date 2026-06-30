@@ -1,4 +1,4 @@
-import ConceptListClient from './ConceptListClient';
+import ConceptListClient from './components/ConceptListClient';
 
 export default function AdminConceptsPage() {
   return <ConceptListClient />;

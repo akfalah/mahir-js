@@ -32,6 +32,13 @@ function getPageMeta(pathname: string): PageMeta {
     };
   }
 
+  if (pathname.startsWith('/admin/users')) {
+    return {
+      title: 'Users',
+      description: 'Manage students and administrator accounts.',
+    };
+  }
+
   if (pathname.startsWith('/admin/concepts')) {
     return {
       title: 'Concepts',
@@ -57,6 +64,13 @@ function getPageMeta(pathname: string): PageMeta {
     return {
       title: 'Test Cases',
       description: 'Manage automated grading test cases.',
+    };
+  }
+
+  if (pathname.startsWith('/admin/submissions')) {
+    return {
+      title: 'Submissions',
+      description: 'Review student submissions and automated grading results.',
     };
   }
 

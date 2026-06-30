@@ -28,6 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 import { DisplayedTestCase, FeedbackContent } from '../utils/types';
 import TestCaseFeedbackCard from './TestCardFeedBack';
+import { Spinner } from '@/components/ui/spinner';
 
 type Props = {
   concept: Concept;
@@ -192,7 +193,11 @@ export default function StudyCaseWorkspacePanel({
                 disabled={!canInteract || isTesting || isSubmitting}
                 className='gap-2'
               >
-                <TestTube2 className='size-4' />
+                {isTesting ? (
+                  <Spinner className='size-4' />
+                ) : (
+                  <TestTube2 className='size-4' />
+                )}
                 {isTesting ? 'Testing...' : 'Run Test'}
               </Button>
 
@@ -202,7 +207,11 @@ export default function StudyCaseWorkspacePanel({
                 disabled={!canInteract || isTesting || isSubmitting}
                 className='gap-2'
               >
-                <Send className='size-4' />
+                {isSubmitting ? (
+                  <Spinner className='size-4' />
+                ) : (
+                  <Send className='size-4' />
+                )}
                 {isSubmitting ? 'Submitting...' : 'Submit Answer'}
               </Button>
             </div>

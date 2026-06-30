@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -68,8 +69,22 @@ type ConceptFormErrors = {
 };
 
 export default function ConceptListClient() {
-  const resource = useAdminResource<Concept>({
+  const {
+    items,
+    params,
+    pagination,
+    isLoading,
+    isMutating,
+    message,
+    setMessage,
+    updateParams,
+    resetParams,
+    createItem,
+    updateItem,
+    deleteItem,
+  } = useAdminResource<Concept>({
     endpoint: '/concepts',
+    resourceName: 'Concept',
     initialParams: {
       page: 1,
       limit: 10,
@@ -78,17 +93,14 @@ export default function ConceptListClient() {
     },
   });
 
-  const concepts = resource.items;
-  const pagination = resource.pagination;
+  const concepts = items;
 
-  const sortBy = String(resource.params.sortBy ?? 'createdAt');
-  const orderBy = String(resource.params.orderBy ?? 'desc');
-  const limit = String(resource.params.limit ?? 10);
+  const sortBy = String(params.sortBy ?? 'createdAt');
+  const orderBy = String(params.orderBy ?? 'desc');
+  const limit = String(params.limit ?? 10);
 
   const publishedFilter =
-    resource.params.isPublished === undefined
-      ? 'all'
-      : String(resource.params.isPublished);
+    params.isPublished === undefined ? 'all' : String(params.isPublished);
 
   const [searchInput, setSearchInput] = useState('');
 
@@ -116,7 +128,7 @@ export default function ConceptListClient() {
     setOrder(String(concept?.order ?? 1));
     setIsPublished(concept?.isPublished ?? true);
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
   };
 
   const openCreateDrawer = () => {
@@ -136,25 +148,25 @@ export default function ConceptListClient() {
   const openDeleteDialog = (concept: Concept) => {
     setSelectedConcept(concept);
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
     setDeleteDialogOpen(true);
   };
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    resource.updateParams({
+    updateParams({
       search: searchInput.trim() || undefined,
     });
   };
 
   const handleReset = () => {
     setSearchInput('');
-    resource.resetParams();
+    resetParams();
   };
 
   const handlePublishedFilterChange = (value: string) => {
-    resource.updateParams({
+    updateParams({
       isPublished: value === 'all' ? undefined : value === 'true',
     });
   };
@@ -163,7 +175,7 @@ export default function ConceptListClient() {
     event.preventDefault();
 
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
 
     const validationResult = conceptSchema.safeParse({
       title,
@@ -191,13 +203,13 @@ export default function ConceptListClient() {
       const payload = validationResult.data;
 
       if (drawerMode === 'create') {
-        await resource.createItem(payload);
-        resource.setMessage('Concept created successfully.');
+        await createItem(payload);
+        setMessage('Concept created successfully.');
       }
 
       if (drawerMode === 'edit' && selectedConcept) {
-        await resource.updateItem(selectedConcept.id, payload);
-        resource.setMessage('Concept updated successfully.');
+        await updateItem(selectedConcept.id, payload);
+        setMessage('Concept updated successfully.');
       }
 
       setDrawerOpen(false);
@@ -205,7 +217,7 @@ export default function ConceptListClient() {
       setSelectedConcept(null);
       resetForm(null);
     } catch {
-      resource.setMessage(
+      setMessage(
         drawerMode === 'create'
           ? 'Failed to create concept.'
           : 'Failed to update concept.',
@@ -219,15 +231,13 @@ export default function ConceptListClient() {
     }
 
     try {
-      await resource.deleteItem(selectedConcept.id);
+      await deleteItem(selectedConcept.id);
 
-      resource.setMessage('Concept deleted successfully.');
+      setMessage('Concept deleted successfully.');
       setDeleteDialogOpen(false);
       setSelectedConcept(null);
     } catch {
-      resource.setMessage(
-        'Failed to delete concept. Please check related materials.',
-      );
+      setMessage('Failed to delete concept. Please check related materials.');
     }
   };
 
@@ -278,7 +288,7 @@ export default function ConceptListClient() {
               <Select
                 value={sortBy}
                 onValueChange={(value) =>
-                  resource.updateParams({
+                  updateParams({
                     sortBy: value,
                   })
                 }
@@ -297,7 +307,7 @@ export default function ConceptListClient() {
               <Select
                 value={orderBy}
                 onValueChange={(value) =>
-                  resource.updateParams({
+                  updateParams({
                     orderBy: value,
                   })
                 }
@@ -315,7 +325,7 @@ export default function ConceptListClient() {
               <Select
                 value={limit}
                 onValueChange={(value) =>
-                  resource.updateParams({
+                  updateParams({
                     limit: Number(value),
                   })
                 }
@@ -328,6 +338,7 @@ export default function ConceptListClient() {
                   <SelectItem value='10'>10 rows</SelectItem>
                   <SelectItem value='20'>20 rows</SelectItem>
                   <SelectItem value='50'>50 rows</SelectItem>
+                  <SelectItem value='100'>100 rows</SelectItem>
                 </SelectContent>
               </Select>
             </>
@@ -335,7 +346,7 @@ export default function ConceptListClient() {
         />
 
         <div className='p-4 md:p-5'>
-          <AdminStatusMessage message={resource.message} />
+          <AdminStatusMessage message={message} />
         </div>
 
         <div className='px-4 overflow-x-auto'>
@@ -353,7 +364,7 @@ export default function ConceptListClient() {
             </TableHeader>
 
             <TableBody>
-              {resource.isLoading ? (
+              {isLoading ? (
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index}>
                     <TableCell>
@@ -502,7 +513,7 @@ export default function ConceptListClient() {
           pagination={pagination}
           label='concepts'
           onPageChange={(nextPage) =>
-            resource.updateParams(
+            updateParams(
               {
                 page: nextPage,
               },
@@ -663,9 +674,10 @@ export default function ConceptListClient() {
           <DrawerFooter className='shrink-0 border-t bg-background'>
             <Button
               type='submit'
-              disabled={resource.isMutating}
+              disabled={isMutating}
             >
-              {resource.isMutating ? 'Saving...' : 'Save Concept'}
+              {isMutating && <Spinner />}
+              {isMutating ? 'Saving...' : 'Save Concept'}
             </Button>
 
             <DrawerClose asChild>
@@ -688,7 +700,7 @@ export default function ConceptListClient() {
             ? `${selectedConcept.title} Concept`
             : 'this concept'
         }? This action can not be undone. If this concept already has related materials, the backend may reject this action.`}
-        isDeleting={resource.isMutating}
+        isDeleting={isMutating}
         onConfirm={handleDeleteConcept}
         onOpenChange={setDeleteDialogOpen}
       />

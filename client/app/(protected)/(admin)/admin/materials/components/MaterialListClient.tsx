@@ -41,6 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -73,8 +74,22 @@ type MaterialFormErrors = {
 };
 
 export default function MaterialListClient() {
-  const resource = useAdminResource<Material>({
+  const {
+    items,
+    params,
+    pagination,
+    isLoading,
+    isMutating,
+    message,
+    setMessage,
+    updateParams,
+    resetParams,
+    createItem,
+    updateItem,
+    deleteItem,
+  } = useAdminResource<Material>({
     endpoint: '/materials',
+    resourceName: 'Material',
     initialParams: {
       page: 1,
       limit: 10,
@@ -83,20 +98,15 @@ export default function MaterialListClient() {
     },
   });
 
-  const materials = resource.items;
-  const pagination = resource.pagination;
+  const materials = items;
 
-  const sortBy = String(resource.params.sortBy ?? 'createdAt');
-  const orderBy = String(resource.params.orderBy ?? 'desc');
-  const limit = String(resource.params.limit ?? 10);
-  const conceptIdFilter = resource.params.conceptId
-    ? String(resource.params.conceptId)
-    : 'all';
+  const sortBy = String(params.sortBy ?? 'createdAt');
+  const orderBy = String(params.orderBy ?? 'desc');
+  const limit = String(params.limit ?? 10);
+  const conceptIdFilter = params.conceptId ? String(params.conceptId) : 'all';
 
   const publishedFilter =
-    resource.params.isPublished === undefined
-      ? 'all'
-      : String(resource.params.isPublished);
+    params.isPublished === undefined ? 'all' : String(params.isPublished);
 
   const [concepts, setConcepts] = useState<Concept[]>([]);
   const [searchInput, setSearchInput] = useState('');
@@ -150,12 +160,6 @@ export default function MaterialListClient() {
     return (pagination.page - 1) * pagination.limit + index + 1;
   };
 
-  const getConceptTitle = (nextConceptId: number) => {
-    return (
-      concepts.find((concept) => concept.id === nextConceptId)?.title ?? '-'
-    );
-  };
-
   const resetForm = (material?: Material | null) => {
     setConceptId(
       material?.conceptId
@@ -171,7 +175,7 @@ export default function MaterialListClient() {
     setOrder(String(material?.order ?? 1));
     setIsPublished(material?.isPublished ?? true);
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
   };
 
   const openCreateDrawer = () => {
@@ -191,26 +195,26 @@ export default function MaterialListClient() {
   const openDeleteDialog = (material: Material) => {
     setSelectedMaterial(material);
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
     setDeleteDialogOpen(true);
   };
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    resource.updateParams({
+    updateParams({
       search: searchInput.trim() || undefined,
     });
   };
 
   const handleReset = () => {
     setSearchInput('');
-    resource.resetParams();
+    resetParams();
   };
 
   const handleConceptFilterChange = (value: string) => {
     if (value === 'all') {
-      resource.updateParams({
+      updateParams({
         conceptId: undefined,
         sortBy: sortBy === 'order' ? 'createdAt' : sortBy,
         orderBy: sortBy === 'order' ? 'desc' : orderBy,
@@ -219,19 +223,19 @@ export default function MaterialListClient() {
       return;
     }
 
-    resource.updateParams({
+    updateParams({
       conceptId: Number(value),
     });
   };
 
   const handlePublishedFilterChange = (value: string) => {
-    resource.updateParams({
+    updateParams({
       isPublished: value === 'all' ? undefined : value === 'true',
     });
   };
 
   const handleSortChange = (value: string) => {
-    resource.updateParams({
+    updateParams({
       sortBy: value,
     });
   };
@@ -240,7 +244,7 @@ export default function MaterialListClient() {
     event.preventDefault();
 
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
 
     const validationResult = materialSchema.safeParse({
       conceptId,
@@ -272,8 +276,8 @@ export default function MaterialListClient() {
       const values = validationResult.data;
 
       if (drawerMode === 'create') {
-        await resource.createItem(values);
-        resource.setMessage('Material created successfully.');
+        await createItem(values);
+        setMessage('Material created successfully.');
       }
 
       if (drawerMode === 'edit' && selectedMaterial) {
@@ -285,8 +289,8 @@ export default function MaterialListClient() {
           order: values.order,
         };
 
-        await resource.updateItem(selectedMaterial.id, payload);
-        resource.setMessage('Material updated successfully.');
+        await updateItem(selectedMaterial.id, payload);
+        setMessage('Material updated successfully.');
       }
 
       setDrawerOpen(false);
@@ -294,7 +298,7 @@ export default function MaterialListClient() {
       setSelectedMaterial(null);
       resetForm(null);
     } catch {
-      resource.setMessage(
+      setMessage(
         drawerMode === 'create'
           ? 'Failed to create material.'
           : 'Failed to update material.',
@@ -308,13 +312,13 @@ export default function MaterialListClient() {
     }
 
     try {
-      await resource.deleteItem(selectedMaterial.id);
+      await deleteItem(selectedMaterial.id);
 
-      resource.setMessage('Material deleted successfully.');
+      setMessage('Material deleted successfully.');
       setDeleteDialogOpen(false);
       setSelectedMaterial(null);
     } catch {
-      resource.setMessage(
+      setMessage(
         'Failed to delete material. Please check related study cases.',
       );
     }
@@ -407,7 +411,7 @@ export default function MaterialListClient() {
               <Select
                 value={orderBy}
                 onValueChange={(value) =>
-                  resource.updateParams({
+                  updateParams({
                     orderBy: value,
                   })
                 }
@@ -425,7 +429,7 @@ export default function MaterialListClient() {
               <Select
                 value={limit}
                 onValueChange={(value) =>
-                  resource.updateParams({
+                  updateParams({
                     limit: Number(value),
                   })
                 }
@@ -438,6 +442,7 @@ export default function MaterialListClient() {
                   <SelectItem value='10'>10 rows</SelectItem>
                   <SelectItem value='20'>20 rows</SelectItem>
                   <SelectItem value='50'>50 rows</SelectItem>
+                  <SelectItem value='100'>100 rows</SelectItem>
                 </SelectContent>
               </Select>
             </>
@@ -445,7 +450,7 @@ export default function MaterialListClient() {
         />
 
         <div className='p-4 md:p-5'>
-          <AdminStatusMessage message={resource.message} />
+          <AdminStatusMessage message={message} />
         </div>
 
         <div className='overflow-x-auto px-4'>
@@ -464,7 +469,7 @@ export default function MaterialListClient() {
             </TableHeader>
 
             <TableBody>
-              {resource.isLoading ? (
+              {isLoading ? (
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index}>
                     <TableCell>
@@ -537,7 +542,7 @@ export default function MaterialListClient() {
                         variant='secondary'
                         className='rounded-full'
                       >
-                        {getConceptTitle(material.conceptId)}
+                        {material.concept?.title}
                       </Badge>
                     </TableCell>
 
@@ -628,7 +633,7 @@ export default function MaterialListClient() {
           pagination={pagination}
           label='materials'
           onPageChange={(nextPage) =>
-            resource.updateParams(
+            updateParams(
               {
                 page: nextPage,
               },
@@ -854,9 +859,10 @@ export default function MaterialListClient() {
           <DrawerFooter className='shrink-0 border-t bg-background'>
             <Button
               type='submit'
-              disabled={resource.isMutating}
+              disabled={isMutating}
             >
-              {resource.isMutating ? 'Saving...' : 'Save Material'}
+              {isMutating && <Spinner />}
+              {isMutating ? 'Saving...' : 'Save Material'}
             </Button>
 
             <DrawerClose asChild>
@@ -879,7 +885,7 @@ export default function MaterialListClient() {
             ? `${selectedMaterial.title} Moncept`
             : 'this material'
         }? This action cannot be undone. If this material already has related study cases, the backend may reject this action.`}
-        isDeleting={resource.isMutating}
+        isDeleting={isMutating}
         onConfirm={handleDeleteMaterial}
         onOpenChange={setDeleteDialogOpen}
       />

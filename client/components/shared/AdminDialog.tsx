@@ -1,3 +1,5 @@
+import { ComponentProps } from 'react';
+
 import {
   Dialog,
   DialogContent,
@@ -8,22 +10,31 @@ import {
 } from '@/components/ui/dialog';
 
 import { Button } from '@/components/ui/button';
-import { Separator } from '../ui/separator';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
+
+type ButtonVariant = ComponentProps<typeof Button>['variant'];
 
 type Props = {
   open: boolean;
   title: string;
   description: string;
   isDeleting?: boolean;
+  confirmLabel?: string;
+  loadingLabel?: string;
+  confirmVariant?: ButtonVariant;
   onConfirm: () => void;
   onOpenChange: (open: boolean) => void;
 };
 
-export default function AdminDeleteDialog({
+export default function AdminDialog({
   open,
   title,
   description,
   isDeleting = false,
+  confirmLabel = 'Delete',
+  loadingLabel = 'Deleting...',
+  confirmVariant = 'destructive',
   onConfirm,
   onOpenChange,
 }: Props) {
@@ -58,11 +69,12 @@ export default function AdminDeleteDialog({
 
           <Button
             type='button'
-            variant='destructive'
+            variant={confirmVariant}
             disabled={isDeleting}
             onClick={onConfirm}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting && <Spinner />}
+            {isDeleting ? loadingLabel : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

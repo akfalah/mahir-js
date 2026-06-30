@@ -5,13 +5,7 @@ import { CheckCircle2, Code2, Edit, Plus, Trash2, XCircle } from 'lucide-react';
 
 import api from '@/lib/api';
 
-import {
-  ApiResponse,
-  Concept,
-  Material,
-  StudyCase,
-  SyntaxRules,
-} from '@/types';
+import { ApiResponse, Material, StudyCase, SyntaxRules } from '@/types';
 
 import { useAdminResource } from '@/hooks/use-admin-resource';
 
@@ -39,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -79,9 +74,39 @@ function stringifyParameterNames(value: string[] | null) {
   return value?.join(', ') ?? '';
 }
 
+function getMaterialOptionLabel(material: Material) {
+  if (material.concept?.title) {
+    return `${material.concept.title} / ${material.title}`;
+  }
+
+  return material.title;
+}
+
+function getStudyCaseMaterialTitle(studyCase: StudyCase) {
+  return studyCase.material?.title ?? `Material #${studyCase.materialId}`;
+}
+
+function getStudyCaseConceptTitle(studyCase: StudyCase) {
+  return studyCase.material?.concept?.title ?? 'No concept data';
+}
+
 export default function StudyCaseListClient() {
-  const resource = useAdminResource<StudyCase>({
+  const {
+    items,
+    params,
+    pagination,
+    isLoading,
+    isMutating,
+    message,
+    setMessage,
+    updateParams,
+    resetParams,
+    createItem,
+    updateItem,
+    deleteItem,
+  } = useAdminResource<StudyCase>({
     endpoint: '/study-cases',
+    resourceName: 'Study case',
     initialParams: {
       page: 1,
       limit: 10,
@@ -90,23 +115,19 @@ export default function StudyCaseListClient() {
     },
   });
 
-  const studyCases = resource.items;
-  const pagination = resource.pagination;
+  const studyCases = items;
 
-  const sortBy = String(resource.params.sortBy ?? 'createdAt');
-  const orderBy = String(resource.params.orderBy ?? 'desc');
-  const limit = String(resource.params.limit ?? 10);
+  const sortBy = String(params.sortBy ?? 'createdAt');
+  const orderBy = String(params.orderBy ?? 'desc');
+  const limit = String(params.limit ?? 10);
 
-  const materialIdFilter = resource.params.materialId
-    ? String(resource.params.materialId)
+  const materialIdFilter = params.materialId
+    ? String(params.materialId)
     : 'all';
 
   const publishedFilter =
-    resource.params.isPublished === undefined
-      ? 'all'
-      : String(resource.params.isPublished);
+    params.isPublished === undefined ? 'all' : String(params.isPublished);
 
-  const [concepts, setConcepts] = useState<Concept[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [searchInput, setSearchInput] = useState('');
 
@@ -137,43 +158,25 @@ export default function StudyCaseListClient() {
   useEffect(() => {
     let isActive = true;
 
-    const loadConceptsAndMaterials = async () => {
+    const loadMaterials = async () => {
       try {
-        const conceptsRes = await api.get<ApiResponse<Concept[]>>('/concepts');
+        const res = await api.get<ApiResponse<Material[]>>('/materials');
 
         if (!isActive) {
           return;
         }
 
-        const nextConcepts = conceptsRes.data.data;
-        setConcepts(nextConcepts);
-
-        const materialsByConcept = await Promise.all(
-          nextConcepts.map((concept) =>
-            api.get<ApiResponse<Material[]>>(
-              `/materials?conceptId=${concept.id}`,
-            ),
-          ),
-        );
-
-        if (!isActive) {
-          return;
-        }
-
-        setMaterials(
-          materialsByConcept.flatMap((response) => response.data.data),
-        );
+        setMaterials(res.data.data);
       } catch {
         if (!isActive) {
           return;
         }
 
-        setConcepts([]);
         setMaterials([]);
       }
     };
 
-    loadConceptsAndMaterials();
+    loadMaterials();
 
     return () => {
       isActive = false;
@@ -182,25 +185,6 @@ export default function StudyCaseListClient() {
 
   const getRowNumber = (index: number) => {
     return (pagination.page - 1) * pagination.limit + index + 1;
-  };
-
-  const getMaterialTitle = (nextMaterialId: number) => {
-    return (
-      materials.find((material) => material.id === nextMaterialId)?.title ?? '-'
-    );
-  };
-
-  const getConceptTitleByMaterialId = (nextMaterialId: number) => {
-    const material = materials.find((item) => item.id === nextMaterialId);
-
-    if (!material) {
-      return '-';
-    }
-
-    return (
-      concepts.find((concept) => concept.id === material.conceptId)?.title ??
-      '-'
-    );
   };
 
   const resetForm = (studyCase?: StudyCase | null) => {
@@ -229,7 +213,7 @@ export default function StudyCaseListClient() {
     );
     setIsPublished(studyCase?.isPublished ?? true);
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
   };
 
   const openCreateDrawer = () => {
@@ -249,26 +233,26 @@ export default function StudyCaseListClient() {
   const openDeleteDialog = (studyCase: StudyCase) => {
     setSelectedStudyCase(studyCase);
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
     setDeleteDialogOpen(true);
   };
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    resource.updateParams({
+    updateParams({
       search: searchInput.trim() || undefined,
     });
   };
 
   const handleReset = () => {
     setSearchInput('');
-    resource.resetParams();
+    resetParams();
   };
 
   const handleMaterialFilterChange = (value: string) => {
     if (value === 'all') {
-      resource.updateParams({
+      updateParams({
         materialId: undefined,
         sortBy: sortBy === 'order' ? 'createdAt' : sortBy,
         orderBy: sortBy === 'order' ? 'desc' : orderBy,
@@ -277,19 +261,19 @@ export default function StudyCaseListClient() {
       return;
     }
 
-    resource.updateParams({
+    updateParams({
       materialId: Number(value),
     });
   };
 
   const handlePublishedFilterChange = (value: string) => {
-    resource.updateParams({
+    updateParams({
       isPublished: value === 'all' ? undefined : value === 'true',
     });
   };
 
   const handleSortChange = (value: string) => {
-    resource.updateParams({
+    updateParams({
       sortBy: value,
     });
   };
@@ -298,7 +282,7 @@ export default function StudyCaseListClient() {
     event.preventDefault();
 
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
 
     const validationResult = studyCaseSchema.safeParse({
       materialId,
@@ -353,8 +337,8 @@ export default function StudyCaseListClient() {
       };
 
       if (drawerMode === 'create') {
-        await resource.createItem(payload);
-        resource.setMessage('Study case created successfully.');
+        await createItem(payload);
+        setMessage('Study case created successfully.');
       }
 
       if (drawerMode === 'edit' && selectedStudyCase) {
@@ -372,8 +356,8 @@ export default function StudyCaseListClient() {
           isPublished: values.isPublished,
         };
 
-        await resource.updateItem(selectedStudyCase.id, updatePayload);
-        resource.setMessage('Study case updated successfully.');
+        await updateItem(selectedStudyCase.id, updatePayload);
+        setMessage('Study case updated successfully.');
       }
 
       setDrawerOpen(false);
@@ -381,7 +365,7 @@ export default function StudyCaseListClient() {
       setSelectedStudyCase(null);
       resetForm(null);
     } catch {
-      resource.setMessage(
+      setMessage(
         drawerMode === 'create'
           ? 'Failed to create study case.'
           : 'Failed to update study case.',
@@ -395,13 +379,13 @@ export default function StudyCaseListClient() {
     }
 
     try {
-      await resource.deleteItem(selectedStudyCase.id);
+      await deleteItem(selectedStudyCase.id);
 
-      resource.setMessage('Study case deleted successfully.');
+      setMessage('Study case deleted successfully.');
       setDeleteDialogOpen(false);
       setSelectedStudyCase(null);
     } catch {
-      resource.setMessage(
+      setMessage(
         'Failed to delete study case. Please check related test cases or submissions.',
       );
     }
@@ -452,7 +436,7 @@ export default function StudyCaseListClient() {
                       key={material.id}
                       value={String(material.id)}
                     >
-                      {material.title}
+                      {getMaterialOptionLabel(material)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -494,7 +478,7 @@ export default function StudyCaseListClient() {
               <Select
                 value={orderBy}
                 onValueChange={(value) =>
-                  resource.updateParams({
+                  updateParams({
                     orderBy: value,
                   })
                 }
@@ -512,7 +496,7 @@ export default function StudyCaseListClient() {
               <Select
                 value={limit}
                 onValueChange={(value) =>
-                  resource.updateParams({
+                  updateParams({
                     limit: Number(value),
                   })
                 }
@@ -525,6 +509,7 @@ export default function StudyCaseListClient() {
                   <SelectItem value='10'>10 rows</SelectItem>
                   <SelectItem value='20'>20 rows</SelectItem>
                   <SelectItem value='50'>50 rows</SelectItem>
+                  <SelectItem value='100'>100 rows</SelectItem>
                 </SelectContent>
               </Select>
             </>
@@ -532,7 +517,7 @@ export default function StudyCaseListClient() {
         />
 
         <div className='p-4 md:p-5'>
-          <AdminStatusMessage message={resource.message} />
+          <AdminStatusMessage message={message} />
         </div>
 
         <div className='overflow-x-auto px-4'>
@@ -551,7 +536,7 @@ export default function StudyCaseListClient() {
             </TableHeader>
 
             <TableBody>
-              {resource.isLoading ? (
+              {isLoading ? (
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index}>
                     <TableCell>
@@ -627,16 +612,13 @@ export default function StudyCaseListClient() {
 
                     <TableCell>
                       <div className='flex flex-col gap-y-1'>
-                        <Badge
-                          variant='secondary'
-                          className='w-fit rounded-full'
-                        >
-                          {getMaterialTitle(studyCase.materialId)}
+                        <Badge variant='secondary'>
+                          {getStudyCaseMaterialTitle(studyCase)}
                         </Badge>
 
-                        <p className='text-xs text-muted-foreground'>
-                          {getConceptTitleByMaterialId(studyCase.materialId)}
-                        </p>
+                        <Badge variant='outline'>
+                          {getStudyCaseConceptTitle(studyCase)}
+                        </Badge>
                       </div>
                     </TableCell>
 
@@ -727,7 +709,7 @@ export default function StudyCaseListClient() {
           pagination={pagination}
           label='study cases'
           onPageChange={(nextPage) =>
-            resource.updateParams(
+            updateParams(
               {
                 page: nextPage,
               },
@@ -775,7 +757,7 @@ export default function StudyCaseListClient() {
                         key={material.id}
                         value={String(material.id)}
                       >
-                        {material.title}
+                        {getMaterialOptionLabel(material)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1060,9 +1042,10 @@ export default function StudyCaseListClient() {
           <DrawerFooter className='shrink-0 border-t bg-background'>
             <Button
               type='submit'
-              disabled={resource.isMutating}
+              disabled={isMutating}
             >
-              {resource.isMutating ? 'Saving...' : 'Save Study Case'}
+              {isMutating && <Spinner />}
+              {isMutating ? 'Saving...' : 'Save Study Case'}
             </Button>
 
             <DrawerClose asChild>
@@ -1085,7 +1068,7 @@ export default function StudyCaseListClient() {
             ? `${selectedStudyCase.title} Study Case`
             : 'this study case'
         }? This action cannot be undone. If this study case already has related test cases or submissions, the backend may reject this action.`}
-        isDeleting={resource.isMutating}
+        isDeleting={isMutating}
         onConfirm={handleDeleteStudyCase}
         onOpenChange={setDeleteDialogOpen}
       />

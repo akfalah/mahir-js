@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/get-api-error-message';
 
 import { ApiResponse, FetchParams, PaginationMeta } from '@/types';
 
 type UseAdminResourceOptions = {
   endpoint: string;
+  resourceName?: string;
   initialParams?: FetchParams;
 };
 
@@ -30,8 +33,13 @@ function buildSearchParams(params: FetchParams) {
   return searchParams;
 }
 
+function getResourceName(resourceName?: string) {
+  return resourceName ?? 'Data';
+}
+
 export function useAdminResource<T>({
   endpoint,
+  resourceName,
   initialParams = {},
 }: UseAdminResourceOptions) {
   const [items, setItems] = useState<T[]>([]);
@@ -42,6 +50,8 @@ export function useAdminResource<T>({
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const label = getResourceName(resourceName);
 
   const requestItems = useCallback(async () => {
     const searchParams = buildSearchParams(params);
@@ -62,14 +72,17 @@ export function useAdminResource<T>({
 
         setItems(res.data.data);
         setPagination(res.data.pagination ?? defaultPagination);
-      } catch {
+      } catch (error) {
         if (!isActive) {
           return;
         }
 
+        const errorMessage = getApiErrorMessage(error);
+
         setItems([]);
         setPagination(defaultPagination);
-        setMessage('Failed to load data.');
+        setMessage(errorMessage);
+        toast.error(errorMessage);
       } finally {
         if (isActive) {
           setIsLoading(false);
@@ -112,10 +125,13 @@ export function useAdminResource<T>({
 
       setItems(res.data.data);
       setPagination(res.data.pagination ?? defaultPagination);
-    } catch {
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error);
+
       setItems([]);
       setPagination(defaultPagination);
-      setMessage('Failed to load data.');
+      setMessage(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -128,6 +144,20 @@ export function useAdminResource<T>({
     try {
       await api.post(endpoint, payload);
       await refresh();
+
+      toast.success(`${label} created`, {
+        description: `${label} has been created successfully.`,
+      });
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error);
+
+      setMessage(errorMessage);
+
+      toast.error(`Failed to create ${label}`, {
+        description: errorMessage,
+      });
+
+      throw error;
     } finally {
       setIsMutating(false);
     }
@@ -140,6 +170,20 @@ export function useAdminResource<T>({
     try {
       await api.patch(`${endpoint}/${id}`, payload);
       await refresh();
+
+      toast.success(`${label} updated`, {
+        description: `${label} has been updated successfully.`,
+      });
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error);
+
+      setMessage(errorMessage);
+
+      toast.error(`Failed to update ${label}`, {
+        description: errorMessage,
+      });
+
+      throw error;
     } finally {
       setIsMutating(false);
     }
@@ -152,6 +196,20 @@ export function useAdminResource<T>({
     try {
       await api.delete(`${endpoint}/${id}`);
       await refresh();
+
+      toast.success(`${label} deleted`, {
+        description: `${label} has been deleted successfully.`,
+      });
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error);
+
+      setMessage(errorMessage);
+
+      toast.error(`Failed to delete ${label}`, {
+        description: errorMessage,
+      });
+
+      throw error;
     } finally {
       setIsMutating(false);
     }

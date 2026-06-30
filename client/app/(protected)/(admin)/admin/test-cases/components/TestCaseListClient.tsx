@@ -12,7 +12,7 @@ import {
 
 import api from '@/lib/api';
 
-import { ApiResponse, Concept, Material, StudyCase, TestCase } from '@/types';
+import { ApiResponse, StudyCase, TestCase } from '@/types';
 
 import { useAdminResource } from '@/hooks/use-admin-resource';
 
@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -52,7 +53,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AdminContentPanel from '@/components/shared/AdminContentPanel';
 import AdminDialog from '@/components/shared/AdminDialog';
 import AdminDrawer from '@/components/shared/AdminDrawer';
-import AdminJsonEditor from '@/components/shared/AdminJsonEditox';
+import AdminJsonEditor from '@/components/shared/AdminJsonEditor';
 import AdminPageHeader from '@/components/shared/AdminPageHeader';
 import AdminPagination from '@/components/shared/AdminPagination';
 import AdminStatusMessage from '@/components/shared/AdminStatusMessage';
@@ -87,8 +88,22 @@ function formatJsonPreview(value: Record<string, unknown>) {
 }
 
 export default function TestCaseListClient() {
-  const resource = useAdminResource<TestCase>({
+  const {
+    items,
+    params,
+    pagination,
+    isLoading,
+    isMutating,
+    message,
+    setMessage,
+    updateParams,
+    resetParams,
+    createItem,
+    updateItem,
+    deleteItem,
+  } = useAdminResource<TestCase>({
     endpoint: '/test-cases',
+    resourceName: 'Test case',
     initialParams: {
       page: 1,
       limit: 10,
@@ -97,25 +112,21 @@ export default function TestCaseListClient() {
     },
   });
 
-  const testCases = resource.items;
-  const pagination = resource.pagination;
+  const testCases = items;
 
-  const sortBy = String(resource.params.sortBy ?? 'createdAt');
-  const orderBy = String(resource.params.orderBy ?? 'desc');
-  const limit = String(resource.params.limit ?? 10);
+  const sortBy = String(params.sortBy ?? 'createdAt');
+  const orderBy = String(params.orderBy ?? 'desc');
+  const limit = String(params.limit ?? 10);
 
-  const studyCaseIdFilter = resource.params.studyCaseId
-    ? String(resource.params.studyCaseId)
+  const studyCaseIdFilter = params.studyCaseId
+    ? String(params.studyCaseId)
     : 'all';
 
   const publishedFilter =
-    resource.params.isPublished === undefined ||
-    resource.params.isPublished === null
+    params.isPublished === undefined || params.isPublished === null
       ? 'all'
-      : String(resource.params.isPublished);
+      : String(params.isPublished);
 
-  const [concepts, setConcepts] = useState<Concept[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
   const [studyCases, setStudyCases] = useState<StudyCase[]>([]);
   const [searchInput, setSearchInput] = useState('');
 
@@ -154,64 +165,25 @@ export default function TestCaseListClient() {
   useEffect(() => {
     let isActive = true;
 
-    const loadLearningData = async () => {
+    const loadStudyCases = async () => {
       try {
-        const conceptsRes = await api.get<ApiResponse<Concept[]>>(
-          '/concepts?sortBy=order&orderBy=asc&limit=100',
-        );
+        const res = await api.get<ApiResponse<StudyCase[]>>('/study-cases');
 
         if (!isActive) {
           return;
         }
 
-        const nextConcepts = conceptsRes.data.data;
-        setConcepts(nextConcepts);
-
-        const materialsByConcept = await Promise.all(
-          nextConcepts.map((concept) =>
-            api.get<ApiResponse<Material[]>>(
-              `/materials?conceptId=${concept.id}&sortBy=order&orderBy=asc&limit=100`,
-            ),
-          ),
-        );
-
-        if (!isActive) {
-          return;
-        }
-
-        const nextMaterials = materialsByConcept.flatMap(
-          (response) => response.data.data,
-        );
-
-        setMaterials(nextMaterials);
-
-        const studyCasesByMaterial = await Promise.all(
-          nextMaterials.map((material) =>
-            api.get<ApiResponse<StudyCase[]>>(
-              `/study-cases?materialId=${material.id}&sortBy=order&orderBy=asc&limit=100`,
-            ),
-          ),
-        );
-
-        if (!isActive) {
-          return;
-        }
-
-        setStudyCases(
-          studyCasesByMaterial.flatMap((response) => response.data.data),
-        );
+        setStudyCases(res.data.data);
       } catch {
         if (!isActive) {
           return;
         }
 
-        setConcepts([]);
-        setMaterials([]);
         setStudyCases([]);
       }
     };
 
-    loadLearningData();
+    loadStudyCases();
 
     return () => {
       isActive = false;
@@ -222,42 +194,46 @@ export default function TestCaseListClient() {
     return (pagination.page - 1) * pagination.limit + index + 1;
   };
 
-  const getStudyCaseTitle = (nextStudyCaseId: number) => {
+  const getStudyCaseOptionLabel = (studyCase: StudyCase) => {
+    const conceptTitle = studyCase.material?.concept?.title;
+    const materialTitle = studyCase.material?.title;
+
+    if (conceptTitle && materialTitle) {
+      return `${conceptTitle} / ${materialTitle} / ${studyCase.title}`;
+    }
+
+    if (materialTitle) {
+      return `${materialTitle} / ${studyCase.title}`;
+    }
+
+    return studyCase.title;
+  };
+
+  const findStudyCase = (studyCaseId: number) => {
+    return studyCases.find((studyCase) => studyCase.id === studyCaseId);
+  };
+
+  const getTestCaseStudyCaseTitle = (testCase: TestCase) => {
     return (
-      studyCases.find((studyCase) => studyCase.id === nextStudyCaseId)?.title ??
-      '-'
+      testCase.studyCase?.title ??
+      findStudyCase(testCase.studyCaseId)?.title ??
+      `Study Case #${testCase.studyCaseId}`
     );
   };
 
-  const getMaterialTitleByStudyCaseId = (nextStudyCaseId: number) => {
-    const studyCase = studyCases.find((item) => item.id === nextStudyCaseId);
-
-    if (!studyCase) {
-      return '-';
-    }
-
+  const getTestCaseMaterialTitle = (testCase: TestCase) => {
     return (
-      materials.find((material) => material.id === studyCase.materialId)
-        ?.title ?? '-'
+      testCase.studyCase?.material?.title ??
+      findStudyCase(testCase.studyCaseId)?.material?.title ??
+      'No material data'
     );
   };
 
-  const getConceptTitleByStudyCaseId = (nextStudyCaseId: number) => {
-    const studyCase = studyCases.find((item) => item.id === nextStudyCaseId);
-
-    if (!studyCase) {
-      return '-';
-    }
-
-    const material = materials.find((item) => item.id === studyCase.materialId);
-
-    if (!material) {
-      return '-';
-    }
-
+  const getTestCaseConceptTitle = (testCase: TestCase) => {
     return (
-      concepts.find((concept) => concept.id === material.conceptId)?.title ??
-      '-'
+      testCase.studyCase?.material?.concept?.title ??
+      findStudyCase(testCase.studyCaseId)?.material?.concept?.title ??
+      'No concept data'
     );
   };
 
@@ -277,7 +253,7 @@ export default function TestCaseListClient() {
     setOrder(String(testCase?.order ?? 1));
     setIsPublished(testCase?.isPublished ?? true);
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
   };
 
   const openCreateDrawer = () => {
@@ -297,26 +273,26 @@ export default function TestCaseListClient() {
   const openDeleteDialog = (testCase: TestCase) => {
     setSelectedTestCase(testCase);
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
     setDeleteDialogOpen(true);
   };
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    resource.updateParams({
+    updateParams({
       search: searchInput.trim() || undefined,
     });
   };
 
   const handleReset = () => {
     setSearchInput('');
-    resource.resetParams();
+    resetParams();
   };
 
   const handleStudyCaseFilterChange = (value: string) => {
     if (value === 'all') {
-      resource.updateParams({
+      updateParams({
         studyCaseId: undefined,
         sortBy: sortBy === 'order' ? 'createdAt' : sortBy,
         orderBy: sortBy === 'order' ? 'desc' : orderBy,
@@ -325,19 +301,19 @@ export default function TestCaseListClient() {
       return;
     }
 
-    resource.updateParams({
+    updateParams({
       studyCaseId: Number(value),
     });
   };
 
   const handlePublishedFilterChange = (value: string) => {
-    resource.updateParams({
+    updateParams({
       isPublished: value === 'all' ? undefined : value === 'true',
     });
   };
 
   const handleSortChange = (value: string) => {
-    resource.updateParams({
+    updateParams({
       sortBy: value,
     });
   };
@@ -384,7 +360,7 @@ export default function TestCaseListClient() {
     event.preventDefault();
 
     setErrors({});
-    resource.setMessage(null);
+    setMessage(null);
 
     const validationResult = testCaseSchema.safeParse({
       studyCaseId,
@@ -423,8 +399,8 @@ export default function TestCaseListClient() {
       };
 
       if (drawerMode === 'create') {
-        await resource.createItem(payload);
-        resource.setMessage('Test case created successfully.');
+        await createItem(payload);
+        setMessage('Test case created successfully.');
       }
 
       if (drawerMode === 'edit' && selectedTestCase) {
@@ -436,8 +412,8 @@ export default function TestCaseListClient() {
           isPublished: values.isPublished,
         };
 
-        await resource.updateItem(selectedTestCase.id, updatePayload);
-        resource.setMessage('Test case updated successfully.');
+        await updateItem(selectedTestCase.id, updatePayload);
+        setMessage('Test case updated successfully.');
       }
 
       setDrawerOpen(false);
@@ -445,7 +421,7 @@ export default function TestCaseListClient() {
       setSelectedTestCase(null);
       resetForm(null);
     } catch {
-      resource.setMessage(
+      setMessage(
         drawerMode === 'create'
           ? 'Failed to create test case.'
           : 'Failed to update test case.',
@@ -459,13 +435,13 @@ export default function TestCaseListClient() {
     }
 
     try {
-      await resource.deleteItem(selectedTestCase.id);
+      await deleteItem(selectedTestCase.id);
 
-      resource.setMessage('Test case deleted successfully.');
+      setMessage('Test case deleted successfully.');
       setDeleteDialogOpen(false);
       setSelectedTestCase(null);
     } catch {
-      resource.setMessage(
+      setMessage(
         'Failed to delete test case. Please check related submissions.',
       );
     }
@@ -519,7 +495,7 @@ export default function TestCaseListClient() {
                       key={studyCase.id}
                       value={String(studyCase.id)}
                     >
-                      {studyCase.title}
+                      {getStudyCaseOptionLabel(studyCase)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -560,7 +536,7 @@ export default function TestCaseListClient() {
               <Select
                 value={orderBy}
                 onValueChange={(value) =>
-                  resource.updateParams({
+                  updateParams({
                     orderBy: value,
                   })
                 }
@@ -578,7 +554,7 @@ export default function TestCaseListClient() {
               <Select
                 value={limit}
                 onValueChange={(value) =>
-                  resource.updateParams({
+                  updateParams({
                     limit: Number(value),
                   })
                 }
@@ -591,6 +567,7 @@ export default function TestCaseListClient() {
                   <SelectItem value='10'>10 rows</SelectItem>
                   <SelectItem value='20'>20 rows</SelectItem>
                   <SelectItem value='50'>50 rows</SelectItem>
+                  <SelectItem value='100'>100 rows</SelectItem>
                 </SelectContent>
               </Select>
             </>
@@ -598,7 +575,7 @@ export default function TestCaseListClient() {
         />
 
         <div className='p-4 md:p-5'>
-          <AdminStatusMessage message={resource.message} />
+          <AdminStatusMessage message={message} />
         </div>
 
         <div className='overflow-x-auto px-4'>
@@ -616,7 +593,7 @@ export default function TestCaseListClient() {
             </TableHeader>
 
             <TableBody>
-              {resource.isLoading ? (
+              {isLoading ? (
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index}>
                     <TableCell>
@@ -690,15 +667,15 @@ export default function TestCaseListClient() {
                           variant='secondary'
                           className='w-fit rounded-full'
                         >
-                          {getStudyCaseTitle(testCase.studyCaseId)}
+                          {getTestCaseStudyCaseTitle(testCase)}
                         </Badge>
 
                         <p className='text-xs text-muted-foreground'>
-                          {getMaterialTitleByStudyCaseId(testCase.studyCaseId)}
+                          {getTestCaseMaterialTitle(testCase)}
                         </p>
 
                         <p className='text-xs text-muted-foreground'>
-                          {getConceptTitleByStudyCaseId(testCase.studyCaseId)}
+                          {getTestCaseConceptTitle(testCase)}
                         </p>
                       </div>
                     </TableCell>
@@ -784,7 +761,7 @@ export default function TestCaseListClient() {
           pagination={pagination}
           label='test cases'
           onPageChange={(nextPage) =>
-            resource.updateParams(
+            updateParams(
               {
                 page: nextPage,
               },
@@ -812,7 +789,7 @@ export default function TestCaseListClient() {
                 <FieldLabel>Study Case</FieldLabel>
 
                 <Select
-                  value={studyCaseId || undefined}
+                  value={studyCaseId}
                   disabled={drawerMode === 'edit'}
                   onValueChange={handleStudyCaseChange}
                 >
@@ -826,7 +803,7 @@ export default function TestCaseListClient() {
                         key={studyCase.id}
                         value={String(studyCase.id)}
                       >
-                        {studyCase.title}
+                        {getStudyCaseOptionLabel(studyCase)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -982,9 +959,10 @@ export default function TestCaseListClient() {
           <DrawerFooter className='shrink-0 border-t bg-background'>
             <Button
               type='submit'
-              disabled={resource.isMutating}
+              disabled={isMutating}
             >
-              {resource.isMutating ? 'Saving...' : 'Save Test Case'}
+              {isMutating && <Spinner />}
+              {isMutating ? 'Saving...' : 'Save Test Case'}
             </Button>
 
             <DrawerClose asChild>
@@ -1005,7 +983,7 @@ export default function TestCaseListClient() {
         description={`Are you sure you want to delete ${
           selectedTestCase?.description ?? 'this test case'
         }? This action cannot be undone. If this test case already has related submissions, the backend may reject this action.`}
-        isDeleting={resource.isMutating}
+        isDeleting={isMutating}
         onConfirm={handleDeleteTestCase}
         onOpenChange={setDeleteDialogOpen}
       />

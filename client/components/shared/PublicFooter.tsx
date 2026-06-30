@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { Code2 } from 'lucide-react';
 
 import { useAuthStore } from '@/stores/use-auth-store';
-import { Skeleton } from '../ui/skeleton';
-import { Separator } from '../ui/separator';
+
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
 export default function PublicFooter() {
   const { user, hasHydrated } = useAuthStore();

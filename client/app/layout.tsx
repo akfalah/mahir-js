@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google';
 
 import './globals.css';
 
+import { Toaster } from '@/components/ui/sonner';
 import AuthProvider from '@/components/shared/AuthProvider';
 
 const geist = Geist({ subsets: ['latin'] });
@@ -21,6 +22,20 @@ export default function RootLayout({
     <html lang='id'>
       <body className={geist.className}>
         <AuthProvider>{children}</AuthProvider>
+
+        <Toaster
+          theme='light'
+          richColors
+          closeButton
+          position='top-right'
+          toastOptions={{
+            classNames: {
+              toast: 'max-w-md rounded-2xl',
+              title: 'text-sm font-semibold',
+              description: 'text-sm',
+            },
+          }}
+        />
       </body>
     </html>
   );

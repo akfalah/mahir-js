@@ -17,14 +17,17 @@ export type User = {
   email: string;
   name: string;
   role: Role;
-  imageUrl?: string;
-  bio?: string;
+  imageUrl?: string | null;
+  bio?: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 // ===== API Response =====
-export type FetchParams = Record<string, string | number | boolean | undefined>;
+export type FetchParams = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
 
 export type PaginationMeta = {
   page: number;
@@ -36,6 +39,30 @@ export type PaginationMeta = {
 export type ApiResponse<T> = {
   data: T;
   pagination?: PaginationMeta;
+};
+
+// ===== Shared Relation Types =====
+export type ConceptRelation = {
+  id: number;
+  slug: string;
+  title: string;
+  isPublished: boolean;
+};
+
+export type MaterialRelation = {
+  id: number;
+  slug: string;
+  title: string;
+  isPublished: boolean;
+  concept: ConceptRelation;
+};
+
+export type StudyCaseRelation = {
+  id: number;
+  slug: string;
+  title: string;
+  isPublished: boolean;
+  material: MaterialRelation;
 };
 
 // ===== Concept =====
@@ -62,6 +89,7 @@ export type Material = {
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
+  concept?: ConceptRelation;
 };
 
 // ===== Study Case =====
@@ -85,6 +113,7 @@ export type StudyCase = {
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
+  material?: MaterialRelation;
 };
 
 // ===== Test Case =====
@@ -98,6 +127,7 @@ export type TestCase = {
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
+  studyCase?: StudyCaseRelation;
 };
 
 // ===== Submission =====
@@ -108,6 +138,25 @@ export type SubmissionStatus =
   | 'FAILED'
   | 'ERROR';
 
+export type SubmissionUser = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+export type SubmissionStudyCase = {
+  id: number;
+  title: string;
+  material: {
+    id: number;
+    title: string;
+    concept: {
+      id: number;
+      title: string;
+    };
+  };
+};
+
 export type Submission = {
   id: number;
   userId: number;
@@ -116,6 +165,8 @@ export type Submission = {
   status: SubmissionStatus;
   errorMessage: string | null;
   createdAt: string;
+  user?: SubmissionUser;
+  studyCase?: SubmissionStudyCase;
 };
 
 // ===== Test Result =====
@@ -128,7 +179,7 @@ export type TestResult = {
   description: string;
   status: TestResultStatus;
   expected: string;
-  received: string;
+  received: string | null;
   failureMessage: string | null;
 };
 

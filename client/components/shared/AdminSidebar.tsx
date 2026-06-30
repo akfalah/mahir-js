@@ -5,60 +5,85 @@ import { usePathname } from 'next/navigation';
 
 import {
   BookOpen,
-  Code2,
-  FileText,
+  ClipboardCheck,
+  FileCode2,
+  GraduationCap,
   LayoutDashboard,
   Layers3,
   ListChecks,
+  Users,
 } from 'lucide-react';
 
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
 } from '@/components/ui/sidebar';
 
-const navItems = [
+const sidebarGroups = [
   {
-    title: 'Dashboard',
-    href: '/admin',
-    icon: LayoutDashboard,
+    label: 'Overview',
+    items: [
+      {
+        title: 'Dashboard',
+        href: '/admin',
+        icon: LayoutDashboard,
+      },
+    ],
   },
   {
-    title: 'Concepts',
-    href: '/admin/concepts',
-    icon: Layers3,
+    label: 'Management',
+    items: [
+      {
+        title: 'Users',
+        href: '/admin/users',
+        icon: Users,
+      },
+      {
+        title: 'Concepts',
+        href: '/admin/concepts',
+        icon: Layers3,
+      },
+      {
+        title: 'Materials',
+        href: '/admin/materials',
+        icon: BookOpen,
+      },
+      {
+        title: 'Study Cases',
+        href: '/admin/study-cases',
+        icon: FileCode2,
+      },
+      {
+        title: 'Test Cases',
+        href: '/admin/test-cases',
+        icon: ListChecks,
+      },
+    ],
   },
   {
-    title: 'Materials',
-    href: '/admin/materials',
-    icon: BookOpen,
-  },
-  {
-    title: 'Study Cases',
-    href: '/admin/study-cases',
-    icon: Code2,
-  },
-  {
-    title: 'Test Cases',
-    href: '/admin/test-cases',
-    icon: ListChecks,
+    label: 'Evaluation',
+    items: [
+      {
+        title: 'Submissions',
+        href: '/admin/submissions',
+        icon: ClipboardCheck,
+      },
+    ],
   },
 ];
 
-function checkIsActive(pathname: string, href: string) {
+function isActivePath(pathname: string, href: string) {
   if (href === '/admin') {
     return pathname === href;
   }
 
-  return pathname.startsWith(href);
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export default function AdminSidebar() {
@@ -67,76 +92,61 @@ export default function AdminSidebar() {
   return (
     <Sidebar
       collapsible='icon'
-      variant='sidebar'
+      className='border-r'
     >
-      <SidebarHeader className='flex min-h-16 justify-center border-b p-2'>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              size='lg'
-              tooltip='Mahir.js Admin'
-              className='h-12 gap-3 rounded-xl px-3 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-12 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0'
-            >
-              <Link href='/admin'>
-                <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground'>
-                  <FileText className='size-5' />
-                </div>
+      <SidebarHeader className='border-b p-4'>
+        <Link
+          href='/admin'
+          className='flex min-h-12 items-center gap-3 rounded-2xl px-2 transition-colors hover:bg-sidebar-accent'
+        >
+          <div className='flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground'>
+            <GraduationCap className='size-5' />
+          </div>
 
-                <div className='flex min-w-0 flex-col gap-y-1 group-data-[collapsible=icon]:hidden'>
-                  <span className='truncate text-sm font-bold leading-none'>
-                    Mahir.js
-                  </span>
-
-                  <span className='truncate text-xs text-muted-foreground'>
-                    Admin Panel
-                  </span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+          <div className='flex min-w-0 flex-col group-data-[collapsible=icon]:hidden'>
+            <span className='truncate text-sm font-bold'>Mahir.js</span>
+            <span className='truncate text-xs text-muted-foreground'>
+              Admin Panel
+            </span>
+          </div>
+        </Link>
       </SidebarHeader>
 
-      <SidebarContent className='p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2'>
-        <SidebarGroup className='p-0 group-data-[collapsible=icon]:w-full'>
-          <SidebarGroupLabel className='group-data-[collapsible=icon]:sr-only'>
-            Management
-          </SidebarGroupLabel>
+      <SidebarContent className='p-3'>
+        {sidebarGroups.map((group) => (
+          <SidebarGroup
+            key={group.label}
+            className='p-0'
+          >
+            <SidebarGroupLabel className='px-2 text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden'>
+              {group.label}
+            </SidebarGroupLabel>
 
-          <SidebarGroupContent>
-            <SidebarMenu className='gap-y-2 group-data-[collapsible=icon]:items-center'>
-              {navItems.map((item) => {
+            <SidebarMenu className='gap-y-1'>
+              {group.items.map((item) => {
                 const Icon = item.icon;
-                const isActive = checkIsActive(pathname, item.href);
+                const isActive = isActivePath(pathname, item.href);
 
                 return (
-                  <SidebarMenuItem
-                    key={item.href}
-                    className='group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center'
-                  >
+                  <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
                       tooltip={item.title}
-                      className='h-10 gap-3 rounded-xl data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0'
+                      className='h-11 rounded-2xl px-3 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground'
                     >
                       <Link href={item.href}>
-                        <Icon className='size-4 shrink-0' />
-                        <span className='group-data-[collapsible=icon]:hidden'>
-                          {item.title}
-                        </span>
+                        <Icon className='size-4' />
+                        <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
-
-      <SidebarRail />
     </Sidebar>
   );
 }
