@@ -13,8 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import PublicBreadcrumb from '@/components/shared/PublicBreadcrumb';
 
-import MaterialContent from './MaterialContent';
-import StudyCaseGrid from './StudyCaseGrid';
+import MaterialContent from './components/MaterialContent';
+import StudyCaseGrid from './components/StudyCaseGrid';
 
 type Props = {
   params: Promise<{

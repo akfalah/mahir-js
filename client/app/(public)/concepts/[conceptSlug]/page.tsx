@@ -8,7 +8,7 @@ import { fetchConceptBySlug, fetchConcepts, fetchMaterials } from '@/lib/fetch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import PublicBreadcrumb from '@/components/shared/PublicBreadcrumb';
-import MaterialGrid from './MaterialGrid';
+import MaterialGrid from './components/MaterialGrid';
 
 type Props = {
   params: Promise<{

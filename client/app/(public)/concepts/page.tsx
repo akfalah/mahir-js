@@ -5,7 +5,7 @@ import { fetchConcepts } from '@/lib/fetch';
 import { Badge } from '@/components/ui/badge';
 
 import PublicBreadcrumb from '@/components/shared/PublicBreadcrumb';
-import ConceptGrid from './ConceptGrid';
+import ConceptGrid from './components/ConceptGrid';
 
 const pageContent = {
   badge: 'Learning Path',
