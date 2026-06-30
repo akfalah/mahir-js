@@ -1,4 +1,4 @@
-import { TestCase } from '../../generated/prisma/client';
+import { Prisma, TestCase } from '../../generated/prisma/client';
 
 import { PaginationRequest, PaginationResponse } from './paginations.model';
 
@@ -31,6 +31,60 @@ export type UpdateTestCaseRequest = {
   isPublished?: boolean;
 };
 
+export const testCaseRelationInclude = {
+  studyCase: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      isPublished: true,
+      material: {
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          isPublished: true,
+          concept: {
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              isPublished: true,
+            },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.TestCaseInclude;
+
+export type TestCaseWithRelations = Prisma.TestCaseGetPayload<{
+  include: typeof testCaseRelationInclude;
+}>;
+
+export type TestCaseConceptResponse = {
+  id: number;
+  slug: string;
+  title: string;
+  isPublished: boolean;
+};
+
+export type TestCaseMaterialResponse = {
+  id: number;
+  slug: string;
+  title: string;
+  isPublished: boolean;
+  concept: TestCaseConceptResponse;
+};
+
+export type TestCaseStudyCaseResponse = {
+  id: number;
+  slug: string;
+  title: string;
+  isPublished: boolean;
+  material: TestCaseMaterialResponse;
+};
+
 export type TestCaseResponse = {
   id: number;
   studyCaseId: number;
@@ -41,6 +95,7 @@ export type TestCaseResponse = {
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
+  studyCase?: TestCaseStudyCaseResponse;
 };
 
 export type TestCaseInput = {
@@ -52,8 +107,10 @@ export type TestCaseInput = {
 
 export type TestCasePaginationResponse = PaginationResponse<TestCaseResponse>;
 
-export function toTestCaseResponse(testCase: TestCase) {
-  return {
+export function toTestCaseResponse(
+  testCase: TestCase | TestCaseWithRelations,
+): TestCaseResponse {
+  const response: TestCaseResponse = {
     id: testCase.id,
     studyCaseId: testCase.studyCaseId,
     description: testCase.description,
@@ -64,4 +121,10 @@ export function toTestCaseResponse(testCase: TestCase) {
     createdAt: testCase.createdAt,
     updatedAt: testCase.updatedAt,
   };
+
+  if ('studyCase' in testCase) {
+    response.studyCase = testCase.studyCase;
+  }
+
+  return response;
 }

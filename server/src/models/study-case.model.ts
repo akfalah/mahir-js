@@ -1,8 +1,8 @@
-import { StudyCase } from '../../generated/prisma/client';
+import { Prisma, StudyCase } from '../../generated/prisma/client';
 
 import { PaginationRequest, PaginationResponse } from './paginations.model';
 
-export type StudyCaeSortBy =
+export type StudyCaseSortBy =
   | 'id'
   | 'slug'
   | 'materialId'
@@ -11,7 +11,7 @@ export type StudyCaeSortBy =
   | 'isPublished'
   | 'createdAt';
 
-export type StudyCasePaginationRequest = PaginationRequest<StudyCaeSortBy> & {
+export type StudyCasePaginationRequest = PaginationRequest<StudyCaseSortBy> & {
   materialId?: number;
   isPublished?: boolean;
 };
@@ -48,6 +48,44 @@ export type UpdateStudyCaseRequest = {
   isPublished?: boolean;
 };
 
+export const studyCaseRelationInclude = {
+  material: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      isPublished: true,
+      concept: {
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          isPublished: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.StudyCaseInclude;
+
+export type StudyCaseWithRelations = Prisma.StudyCaseGetPayload<{
+  include: typeof studyCaseRelationInclude;
+}>;
+
+export type StudyCaseConceptResponse = {
+  id: number;
+  slug: string;
+  title: string;
+  isPublished: boolean;
+};
+
+export type StudyCaseMaterialResponse = {
+  id: number;
+  slug: string;
+  title: string;
+  isPublished: boolean;
+  concept: StudyCaseConceptResponse;
+};
+
 export type StudyCaseResponse = {
   id: number;
   materialId: number;
@@ -63,12 +101,15 @@ export type StudyCaseResponse = {
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
+  material?: StudyCaseMaterialResponse;
 };
 
 export type StudyCasePaginationResponse = PaginationResponse<StudyCaseResponse>;
 
-export function toStudyCaseResponse(studyCase: StudyCase) {
-  return {
+export function toStudyCaseResponse(
+  studyCase: StudyCase | StudyCaseWithRelations,
+): StudyCaseResponse {
+  const response: StudyCaseResponse = {
     id: studyCase.id,
     materialId: studyCase.materialId,
     slug: studyCase.slug,
@@ -84,4 +125,10 @@ export function toStudyCaseResponse(studyCase: StudyCase) {
     createdAt: studyCase.createdAt,
     updatedAt: studyCase.updatedAt,
   };
+
+  if ('material' in studyCase) {
+    response.material = studyCase.material;
+  }
+
+  return response;
 }

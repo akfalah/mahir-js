@@ -11,6 +11,7 @@ import {
   CreateStudyCaseRequest,
   StudyCasePaginationRequest,
   StudyCasePaginationResponse,
+  studyCaseRelationInclude,
   StudyCaseResponse,
   toStudyCaseResponse,
   UpdateStudyCaseRequest,
@@ -52,6 +53,7 @@ export class StudyCaseService {
     const [studyCases, total] = await Promise.all([
       prisma.studyCase.findMany({
         where,
+        include: studyCaseRelationInclude,
         skip,
         take: data.limit,
         orderBy: { [data.sortBy as string]: data.orderBy },
@@ -78,6 +80,7 @@ export class StudyCaseService {
 
     const studyCase = await prisma.studyCase.findUnique({
       where: { slug, ...(!isAdmin && { isPublished: true }) },
+      include: studyCaseRelationInclude,
     });
 
     if (!studyCase) throw new ResponseError(404, 'Study case not found');

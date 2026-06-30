@@ -1,4 +1,4 @@
-import { Material } from '../../generated/prisma/client';
+import { Material, Prisma } from '../../generated/prisma/client';
 
 import { PaginationRequest, PaginationResponse } from './paginations.model';
 
@@ -34,6 +34,28 @@ export type UpdateMaterialRequest = {
   isPublished?: boolean;
 };
 
+export const materialRelationInclude = {
+  concept: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      isPublished: true,
+    },
+  },
+} satisfies Prisma.MaterialInclude;
+
+export type MaterialWithRelations = Prisma.MaterialGetPayload<{
+  include: typeof materialRelationInclude;
+}>;
+
+export type MaterialConceptResponse = {
+  id: number;
+  slug: string;
+  title: string;
+  isPublished: boolean;
+};
+
 export type MaterialResponse = {
   id: number;
   conceptId: number;
@@ -45,12 +67,15 @@ export type MaterialResponse = {
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
+  concept?: MaterialConceptResponse;
 };
 
 export type MaterialPaginationResponse = PaginationResponse<MaterialResponse>;
 
-export function toMaterialResponse(material: Material) {
-  return {
+export function toMaterialResponse(
+  material: Material | MaterialWithRelations,
+): MaterialResponse {
+  const response: MaterialResponse = {
     id: material.id,
     conceptId: material.conceptId,
     slug: material.slug,
@@ -62,4 +87,10 @@ export function toMaterialResponse(material: Material) {
     createdAt: material.createdAt,
     updatedAt: material.updatedAt,
   };
+
+  if ('concept' in material) {
+    response.concept = material.concept;
+  }
+
+  return response;
 }

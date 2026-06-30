@@ -11,6 +11,7 @@ import {
   CreateMaterialRequest,
   MaterialPaginationRequest,
   MaterialPaginationResponse,
+  materialRelationInclude,
   MaterialResponse,
   toMaterialResponse,
   UpdateMaterialRequest,
@@ -51,6 +52,7 @@ export class MaterialService {
     const [materials, total] = await Promise.all([
       prisma.material.findMany({
         where,
+        include: materialRelationInclude,
         skip,
         take: data.limit,
         orderBy: { [data.sortBy as string]: data.orderBy },
@@ -77,6 +79,7 @@ export class MaterialService {
 
     const material = await prisma.material.findUnique({
       where: { slug, ...(!isAdmin && { isPublished: true }) },
+      include: materialRelationInclude,
     });
 
     if (!material) throw new ResponseError(404, 'Material not found');

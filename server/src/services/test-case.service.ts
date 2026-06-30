@@ -13,6 +13,7 @@ import {
   CreateTestCaseRequest,
   TestCasePaginationRequest,
   TestCasePaginationResponse,
+  testCaseRelationInclude,
   TestCaseResponse,
   toTestCaseResponse,
   UpdateTestCaseRequest,
@@ -46,6 +47,7 @@ export class TestCaseService {
     const [testCases, total] = await Promise.all([
       prisma.testCase.findMany({
         where,
+        include: testCaseRelationInclude,
         skip,
         take: data.limit,
         orderBy: { [data.sortBy as string]: data.orderBy },
@@ -72,6 +74,7 @@ export class TestCaseService {
 
     const testCase = await prisma.testCase.findUnique({
       where: { id, ...(!isAdmin && { isPublished: true }) },
+      include: testCaseRelationInclude,
     });
 
     if (!testCase) throw new ResponseError(404, 'Test case not found');

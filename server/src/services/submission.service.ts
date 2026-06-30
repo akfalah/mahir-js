@@ -15,8 +15,10 @@ import { JwtPayload } from '../models/auth.model';
 import {
   CreateSubmissionRequest,
   RunSubmissionResponse,
+  submissionDetailInclude,
   SubmissionPaginationRequest,
   SubmissionPaginationResponse,
+  submissionRelationInclude,
   SubmissionResponse,
   toSubmissionResponse,
 } from '../models/submission.model';
@@ -48,6 +50,7 @@ export class SubmissionService {
     const [submissions, total] = await Promise.all([
       prisma.submission.findMany({
         where,
+        include: submissionRelationInclude,
         skip,
         take: data.limit,
         orderBy: { [data.sortBy as string]: data.orderBy },
@@ -72,7 +75,7 @@ export class SubmissionService {
   ): Promise<SubmissionResponse & { testResults: TestResultResponse[] }> {
     const submission = await prisma.submission.findUnique({
       where: { id },
-      include: { testResults: { orderBy: { id: 'asc' } } },
+      include: submissionDetailInclude,
     });
 
     if (!submission) throw new ResponseError(404, 'Submission not found');
