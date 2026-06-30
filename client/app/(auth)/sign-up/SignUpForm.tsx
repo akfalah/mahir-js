@@ -70,8 +70,11 @@ export default function SignUpForm() {
     setIsSubmitting(true);
 
     try {
-      const { confirmPassword: _confirmPassword, ...payload } =
-        validationResult.data;
+      const payload = {
+        email: validationResult.data.email,
+        name: validationResult.data.name,
+        password: validationResult.data.password,
+      };
 
       await signUp(payload);
 
