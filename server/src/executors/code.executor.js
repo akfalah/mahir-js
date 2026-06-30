@@ -297,7 +297,7 @@ function parseJestResults(jestResult, testCases) {
       status: passed ? 'PASSED' : 'FAILED',
       expected: JSON.stringify(testCase.expected.result),
       received,
-      failureMessage: passed ? null : failMessage,
+      failureMessage: passed ? null : cleanFailureMessage(failMessage),
     });
   }
 
