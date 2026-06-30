@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "nodemon",
     "test": "jest --runInBand --forceExit",
-    "test:watch": "jest --runInBand --watch"
+    "test:watch": "jest --runInBand --watch",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
   },
   "jest": {
     "transform": {
