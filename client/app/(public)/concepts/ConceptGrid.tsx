@@ -9,7 +9,7 @@ import api from '@/lib/api';
 
 import { useAuthStore } from '@/stores/use-auth-store';
 
-import { Concept, Material, StudyCase, StudyCaseProgress } from '@/types';
+import { Concept, Material, MaterialProgress } from '@/types';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,10 +30,11 @@ export default function ConceptGrid({ concepts }: Props) {
   const { user, hasHydrated } = useAuthStore();
 
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [studyCases, setStudyCases] = useState<StudyCase[]>([]);
-  const [studyCaseProgresses, setStudyCaseProgresses] = useState<
-    StudyCaseProgress[]
+  const [materialProgresses, setMaterialProgresses] = useState<
+    MaterialProgress[]
   >([]);
+
+  const shouldShowProgress = hasHydrated && user?.role === 'STUDENT';
 
   useEffect(() => {
     let isActive = true;
@@ -53,6 +54,12 @@ export default function ConceptGrid({ concepts }: Props) {
         return;
       }
 
+      if (user?.role !== 'STUDENT') {
+        setMaterials([]);
+        setMaterialProgresses([]);
+        return;
+      }
+
       const materialsByConcept = await Promise.all(
         concepts.map((concept) =>
           safeGet<Material[]>(
@@ -64,28 +71,17 @@ export default function ConceptGrid({ concepts }: Props) {
 
       const nextMaterials = materialsByConcept.flat();
 
-      const studyCasesByMaterial = await Promise.all(
-        nextMaterials.map((material) =>
-          safeGet<StudyCase[]>(
-            `/study-cases?materialId=${material.id}&isPublished=true&sortBy=order&orderBy=asc&limit=100`,
-            [],
-          ),
-        ),
+      const nextMaterialProgresses = await safeGet<MaterialProgress[]>(
+        '/progress/materials',
+        [],
       );
-
-      const nextStudyCases = studyCasesByMaterial.flat();
-
-      const nextStudyCaseProgresses = user
-        ? await safeGet<StudyCaseProgress[]>('/progress/study-cases', [])
-        : [];
 
       if (!isActive) {
         return;
       }
 
       setMaterials(nextMaterials);
-      setStudyCases(nextStudyCases);
-      setStudyCaseProgresses(nextStudyCaseProgresses);
+      setMaterialProgresses(nextMaterialProgresses);
     };
 
     fetchProgressData();
@@ -93,34 +89,26 @@ export default function ConceptGrid({ concepts }: Props) {
     return () => {
       isActive = false;
     };
-  }, [concepts, hasHydrated, user]);
+  }, [concepts, hasHydrated, user?.role]);
 
-  const completedStudyCaseIds = useMemo(() => {
+  const completedMaterialIds = useMemo(() => {
     return new Set(
-      studyCaseProgresses
+      materialProgresses
         .filter((progress) => progress.isCompleted)
-        .map((progress) => progress.studyCaseId),
+        .map((progress) => progress.materialId),
     );
-  }, [studyCaseProgresses]);
+  }, [materialProgresses]);
 
   const getConceptProgress = (concept: Concept): ConceptProgressSummary => {
     const conceptMaterials = materials.filter(
       (material) => material.conceptId === concept.id,
     );
 
-    const conceptMaterialIds = new Set(
-      conceptMaterials.map((material) => material.id),
-    );
-
-    const conceptStudyCases = studyCases.filter((studyCase) =>
-      conceptMaterialIds.has(studyCase.materialId),
-    );
-
-    const completed = conceptStudyCases.filter((studyCase) =>
-      completedStudyCaseIds.has(studyCase.id),
+    const completed = conceptMaterials.filter((material) =>
+      completedMaterialIds.has(material.id),
     ).length;
 
-    const total = conceptStudyCases.length;
+    const total = conceptMaterials.length;
 
     const value = total > 0 ? Math.round((completed / total) * 100) : 0;
 
@@ -135,8 +123,11 @@ export default function ConceptGrid({ concepts }: Props) {
     <section className='grid items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3'>
       {concepts.map((concept) => {
         const progress = getConceptProgress(concept);
+
         const isCompleted =
-          progress.total > 0 && progress.completed === progress.total;
+          shouldShowProgress &&
+          progress.total > 0 &&
+          progress.completed === progress.total;
 
         return (
           <Card
@@ -167,17 +158,20 @@ export default function ConceptGrid({ concepts }: Props) {
                 </p>
               </div>
 
-              <div className='flex flex-col gap-y-2 rounded-2xl bg-muted/40 p-3'>
-                <div className='flex items-center justify-between gap-4 text-xs'>
-                  <span className='text-muted-foreground'>
-                    {progress.completed} of {progress.total} completed
-                  </span>
+              {shouldShowProgress && (
+                <div className='flex flex-col gap-y-2 rounded-2xl bg-muted/40 p-3'>
+                  <div className='flex items-center justify-between gap-4 text-xs'>
+                    <span className='text-muted-foreground'>
+                      {progress.completed} of {progress.total} materials
+                      completed
+                    </span>
 
-                  <span className='font-medium'>{progress.value}%</span>
+                    <span className='font-medium'>{progress.value}%</span>
+                  </div>
+
+                  <Progress value={progress.value} />
                 </div>
-
-                <Progress value={progress.value} />
-              </div>
+              )}
             </CardContent>
 
             <CardFooter className='p-4 md:p-5'>
