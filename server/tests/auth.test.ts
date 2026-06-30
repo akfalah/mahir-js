@@ -3,244 +3,194 @@ import supertest from 'supertest';
 import { server } from '../src/applications/server';
 import { prisma } from '../src/applications/database';
 
+import {
+  authHeader,
+  cleanupTestData,
+  createTestPrefix,
+  createUserFixture,
+  uniqueEmail,
+} from './helpers/test-data.helper';
+
 const api = supertest(server);
 
-describe('auth test', () => {
+const prefix = createTestPrefix('auth');
+
+describe('auth endpoints', () => {
   beforeAll(async () => {
-    await prisma.user.deleteMany({
-      where: { email: { in: ['signup.test@example.com'] } },
-    });
+    await cleanupTestData(prefix);
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({
-      where: { email: { in: ['signup.test@example.com'] } },
-    });
+    await cleanupTestData(prefix);
   });
 
-  // ------------------------------------------------------------
-  // SIGN UP
-  // ------------------------------------------------------------
   describe('POST /api/auth/sign-up', () => {
-    it('should sign up successfully', async () => {
+    it('creates a student account and does not expose password', async () => {
       const res = await api.post('/api/auth/sign-up').send({
-        email: 'signup.test@example.com',
-        name: 'Test User',
+        email: uniqueEmail(prefix, 'signup'),
+        name: 'Signup User',
         password: 'password123',
       });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.email).toBe('signup.test@example.com');
-      expect(res.body.data.name).toBe('Test User');
-      expect(res.body.data.role).toBe('STUDENT');
+      expect(res.body.data).toMatchObject({
+        email: uniqueEmail(prefix, 'signup'),
+        name: 'Signup User',
+        role: 'STUDENT',
+      });
+      expect(res.body.data.password).toBeUndefined();
     });
 
-    it('should fail if email already exists', async () => {
+    it('rejects duplicate email', async () => {
       const res = await api.post('/api/auth/sign-up').send({
-        email: 'signup.test@example.com',
-        name: 'Test User',
+        email: uniqueEmail(prefix, 'signup'),
+        name: 'Signup User',
         password: 'password123',
       });
 
       expect(res.status).toBe(400);
     });
 
-    it('should fail if email is invalid', async () => {
-      const res = await api.post('/api/auth/sign-up').send({
-        email: 'signup.test',
-        name: 'Test User',
-        password: 'password123',
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should fail if password is too short', async () => {
-      const res = await api.post('/api/auth/sign-up').send({
-        email: 'signup.test@example.com',
-        name: 'Test User',
-        password: '123',
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should fail if name is too short', async () => {
-      const res = await api.post('/api/auth/sign-up').send({
-        email: 'signup.test',
-        name: 'abc',
-        password: 'password123',
-      });
+    it.each([
+      ['invalid email', { email: 'not-email', name: 'Valid Name', password: 'password123' }],
+      ['short name', { email: uniqueEmail(prefix, 'short-name'), name: 'ab', password: 'password123' }],
+      ['short password', { email: uniqueEmail(prefix, 'short-password'), name: 'Valid Name', password: '123' }],
+    ])('rejects %s', async (_caseName, payload) => {
+      const res = await api.post('/api/auth/sign-up').send(payload);
 
       expect(res.status).toBe(400);
     });
   });
 
-  // ------------------------------------------------------------
-  // SIGN IN
-  // ------------------------------------------------------------
   describe('POST /api/auth/sign-in', () => {
-    it('should sign in successfully', async () => {
+    it('signs in with valid credentials', async () => {
       const res = await api.post('/api/auth/sign-in').send({
-        email: 'signup.test@example.com',
+        email: uniqueEmail(prefix, 'signup'),
         password: 'password123',
       });
 
       expect(res.status).toBe(200);
       expect(res.body.data.token).toBeDefined();
+      expect(res.body.data.user.email).toBe(uniqueEmail(prefix, 'signup'));
     });
 
-    it('should fail with wrong password', async () => {
-      const res = await api.post('/api/auth/sign-in').send({
-        email: 'signup.test@example.com',
+    it('rejects wrong password and unknown email', async () => {
+      const wrongPassword = await api.post('/api/auth/sign-in').send({
+        email: uniqueEmail(prefix, 'signup'),
         password: 'wrongpassword',
       });
 
-      expect(res.status).toBe(401);
-    });
-
-    it('should fail with non-existent email', async () => {
-      const res = await api.post('/api/auth/sign-in').send({
-        email: 'notfound@example.com',
+      const unknownEmail = await api.post('/api/auth/sign-in').send({
+        email: uniqueEmail(prefix, 'unknown'),
         password: 'password123',
       });
 
-      expect(res.status).toBe(401);
+      expect(wrongPassword.status).toBe(401);
+      expect(unknownEmail.status).toBe(401);
     });
   });
 
-  // ------------------------------------------------------------
-  // PROFILE
-  // ------------------------------------------------------------
-  describe('GET /api/auth/profile', () => {
-    let token: string;
-
-    beforeAll(async () => {
-      const res = await api.post('/api/auth/sign-in').send({
-        email: 'signup.test@example.com',
-        password: 'password123',
+  describe('profile endpoints', () => {
+    it('requires authentication', async () => {
+      const profile = await api.get('/api/auth/profile');
+      const update = await api.patch('/api/auth/profile').send({ name: 'New Name' });
+      const password = await api.patch('/api/auth/profile/password').send({
+        currentPassword: 'password123',
+        newPassword: 'newpassword123',
       });
 
-      token = res.body.data.token;
+      expect(profile.status).toBe(401);
+      expect(update.status).toBe(401);
+      expect(password.status).toBe(401);
     });
 
-    it('should return current user', async () => {
+    it('rejects invalid token', async () => {
       const res = await api
         .get('/api/auth/profile')
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.email).toBe('signup.test@example.com');
-    });
-
-    it('should fail without token', async () => {
-      const res = await api.get('/api/auth/profile');
+        .set('Authorization', 'Bearer invalid-token');
 
       expect(res.status).toBe(401);
     });
 
-    it('should fail with invalid token', async () => {
+    it('returns and updates the current profile', async () => {
+      const { token } = await createUserFixture({ prefix, label: 'profile' });
+
+      const profile = await api
+        .get('/api/auth/profile')
+        .set(authHeader(token));
+
+      const update = await api
+        .patch('/api/auth/profile')
+        .set(authHeader(token))
+        .send({
+          name: 'Updated Profile',
+          bio: 'Learning JavaScript with Mahir.js',
+          imageUrl: 'https://example.com/avatar.png',
+        });
+
+      expect(profile.status).toBe(200);
+      expect(update.status).toBe(200);
+      expect(update.body.data.name).toBe('Updated Profile');
+      expect(update.body.data.bio).toBe('Learning JavaScript with Mahir.js');
+      expect(update.body.data.password).toBeUndefined();
+    });
+
+    it('rejects duplicate profile email and invalid profile payload', async () => {
+      const { token } = await createUserFixture({ prefix, label: 'profile-duplicate' });
+      await createUserFixture({ prefix, label: 'profile-existing' });
+
+      const duplicate = await api
+        .patch('/api/auth/profile')
+        .set(authHeader(token))
+        .send({ email: uniqueEmail(prefix, 'profile-existing') });
+
+      const invalid = await api
+        .patch('/api/auth/profile')
+        .set(authHeader(token))
+        .send({ name: 'ab' });
+
+      expect(duplicate.status).toBe(400);
+      expect(invalid.status).toBe(400);
+    });
+
+    it('updates password and allows sign in with the new password', async () => {
+      const { token, user } = await createUserFixture({ prefix, label: 'password' });
+
+      const wrongCurrent = await api
+        .patch('/api/auth/profile/password')
+        .set(authHeader(token))
+        .send({ currentPassword: 'wrongpassword', newPassword: 'newpassword123' });
+
+      const shortNew = await api
+        .patch('/api/auth/profile/password')
+        .set(authHeader(token))
+        .send({ currentPassword: 'password123', newPassword: '123' });
+
+      const success = await api
+        .patch('/api/auth/profile/password')
+        .set(authHeader(token))
+        .send({ currentPassword: 'password123', newPassword: 'newpassword123' });
+
+      const signIn = await api.post('/api/auth/sign-in').send({
+        email: user.email,
+        password: 'newpassword123',
+      });
+
+      expect(wrongCurrent.status).toBe(400);
+      expect(shortNew.status).toBe(400);
+      expect(success.status).toBe(200);
+      expect(signIn.status).toBe(200);
+    });
+
+    it('returns 404 when token references a deleted user', async () => {
+      const { token, user } = await createUserFixture({ prefix, label: 'deleted-profile' });
+      await prisma.user.delete({ where: { id: user.id } });
+
       const res = await api
         .get('/api/auth/profile')
-        .set('Authorization', 'Bearer invalidtoken');
+        .set(authHeader(token));
 
-      expect(res.status).toBe(401);
-    });
-  });
-
-  // ------------------------------------------------------------
-  // UPDATE PROFILE
-  // ------------------------------------------------------------
-  describe('PATCH /api/auth/profile', () => {
-    let token: string;
-
-    beforeAll(async () => {
-      const res = await api.post('/api/auth/sign-in').send({
-        email: 'signup.test@example.com',
-        password: 'password123',
-      });
-
-      token = res.body.data.token;
-    });
-
-    it('should update profile successfully', async () => {
-      const res = await api
-        .patch('/api/auth/profile')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ name: 'Updated Name', bio: 'Hello world' });
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.name).toBe('Updated Name');
-      expect(res.body.data.bio).toBe('Hello world');
-    });
-
-    it('should fail without token', async () => {
-      const res = await api.patch('/api/auth/profile');
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should fail with invalid image format', async () => {
-      const res = await api
-        .patch('/api/auth/profile')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ image: 'not-a-base64-image' });
-
-      expect(res.status).toBe(400);
-    });
-  });
-
-  // ------------------------------------------------------------
-  // UPDATE PASSWORD
-  // ------------------------------------------------------------
-  describe('PATCH /api/auth/profile/password', () => {
-    let token: string;
-
-    beforeAll(async () => {
-      const res = await api.post('/api/auth/sign-in').send({
-        email: 'signup.test@example.com',
-        password: 'password123',
-      });
-      token = res.body.data.token;
-    });
-
-    it('should update password successfully', async () => {
-      const res = await api
-        .patch('/api/auth/profile/password')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          currentPassword: 'password123',
-          newPassword: 'newpassword123',
-        });
-
-      expect(res.status).toBe(200);
-    });
-
-    it('should fail without token', async () => {
-      const res = await api.patch('/api/auth/profile/password');
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should fail with wrong current password', async () => {
-      const res = await api
-        .patch('/api/auth/profile/password')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          currentPassword: 'wrongpassword',
-          newPassword: 'newpassword123',
-        });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should fail if new password is too short', async () => {
-      const res = await api
-        .patch('/api/auth/profile/password')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ currentPassword: 'newpassword123', newPassword: '123' });
-
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(404);
     });
   });
 });

@@ -49,17 +49,24 @@ process.on(
       const syntaxCheck = checkSyntax(code, syntaxRules);
 
       if (!syntaxCheck.passed) {
-        // syntax tidak sesuai — return semua test case sebagai ERROR
-        const results = testCases.map((tc) => ({
-          testCaseId: tc.id,
-          description: tc.description,
-          status: 'ERROR',
-          expected: JSON.stringify(tc.expected.result),
-          received: null,
-          failureMessage: syntaxCheck.errors.join('\n'),
-        }));
+        process.send({
+          success: true,
+          results: buildErrorResults(testCases, syntaxCheck.errors.join('\n')),
+        });
+        process.exit(0);
+        return;
+      }
 
-        process.send({ success: true, results });
+      const runtimeAccessCheck = checkBlockedRuntimeAccess(code);
+
+      if (!runtimeAccessCheck.passed) {
+        process.send({
+          success: true,
+          results: buildErrorResults(
+            testCases,
+            runtimeAccessCheck.errors.join('\n'),
+          ),
+        });
         process.exit(0);
         return;
       }
@@ -192,6 +199,60 @@ process.on(
     process.exit(0);
   },
 );
+
+function buildErrorResults(testCases, failureMessage) {
+  return testCases.map((tc) => ({
+    testCaseId: tc.id,
+    description: tc.description,
+    status: 'ERROR',
+    expected: JSON.stringify(tc.expected.result),
+    received: null,
+    failureMessage,
+  }));
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function checkBlockedRuntimeAccess(code) {
+  const errors = [];
+
+  for (const mod of BLOCKED_MODULES) {
+    const requirePattern = new RegExp(
+      `\\brequire\\s*\\(\\s*['"]${escapeRegExp(mod)}['"]\\s*\\)`,
+    );
+
+    if (requirePattern.test(code)) {
+      errors.push(`Module '${mod}' is not allowed`);
+    }
+  }
+
+  const blockedGlobals = ['process', '__dirname', '__filename'];
+
+  for (const globalName of blockedGlobals) {
+    const globalPattern = new RegExp(`\\b${escapeRegExp(globalName)}\\b`);
+
+    if (globalPattern.test(code)) {
+      errors.push(`'${globalName}' is not allowed`);
+    }
+  }
+
+  const blockedDynamicExecution = ['eval', 'Function'];
+
+  for (const fnName of blockedDynamicExecution) {
+    const dynamicPattern = new RegExp(`\\b${escapeRegExp(fnName)}\\s*\\(`);
+
+    if (dynamicPattern.test(code)) {
+      errors.push(`'${fnName}' is not allowed`);
+    }
+  }
+
+  return {
+    passed: errors.length === 0,
+    errors,
+  };
+}
 
 function generateJestTestFile(functionName, parameterNames, testCases) {
   const testBlocks = testCases

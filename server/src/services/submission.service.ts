@@ -96,6 +96,11 @@ export class SubmissionService {
     const studyCase = await prisma.studyCase.findUnique({
       where: { id: data.studyCaseId },
       include: {
+        material: {
+          include: {
+            concept: true,
+          },
+        },
         testCases: {
           where: {
             isPublished: true,
@@ -111,7 +116,12 @@ export class SubmissionService {
       throw new ResponseError(404, 'Study case not found');
     }
 
-    if (!studyCase.isPublished && user.role === Role.STUDENT) {
+    if (
+      user.role === Role.STUDENT &&
+      (!studyCase.isPublished ||
+        !studyCase.material.isPublished ||
+        !studyCase.material.concept.isPublished)
+    ) {
       throw new ResponseError(404, 'Study case not found');
     }
 
@@ -181,9 +191,27 @@ export class SubmissionService {
 
     const studyCase = await prisma.studyCase.findUnique({
       where: { id: data.studyCaseId },
+      include: {
+        material: {
+          include: {
+            concept: true,
+          },
+        },
+      },
     });
 
-    if (!studyCase) throw new ResponseError(404, 'Study case not found');
+    if (!studyCase) {
+      throw new ResponseError(404, 'Study case not found');
+    }
+
+    if (
+      user.role === Role.STUDENT &&
+      (!studyCase.isPublished ||
+        !studyCase.material.isPublished ||
+        !studyCase.material.concept.isPublished)
+    ) {
+      throw new ResponseError(404, 'Study case not found');
+    }
 
     const submission = await prisma.submission.create({
       data: {
