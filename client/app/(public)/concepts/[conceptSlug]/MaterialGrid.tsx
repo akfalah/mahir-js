@@ -35,6 +35,8 @@ export default function MaterialGrid({ concept, materials }: Props) {
     StudyCaseProgress[]
   >([]);
 
+  const shouldShowProgress = hasHydrated && user?.role === 'STUDENT';
+
   useEffect(() => {
     let isActive = true;
 
@@ -115,8 +117,11 @@ export default function MaterialGrid({ concept, materials }: Props) {
     <div className='grid items-stretch gap-5 md:grid-cols-2'>
       {materials.map((material) => {
         const progress = getMaterialProgress(material);
+
         const isCompleted =
-          progress.total > 0 && progress.completed === progress.total;
+          shouldShowProgress &&
+          progress.total > 0 &&
+          progress.completed === progress.total;
 
         return (
           <Card
@@ -147,17 +152,19 @@ export default function MaterialGrid({ concept, materials }: Props) {
                 </p>
               </div>
 
-              <div className='flex flex-col gap-y-2 rounded-2xl bg-muted/40 p-3'>
-                <div className='flex items-center justify-between gap-4 text-xs'>
-                  <span className='text-muted-foreground'>
-                    {progress.completed} of {progress.total} completed
-                  </span>
+              {shouldShowProgress && (
+                <div className='flex flex-col gap-y-2 rounded-2xl bg-muted/40 p-3'>
+                  <div className='flex items-center justify-between gap-4 text-xs'>
+                    <span className='text-muted-foreground'>
+                      {progress.completed} of {progress.total} completed
+                    </span>
 
-                  <span className='font-medium'>{progress.value}%</span>
+                    <span className='font-medium'>{progress.value}%</span>
+                  </div>
+
+                  <Progress value={progress.value} />
                 </div>
-
-                <Progress value={progress.value} />
-              </div>
+              )}
             </CardContent>
 
             <CardFooter className='p-4 md:p-5'>

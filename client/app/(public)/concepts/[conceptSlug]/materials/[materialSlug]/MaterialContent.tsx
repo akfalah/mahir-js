@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import DOMPurify from 'dompurify';
+import createDOMPurify from 'dompurify';
 
 type Props = {
   content: string;
@@ -9,6 +9,12 @@ type Props = {
 
 export default function MaterialContent({ content }: Props) {
   const cleanContent = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return content;
+    }
+
+    const DOMPurify = createDOMPurify(window);
+
     return DOMPurify.sanitize(content);
   }, [content]);
 
