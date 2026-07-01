@@ -209,34 +209,6 @@ export default function TestCaseListClient() {
     return studyCase.title;
   };
 
-  const findStudyCase = (studyCaseId: number) => {
-    return studyCases.find((studyCase) => studyCase.id === studyCaseId);
-  };
-
-  const getTestCaseStudyCaseTitle = (testCase: TestCase) => {
-    return (
-      testCase.studyCase?.title ??
-      findStudyCase(testCase.studyCaseId)?.title ??
-      `Study Case #${testCase.studyCaseId}`
-    );
-  };
-
-  const getTestCaseMaterialTitle = (testCase: TestCase) => {
-    return (
-      testCase.studyCase?.material?.title ??
-      findStudyCase(testCase.studyCaseId)?.material?.title ??
-      'No material data'
-    );
-  };
-
-  const getTestCaseConceptTitle = (testCase: TestCase) => {
-    return (
-      testCase.studyCase?.material?.concept?.title ??
-      findStudyCase(testCase.studyCaseId)?.material?.concept?.title ??
-      'No concept data'
-    );
-  };
-
   const resetForm = (testCase?: TestCase | null) => {
     setStudyCaseId(
       testCase?.studyCaseId
@@ -662,20 +634,17 @@ export default function TestCaseListClient() {
                     </TableCell>
 
                     <TableCell>
-                      <div className='flex flex-col gap-y-1'>
-                        <Badge
-                          variant='secondary'
-                          className='w-fit rounded-full'
-                        >
-                          {getTestCaseStudyCaseTitle(testCase)}
-                        </Badge>
-
-                        <p className='text-xs text-muted-foreground'>
-                          {getTestCaseMaterialTitle(testCase)}
+                      <div className='flex min-w-0 flex-col gap-y-1'>
+                        <p className='truncate font-semibold'>
+                          {testCase.studyCase?.title ??
+                            `Study Case #${testCase.studyCaseId}`}
                         </p>
 
-                        <p className='text-xs text-muted-foreground'>
-                          {getTestCaseConceptTitle(testCase)}
+                        <p className='truncate text-sm text-muted-foreground'>
+                          {testCase.studyCase?.material?.title ?? '-'}
+                          {testCase.studyCase?.material?.concept?.title
+                            ? ` • ${testCase.studyCase.material.concept.title}`
+                            : ''}
                         </p>
                       </div>
                     </TableCell>

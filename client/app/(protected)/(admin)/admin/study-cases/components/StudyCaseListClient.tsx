@@ -82,14 +82,6 @@ function getMaterialOptionLabel(material: Material) {
   return material.title;
 }
 
-function getStudyCaseMaterialTitle(studyCase: StudyCase) {
-  return studyCase.material?.title ?? `Material #${studyCase.materialId}`;
-}
-
-function getStudyCaseConceptTitle(studyCase: StudyCase) {
-  return studyCase.material?.concept?.title ?? 'No concept data';
-}
-
 export default function StudyCaseListClient() {
   const {
     items,
@@ -611,14 +603,15 @@ export default function StudyCaseListClient() {
                     </TableCell>
 
                     <TableCell>
-                      <div className='flex flex-col gap-y-1'>
-                        <Badge variant='secondary'>
-                          {getStudyCaseMaterialTitle(studyCase)}
-                        </Badge>
+                      <div className='flex min-w-0 flex-col gap-y-1'>
+                        <p className='truncate font-semibold'>
+                          {studyCase.material?.title ??
+                            `Material #${studyCase.materialId}`}
+                        </p>
 
-                        <Badge variant='outline'>
-                          {getStudyCaseConceptTitle(studyCase)}
-                        </Badge>
+                        <p className='truncate text-sm text-muted-foreground'>
+                          {studyCase.material?.concept.title ?? ''}
+                        </p>
                       </div>
                     </TableCell>
 

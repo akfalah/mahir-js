@@ -5,13 +5,13 @@ import { usePathname } from 'next/navigation';
 
 import {
   BookOpen,
-  ClipboardCheck,
-  FileCode2,
-  GraduationCap,
+  FileText,
   LayoutDashboard,
   Layers3,
   ListChecks,
   Users,
+  FileCode2,
+  ClipboardCheck,
 } from 'lucide-react';
 
 import {
@@ -23,6 +23,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from '@/components/ui/sidebar';
 
 const sidebarGroups = [
@@ -92,52 +93,67 @@ export default function AdminSidebar() {
   return (
     <Sidebar
       collapsible='icon'
-      className='border-r'
+      variant='sidebar'
     >
-      <SidebarHeader className='border-b p-4'>
-        <Link
-          href='/admin'
-          className='flex min-h-12 items-center gap-3 rounded-2xl px-2 transition-colors hover:bg-sidebar-accent'
-        >
-          <div className='flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground'>
-            <GraduationCap className='size-5' />
-          </div>
+      <SidebarHeader className='flex min-h-16 justify-center border-b p-2'>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              size='lg'
+              tooltip='Mahir.js Admin'
+              className='h-12 gap-3 rounded-xl px-3 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-12 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0'
+            >
+              <Link href='/admin'>
+                <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground'>
+                  <FileText className='size-5' />
+                </div>
 
-          <div className='flex min-w-0 flex-col group-data-[collapsible=icon]:hidden'>
-            <span className='truncate text-sm font-bold'>Mahir.js</span>
-            <span className='truncate text-xs text-muted-foreground'>
-              Admin Panel
-            </span>
-          </div>
-        </Link>
+                <div className='flex min-w-0 flex-col gap-y-1 group-data-[collapsible=icon]:hidden'>
+                  <span className='truncate text-sm font-bold leading-none'>
+                    Mahir.js
+                  </span>
+
+                  <span className='truncate text-xs text-muted-foreground'>
+                    Admin Panel
+                  </span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className='p-3'>
+      <SidebarContent className='p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2'>
         {sidebarGroups.map((group) => (
           <SidebarGroup
             key={group.label}
-            className='p-0'
+            className='p-0 group-data-[collapsible=icon]:w-full'
           >
-            <SidebarGroupLabel className='px-2 text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden'>
+            <SidebarGroupLabel className='group-data-[collapsible=icon]:sr-only'>
               {group.label}
             </SidebarGroupLabel>
 
-            <SidebarMenu className='gap-y-1'>
+            <SidebarMenu className='gap-y-2 group-data-[collapsible=icon]:items-center'>
               {group.items.map((item) => {
-                const Icon = item.icon;
                 const isActive = isActivePath(pathname, item.href);
 
                 return (
-                  <SidebarMenuItem key={item.href}>
+                  <SidebarMenuItem
+                    key={item.href}
+                    className='group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center'
+                  >
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
                       tooltip={item.title}
-                      className='h-11 rounded-2xl px-3 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground'
+                      className='h-10 gap-3 rounded-xl data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground group-data-[collapsible=icon]:size-11 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0'
                     >
                       <Link href={item.href}>
-                        <Icon className='size-4' />
-                        <span>{item.title}</span>
+                        <item.icon className='size-4 shrink-0' />
+                        <span className='group-data-[collapsible=icon]:hidden'>
+                          {item.title}
+                        </span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -147,6 +163,8 @@ export default function AdminSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
+
+      <SidebarRail />
     </Sidebar>
   );
 }

@@ -538,12 +538,10 @@ export default function MaterialListClient() {
                     </TableCell>
 
                     <TableCell>
-                      <Badge
-                        variant='secondary'
-                        className='rounded-full'
-                      >
-                        {material.concept?.title}
-                      </Badge>
+                      <p className='truncate font-semibold'>
+                        {material.concept?.title ??
+                          `Material #${material.conceptId}`}
+                      </p>
                     </TableCell>
 
                     <TableCell>
