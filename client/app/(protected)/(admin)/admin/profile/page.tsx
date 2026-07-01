@@ -1,5 +1,5 @@
 import ProfileClient from '@/components/shared/ProfileClient';
 
-export default function ProfilePage() {
+export default function AdminProfilePage() {
   return <ProfileClient />;
 }

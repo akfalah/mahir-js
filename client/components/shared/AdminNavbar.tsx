@@ -32,6 +32,13 @@ function getPageMeta(pathname: string): PageMeta {
     };
   }
 
+  if (pathname.startsWith('/admin/profile')) {
+    return {
+      title: 'Profile',
+      description: 'Manage your account information.',
+    };
+  }
+
   if (pathname.startsWith('/admin/users')) {
     return {
       title: 'Users',
@@ -97,8 +104,8 @@ export default function AdminNavbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const user = useAuthStore((state) => state.user);
-  const signOut = useAuthStore((state) => state.signOut);
+  const { user, signOut } = useAuthStore();
+  const initials = getInitials(user?.name);
 
   const pageMeta = getPageMeta(pathname);
 
@@ -135,7 +142,7 @@ export default function AdminNavbar() {
           >
             <Link href='/'>
               <Home className='size-4' />
-              <span className='hidden sm:inline'>Public Site</span>
+              <span className='hidden sm:inline'>View Site</span>
             </Link>
           </Button>
 
@@ -147,12 +154,12 @@ export default function AdminNavbar() {
               >
                 <Avatar className='size-9 border'>
                   <AvatarImage
-                    src={user?.imageUrl ?? undefined}
-                    alt={user?.name ?? 'Admin'}
+                    src={user?.imageUrl}
+                    alt={user?.name}
                   />
 
                   <AvatarFallback className='text-xs font-semibold'>
-                    {getInitials(user?.name)}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
               </button>
@@ -178,7 +185,7 @@ export default function AdminNavbar() {
 
               <DropdownMenuItem asChild>
                 <Link
-                  href='/profile'
+                  href='/admin/profile'
                   className='gap-2'
                 >
                   <UserCircle className='size-4' />
@@ -187,10 +194,10 @@ export default function AdminNavbar() {
               </DropdownMenuItem>
 
               <DropdownMenuItem
-                className='gap-2 text-destructive focus:text-destructive'
+                className='group gap-2 text-destructive transition-colors focus:bg-destructive/10 focus:text-destructive [&_svg]:text-destructive'
                 onClick={handleSignOut}
               >
-                <LogOut className='size-4' />
+                <LogOut className='size-4 text-destructive' />
                 Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>

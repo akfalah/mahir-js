@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-import { Code2, Menu } from 'lucide-react';
+import { Code2, LogOut, Menu, UserCircle } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -15,19 +15,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-  SheetClose,
 } from '@/components/ui/sheet';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const navItems = [
   {
@@ -35,10 +36,23 @@ const navItems = [
     href: '/',
   },
   {
-    label: 'Concepts',
+    label: "Let's Learn",
     href: '/concepts',
   },
 ];
+
+function getInitials(name?: string | null) {
+  if (!name) {
+    return 'U';
+  }
+
+  return name
+    .split(' ')
+    .map((item) => item[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export default function PublicNavbar() {
   const pathname = usePathname();
@@ -47,16 +61,10 @@ export default function PublicNavbar() {
   const { user, signOut, hasHydrated } = useAuthStore();
 
   const isAdmin = user?.role === 'ADMIN';
-
-  const initials = user?.name
-    ?.split(' ')
-    .map((name) => name[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = getInitials(user?.name);
 
   const dashboardHref = isAdmin ? '/admin' : '/learn';
-  const dashboardLabel = isAdmin ? 'Admin Dashboard' : 'My Learning';
+  const dashboardLabel = isAdmin ? 'Admin Dashboard' : 'Continue Learning';
 
   const handleSignOut = async () => {
     await signOut();
@@ -65,12 +73,12 @@ export default function PublicNavbar() {
 
   return (
     <header className='sticky top-0 z-50 border-b bg-background/85 backdrop-blur-xl'>
-      <div className='container mx-auto p-4 flex items-center justify-between'>
+      <div className='container mx-auto flex items-center justify-between p-4'>
         <Link
           href='/'
           className='flex items-center gap-2'
         >
-          <div className='size-10 flex items-center justify-center text-primary-foreground bg-primary rounded-full shadow-sm'>
+          <div className='flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm'>
             <Code2 className='size-5' />
           </div>
 
@@ -79,7 +87,7 @@ export default function PublicNavbar() {
           </span>
         </Link>
 
-        <nav className='hidden md:flex items-center gap-x-1'>
+        <nav className='hidden items-center gap-x-1 md:flex'>
           {navItems.map((item) => {
             const isActive =
               item.href === '/'
@@ -102,7 +110,7 @@ export default function PublicNavbar() {
           })}
         </nav>
 
-        <div className='hidden md:flex items-center gap-x-2'>
+        <div className='hidden items-center gap-x-2 md:flex'>
           {!hasHydrated ? (
             <div className='flex items-center gap-x-2'>
               <Skeleton className='h-9 w-25' />
@@ -119,13 +127,21 @@ export default function PublicNavbar() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Avatar className='h-9 w-9 cursor-pointer border'>
-                    <AvatarImage src={user.imageUrl} />
+                  <button
+                    type='button'
+                    className='rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                  >
+                    <Avatar className='size-9 cursor-pointer border'>
+                      <AvatarImage
+                        src={user.imageUrl ?? undefined}
+                        alt={user.name}
+                      />
 
-                    <AvatarFallback className='bg-primary text-xs font-semibold text-primary-foreground'>
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
+                      <AvatarFallback className='bg-primary text-xs font-semibold text-primary-foreground'>
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent
@@ -142,15 +158,21 @@ export default function PublicNavbar() {
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem asChild>
-                    <Link href='/profile'>Profile</Link>
+                    <Link href='/profile'>
+                      <UserCircle className='size-4' />
+                      Profile
+                    </Link>
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem
                     onClick={handleSignOut}
-                    className='cursor-pointer text-destructive'
+                    className={
+                      'cursor-pointer text-destructive focus:text-destructive'
+                    }
                   >
+                    <LogOut className='size-4' />
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -166,7 +188,7 @@ export default function PublicNavbar() {
               </Button>
 
               <Button asChild>
-                <Link href='/sign-up'>Start Free</Link>
+                <Link href='/sign-up'>Start Learning Free</Link>
               </Button>
             </>
           )}
@@ -179,7 +201,7 @@ export default function PublicNavbar() {
                 variant='outline'
                 size='icon'
               >
-                <Menu />
+                <Menu className='size-4' />
               </Button>
             </SheetTrigger>
 
@@ -190,7 +212,7 @@ export default function PublicNavbar() {
                 </SheetTitle>
               </SheetHeader>
 
-              <div className='px-4 flex flex-col gap-y-6'>
+              <div className='flex flex-col gap-y-6 px-4'>
                 <nav className='flex flex-col gap-y-2'>
                   {navItems.map((item) => {
                     const isActive =
@@ -206,8 +228,8 @@ export default function PublicNavbar() {
                         <Link
                           href={item.href}
                           className={cn(
-                            'block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl',
-                            isActive && 'text-foreground bg-secondary',
+                            'block rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground',
+                            isActive && 'bg-secondary text-foreground',
                           )}
                         >
                           {item.label}
@@ -225,55 +247,61 @@ export default function PublicNavbar() {
                     <Skeleton className='h-10 w-full' />
                   </div>
                 ) : user ? (
-                  <div className='flex flex-col gap-y-4'>
-                    <div className='flex items-center gap-3'>
-                      <Avatar className='size-10 border'>
-                        <AvatarImage src={user.imageUrl} />
-
-                        <AvatarFallback className='text-xs font-semibold text-primary-foreground bg-primary'>
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className='min-w-0'>
-                        <p className='truncate text-sm font-medium'>
-                          {user.name}
-                        </p>
-                        <p className='truncate text-xs text-muted-foreground'>
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-
-                    <SheetClose asChild>
-                      <Button
-                        className='w-full'
-                        asChild
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type='button'
+                        className='flex items-center gap-2 rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
                       >
-                        <Link href={dashboardHref}>{dashboardLabel}</Link>
-                      </Button>
-                    </SheetClose>
+                        <Avatar className='size-9 border'>
+                          <AvatarImage src={user.imageUrl} />
 
-                    <SheetClose asChild>
-                      <Button
-                        variant='outline'
-                        className='w-full'
-                        asChild
-                      >
-                        <Link href='/profile'>Profile</Link>
-                      </Button>
-                    </SheetClose>
+                          <AvatarFallback className='text-xs font-semibold text-primary-foreground bg-primary'>
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                      </button>
+                    </DropdownMenuTrigger>
 
-                    <Button
-                      variant='outline'
-                      className='w-full text-destructive'
-                      onClick={handleSignOut}
+                    <DropdownMenuContent
+                      align='end'
+                      className='w-56'
                     >
-                      Sign Out
-                    </Button>
-                  </div>
+                      <DropdownMenuLabel>
+                        <div className='flex flex-col gap-y-1'>
+                          <span className='truncate text-sm font-semibold'>
+                            {user?.name ?? 'Admin'}
+                          </span>
+
+                          <span className='truncate text-xs font-normal text-muted-foreground'>
+                            {user?.email ?? 'admin@mahirjs.local'}
+                          </span>
+                        </div>
+                      </DropdownMenuLabel>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href='/profile'
+                          className='gap-2'
+                        >
+                          <UserCircle className='size-4' />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        className='group gap-2 text-destructive transition-colors focus:bg-destructive/10 focus:text-destructive [&_svg]:text-destructive'
+                        onClick={handleSignOut}
+                      >
+                        <LogOut className='size-4 text-destructive' />
+                        Sign out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : (
-                  <div className='grid gap-x-2'>
+                  <div className='flex flex-col gap-y-2'>
                     <SheetClose asChild>
                       <Button
                         variant='outline'
@@ -289,7 +317,7 @@ export default function PublicNavbar() {
                         className='w-full'
                         asChild
                       >
-                        <Link href='/sign-up'>Start Free</Link>
+                        <Link href='/sign-up'>Start Learning Free</Link>
                       </Button>
                     </SheetClose>
                   </div>

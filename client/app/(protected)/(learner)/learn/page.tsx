@@ -1,5 +1,5 @@
-import LearningClient from './LearningClient';
+import LearningClient from './components/LearningClient';
 
-export default function LeanPage() {
+export default function LearnPage() {
   return <LearningClient />;
 }

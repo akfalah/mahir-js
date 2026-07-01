@@ -17,8 +17,8 @@ export type User = {
   email: string;
   name: string;
   role: Role;
-  imageUrl?: string | null;
-  bio?: string | null;
+  imageUrl?: string;
+  bio?: string;
   createdAt: string;
   updatedAt: string;
 };
