@@ -44,6 +44,12 @@ export class StudyCaseService {
               mode: 'insensitive' as const,
             },
           },
+          {
+            functionName: {
+              contains: data.search,
+              mode: 'insensitive' as const,
+            },
+          },
         ],
       }),
     };

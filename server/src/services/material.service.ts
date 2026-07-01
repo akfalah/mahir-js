@@ -42,7 +42,7 @@ export class MaterialService {
       ...(data.search && {
         OR: [
           { title: { contains: data.search, mode: 'insensitive' as const } },
-          { content: { contains: data.search, mode: 'insensitive' as const } },
+          { description: { contains: data.search, mode: 'insensitive' as const } },
         ],
       }),
     };
