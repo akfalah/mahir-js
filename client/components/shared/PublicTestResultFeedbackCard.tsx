@@ -1,15 +1,30 @@
 import { Badge } from '@/components/ui/badge';
 
-import { getTestCaseStatusStyle } from '../utils/study-case-editor';
-import { DisplayedTestCase } from '../utils/types';
+import { DisplayedTestStatus } from '@/types';
 
-export default function TestCaseFeedbackCard({
+import { getTestCaseStatusStyle } from '@/lib/helpers/test-result-style';
+
+export type TestResultFeedbackItem = {
+  id: number;
+  description: string;
+  status: DisplayedTestStatus;
+  input?: string;
+  expected: string;
+  received?: string | null;
+  whatToCheck?: string | null;
+};
+
+type Props = {
+  testCase: TestResultFeedbackItem;
+  index: number;
+  showInput?: boolean;
+};
+
+export default function PublicTestResultFeedbackCard({
   testCase,
   index,
-}: {
-  testCase: DisplayedTestCase;
-  index: number;
-}) {
+  showInput = true,
+}: Props) {
   const statusStyle = getTestCaseStatusStyle(testCase.status);
   const Icon = statusStyle.icon;
 
@@ -38,15 +53,17 @@ export default function TestCaseFeedbackCard({
         </div>
 
         <div className='grid gap-3 rounded-xl bg-background/70 p-3 text-sm'>
-          <div className='flex flex-col gap-y-1'>
-            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
-              Input
-            </p>
+          {showInput && testCase.input && (
+            <div className='flex flex-col gap-y-1'>
+              <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+                Input
+              </p>
 
-            <p className='rounded-lg bg-background p-2 font-medium'>
-              {testCase.input}
-            </p>
-          </div>
+              <p className='rounded-lg bg-background p-2 font-medium'>
+                {testCase.input}
+              </p>
+            </div>
+          )}
 
           <div className='flex flex-col gap-y-1'>
             <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>

@@ -3,6 +3,7 @@ import {
   ConceptProgress,
   Material,
   MaterialProgress,
+  PaginationMeta,
   StudyCase,
   StudyCaseProgress,
   Submission,
@@ -16,6 +17,7 @@ export type LearningDashboard = {
   materialProgresses: MaterialProgress[];
   studyCaseProgresses: StudyCaseProgress[];
   submissions: Submission[];
+  submissionsPagination: PaginationMeta;
 };
 
 export type ContinueTarget = {

@@ -172,6 +172,8 @@ export type Submission = {
 // ===== Test Result =====
 export type TestResultStatus = 'PASSED' | 'FAILED' | 'ERROR';
 
+export type DisplayedTestStatus = TestResultStatus | 'PENDING';
+
 export type TestResult = {
   id: number;
   submissionId: number;

@@ -1,7 +1,6 @@
-import { TestResultStatus } from "@/types";
-import { LucideIcon } from "lucide-react";
+import { DisplayedTestStatus } from "@/types";
 
-export type DisplayedTestStatus = TestResultStatus | 'PENDING';
+import { LucideIcon } from "lucide-react";
 
 export type DisplayedTestCase = {
   id: number;

@@ -2,32 +2,28 @@
 
 import { useState } from 'react';
 
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  Clock3,
-  Eye,
-  FileCode2,
-  Loader2,
-  XCircle,
-} from 'lucide-react';
+import { ChevronDown, Clock3, Eye, FileCode2, Loader2 } from 'lucide-react';
 
 import { fetchSubmissionById } from '@/lib/fetch';
+import { formatSubmissionDate } from '@/lib/helpers/date-formatter';
 import { getWhatToCheck } from '@/lib/helpers/submission-feedback';
 import { cn } from '@/lib/utils';
 
 import { useAuthStore } from '@/stores/use-auth-store';
 
-import { Submission, SubmissionDetail, TestResult } from '@/types';
+import { PaginationMeta, Submission, SubmissionDetail } from '@/types';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatSubmissionDate } from '@/lib/helpers/date-formatter';
+import PublicPagination from '@/components/shared/PublicPagination';
+import PublicTestResultFeedbackCard from '@/components/shared/PublicTestResultFeedbackCard';
 
 type Props = {
   submissions: Submission[];
+  pagination: PaginationMeta;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (limit: number) => void;
 };
 
 function getSubmissionStatusClassName(status: Submission['status']) {
@@ -50,30 +46,6 @@ function getSubmissionStatusClassName(status: Submission['status']) {
   return 'border-border bg-muted text-muted-foreground';
 }
 
-function getTestResultStatusClassName(status: TestResult['status']) {
-  if (status === 'PASSED') {
-    return 'border-green-200 bg-green-50 text-green-700';
-  }
-
-  if (status === 'FAILED') {
-    return 'border-red-200 bg-red-50 text-red-700';
-  }
-
-  return 'border-orange-200 bg-orange-50 text-orange-700';
-}
-
-function TestResultIcon({ status }: { status: TestResult['status'] }) {
-  if (status === 'PASSED') {
-    return <CheckCircle2 className='size-4' />;
-  }
-
-  if (status === 'FAILED') {
-    return <XCircle className='size-4' />;
-  }
-
-  return <AlertTriangle className='size-4' />;
-}
-
 function getErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     return error.message;
@@ -82,7 +54,12 @@ function getErrorMessage(error: unknown) {
   return 'Failed to load submission details.';
 }
 
-export default function LearningSubmissions({ submissions }: Props) {
+export default function LearningSubmissions({
+  submissions,
+  pagination,
+  onPageChange,
+  onPageSizeChange,
+}: Props) {
   const { token } = useAuthStore();
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -254,7 +231,7 @@ export default function LearningSubmissions({ submissions }: Props) {
                       {!isLoading && detail && (
                         <>
                           <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-                            <div className='rounded-2xl border bg-card p-4'>
+                            <div className='flex flex-col gap-y-2 rounded-2xl border bg-card p-4'>
                               <p className='text-sm text-muted-foreground'>
                                 Status
                               </p>
@@ -262,7 +239,6 @@ export default function LearningSubmissions({ submissions }: Props) {
                               <Badge
                                 variant='outline'
                                 className={cn(
-                                  'w-fit',
                                   getSubmissionStatusClassName(detail.status),
                                 )}
                               >
@@ -301,85 +277,26 @@ export default function LearningSubmissions({ submissions }: Props) {
 
                             {detail.testResults.length > 0 ? (
                               <div className='grid grid-cols-1 gap-3'>
-                                {detail.testResults.map((result) => {
-                                  const whatToCheck = getWhatToCheck({
-                                    status: result.status,
-                                    expected: result.expected,
-                                    received: result.received,
-                                    failureMessage: result.failureMessage,
-                                  });
-
-                                  return (
-                                    <div
-                                      key={result.id}
-                                      className='rounded-2xl border bg-card p-4'
-                                    >
-                                      <div className='flex flex-col gap-y-4'>
-                                        <div className='flex flex-col gap-y-3 md:flex-row md:items-start md:justify-between'>
-                                          <div className='flex items-start gap-3'>
-                                            <div
-                                              className={cn(
-                                                'flex size-9 shrink-0 items-center justify-center rounded-xl border',
-                                                getTestResultStatusClassName(
-                                                  result.status,
-                                                ),
-                                              )}
-                                            >
-                                              <TestResultIcon
-                                                status={result.status}
-                                              />
-                                            </div>
-
-                                            <div className='flex flex-col gap-y-2'>
-                                              <p className='font-semibold'>
-                                                {result.description}
-                                              </p>
-
-                                              {whatToCheck && (
-                                                <p className='text-sm leading-relaxed text-muted-foreground'>
-                                                  {whatToCheck}
-                                                </p>
-                                              )}
-                                            </div>
-                                          </div>
-
-                                          <Badge
-                                            variant='outline'
-                                            className={getTestResultStatusClassName(
-                                              result.status,
-                                            )}
-                                          >
-                                            {result.status}
-                                          </Badge>
-                                        </div>
-
-                                        <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
-                                          <div className='rounded-xl bg-muted/50 p-3'>
-                                            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
-                                              Expected
-                                            </p>
-
-                                            <pre className='overflow-auto pt-2 text-sm'>
-                                              <code>{result.expected}</code>
-                                            </pre>
-                                          </div>
-
-                                          <div className='rounded-xl bg-muted/50 p-3'>
-                                            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
-                                              Received
-                                            </p>
-
-                                            <pre className='overflow-auto pt-2 text-sm'>
-                                              <code>
-                                                {result.received ?? '-'}
-                                              </code>
-                                            </pre>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                {detail.testResults.map((result, index) => (
+                                  <PublicTestResultFeedbackCard
+                                    key={result.id}
+                                    index={index}
+                                    showInput={false}
+                                    testCase={{
+                                      id: result.id,
+                                      description: result.description,
+                                      status: result.status,
+                                      expected: result.expected,
+                                      received: result.received,
+                                      whatToCheck: getWhatToCheck({
+                                        status: result.status,
+                                        expected: result.expected,
+                                        received: result.received,
+                                        failureMessage: result.failureMessage,
+                                      }),
+                                    }}
+                                  />
+                                ))}
                               </div>
                             ) : (
                               <div className='rounded-2xl border border-dashed p-5 text-center text-sm text-muted-foreground'>
@@ -395,6 +312,14 @@ export default function LearningSubmissions({ submissions }: Props) {
               </Card>
             );
           })}
+
+          <PublicPagination
+            pagination={pagination}
+            itemLabel='submissions'
+            pageSizeOptions={[5, 10, 20, 50]}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </div>
       ) : (
         <Card className='rounded-3xl border-dashed'>

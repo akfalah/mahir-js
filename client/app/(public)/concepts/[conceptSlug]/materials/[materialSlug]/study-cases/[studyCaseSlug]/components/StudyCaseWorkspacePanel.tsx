@@ -26,9 +26,9 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import PublicPrevNextNavigation from '@/components/shared/PublicPrevNextNavigation';
+import PublicTestResultFeedbackCard from '@/components/shared/PublicTestResultFeedbackCard';
 
 import { DisplayedTestCase, FeedbackContent } from '../utils/types';
-import TestCaseFeedbackCard from './TestCardFeedBack';
 
 type Props = {
   concept: Concept;
@@ -316,7 +316,7 @@ export default function StudyCaseWorkspacePanel({
             ) : hasResults && displayedTestCases.length > 0 ? (
               <div className='flex flex-col gap-y-3'>
                 {displayedTestCases.map((testCase, index) => (
-                  <TestCaseFeedbackCard
+                  <PublicTestResultFeedbackCard
                     key={testCase.id}
                     testCase={testCase}
                     index={index}
