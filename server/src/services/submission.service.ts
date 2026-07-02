@@ -27,6 +27,8 @@ import {
   toTestResultResponse,
 } from '../models/test-result.model';
 
+import { normalizeCodeForCompare } from '../utils/normalize-code-for-compare';
+
 import { submissionQueue } from '../queues/submission.queue';
 
 import { runSubmissionCode } from '../workers/submission.worker';
@@ -214,6 +216,28 @@ export class SubmissionService {
         !studyCase.material.concept.isPublished)
     ) {
       throw new ResponseError(404, 'Study case not found');
+    }
+
+    const latestPassedSubmission = await prisma.submission.findFirst({
+      where: {
+        userId: user.id,
+        studyCaseId: data.studyCaseId,
+        status: 'PASSED',
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (
+      latestPassedSubmission &&
+      normalizeCodeForCompare(latestPassedSubmission.code) ===
+        normalizeCodeForCompare(data.code)
+    ) {
+      throw new ResponseError(
+        409,
+        'This solution has already passed and been saved.',
+      );
     }
 
     const submission = await prisma.submission.create({
