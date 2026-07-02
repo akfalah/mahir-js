@@ -5,11 +5,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import api from '@/lib/api';
+
 import {
   fetchSubmissionById,
   fetchSubmissions,
   fetchTestCases,
 } from '@/lib/fetch';
+import { getApiErrorMessage } from '@/lib/get-api-error-message';
 import { getWhatToCheck } from '@/lib/helpers/submission-feedback';
 
 import { useAuthStore } from '@/stores/use-auth-store';
@@ -379,11 +381,7 @@ export default function StudyCaseEditor({
         );
       }
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to submit your answer. Please try again.',
-      );
+      setMessage(getApiErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
