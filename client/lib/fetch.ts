@@ -1,115 +1,195 @@
-import { ApiResponse, FetchParams } from '@/types';
+import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/get-api-error-message';
 
-const SERVER_API_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8888/api';
+import {
+  ApiResponse,
+  Concept,
+  ConceptProgress,
+  FetchParams,
+  Material,
+  MaterialProgress,
+  StudyCase,
+  StudyCaseProgress,
+  Submission,
+  SubmissionDetail,
+  TestCase,
+} from '@/types';
 
-async function fetchAPI<T>(
-  path: string,
-  token?: string,
-  params?: FetchParams,
-): Promise<ApiResponse<T>> {
-  const headers: HeadersInit = {
-    Accept: 'application/json',
-  };
+type AuthToken = string | null | undefined;
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+function cleanParams(params?: FetchParams) {
+  if (!params) {
+    return undefined;
   }
 
-  const url = new URL(`${SERVER_API_URL}${path}`);
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => {
+      return value !== null && value !== undefined && value !== '';
+    }),
+  );
+}
 
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') {
-        url.searchParams.set(key, String(value));
-      }
-    });
-  }
-
-  const res = await fetch(url.toString(), {
-    cache: 'no-store',
-    headers,
-  });
-
-  const text = await res.text();
-
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    console.error('API returned non-JSON response', {
-      url: url.toString(),
-      status: res.status,
-      body: text.slice(0, 300),
-    });
-
-    throw new Error(`API returned non-JSON response: ${url.toString()}`);
-  }
-
-  if (!res.ok) {
-    console.error('API error', {
-      url: url.toString(),
-      status: res.status,
-      body: json,
-    });
-
-    throw new Error(json.errors || json.message || 'Failed to fetch API');
-  }
-
+function getRequestConfig(token?: AuthToken, params?: FetchParams) {
   return {
-    data: json.data,
-    pagination: json.pagination,
+    params: cleanParams(params),
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : undefined,
   };
 }
 
-export const fetchConcepts = (token?: string, params?: FetchParams) =>
-  fetchAPI<import('@/types').Concept[]>('/concepts', token, {
-    sortBy: 'createdAt',
-    orderBy: 'desc',
+function emptyResponse<T>(data: T): ApiResponse<T> {
+  return {
+    data,
+  };
+}
+
+async function fetchAPI<T>(
+  path: string,
+  token?: AuthToken,
+  params?: FetchParams,
+): Promise<ApiResponse<T>> {
+  try {
+    const res = await api.get<ApiResponse<T>>(
+      path,
+      getRequestConfig(token, params),
+    );
+
+    return res.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
+async function fetchProtectedList<T>(
+  path: string,
+  token?: AuthToken,
+  params?: FetchParams,
+): Promise<ApiResponse<T[]>> {
+  if (!token) {
+    return emptyResponse<T[]>([]);
+  }
+
+  return fetchAPI<T[]>(path, token, params);
+}
+
+// ===== Concepts =====
+
+export const fetchConcepts = (token?: AuthToken, params?: FetchParams) =>
+  fetchAPI<Concept[]>('/concepts', token, {
+    sortBy: 'order',
+    orderBy: 'asc',
     limit: 100,
     ...params,
   });
 
-export const fetchConceptBySlug = (slug: string, token?: string) =>
-  fetchAPI<import('@/types').Concept>(`/concepts/${slug}`, token);
+export const fetchPublishedConcepts = (
+  token?: AuthToken,
+  params?: FetchParams,
+) =>
+  fetchConcepts(token, {
+    isPublished: true,
+    ...params,
+  });
 
-export const fetchMaterials = (token?: string, params?: FetchParams) =>
-  fetchAPI<import('@/types').Material[]>('/materials', token, {
-    sortBy: 'createdAt',
-    orderBy: 'desc',
+export const fetchConceptBySlug = (slug: string, token?: AuthToken) =>
+  fetchAPI<Concept>(`/concepts/${slug}`, token);
+
+// ===== Materials =====
+
+export const fetchMaterials = (token?: AuthToken, params?: FetchParams) =>
+  fetchAPI<Material[]>('/materials', token, {
+    sortBy: 'order',
+    orderBy: 'asc',
     limit: 100,
     ...params,
   });
 
-export const fetchMaterialBySlug = (slug: string, token?: string) =>
-  fetchAPI<import('@/types').Material>(`/materials/${slug}`, token);
+export const fetchPublishedMaterials = (
+  token?: AuthToken,
+  params?: FetchParams,
+) =>
+  fetchMaterials(token, {
+    isPublished: true,
+    ...params,
+  });
 
-export const fetchStudyCases = (token?: string, params?: FetchParams) =>
-  fetchAPI<import('@/types').StudyCase[]>('/study-cases', token, {
-    sortBy: 'createdAt',
-    orderBy: 'desc',
+export const fetchMaterialBySlug = (slug: string, token?: AuthToken) =>
+  fetchAPI<Material>(`/materials/${slug}`, token);
+
+// ===== Study Cases =====
+
+export const fetchStudyCases = (token?: AuthToken, params?: FetchParams) =>
+  fetchAPI<StudyCase[]>('/study-cases', token, {
+    sortBy: 'order',
+    orderBy: 'asc',
     limit: 100,
     ...params,
   });
 
-export const fetchStudyCaseBySlug = (slug: string, token?: string) =>
-  fetchAPI<import('@/types').StudyCase>(`/study-cases/${slug}`, token);
+export const fetchPublishedStudyCases = (
+  token?: AuthToken,
+  params?: FetchParams,
+) =>
+  fetchStudyCases(token, {
+    isPublished: true,
+    ...params,
+  });
 
-export const fetchTestCases = (token?: string, params?: FetchParams) =>
-  fetchAPI<import('@/types').TestCase[]>('/test-cases', token, {
-    sortBy: 'createdAt',
-    orderBy: 'desc',
+export const fetchStudyCaseBySlug = (slug: string, token?: AuthToken) =>
+  fetchAPI<StudyCase>(`/study-cases/${slug}`, token);
+
+// ===== Test Cases =====
+
+export const fetchTestCases = (token?: AuthToken, params?: FetchParams) =>
+  fetchAPI<TestCase[]>('/test-cases', token, {
+    sortBy: 'order',
+    orderBy: 'asc',
     limit: 100,
     ...params,
   });
 
-export const fetchSubmissions = (token: string, params?: FetchParams) =>
-  fetchAPI<import('@/types').Submission[]>('/submissions', token, {
+// ===== Progress =====
+// Protected data.
+// Guest users get empty data instead of 401.
+
+export const fetchConceptProgresses = (
+  token?: AuthToken,
+  params?: FetchParams,
+) =>
+  fetchProtectedList<ConceptProgress>('/progress/concepts', token, {
+    ...params,
+  });
+
+export const fetchMaterialProgresses = (
+  token?: AuthToken,
+  params?: FetchParams,
+) =>
+  fetchProtectedList<MaterialProgress>('/progress/materials', token, {
+    ...params,
+  });
+
+export const fetchStudyCaseProgresses = (
+  token?: AuthToken,
+  params?: FetchParams,
+) =>
+  fetchProtectedList<StudyCaseProgress>('/progress/study-cases', token, {
+    ...params,
+  });
+
+// ===== Submissions =====
+// Protected data.
+// Guest users get empty data instead of 401.
+
+export const fetchSubmissions = (token?: AuthToken, params?: FetchParams) =>
+  fetchProtectedList<Submission>('/submissions', token, {
     sortBy: 'createdAt',
     orderBy: 'desc',
     limit: 10,
     ...params,
   });
 
-export const fetchSubmissionById = (id: string, token: string) =>
-  fetchAPI<import('@/types').SubmissionDetail>(`/submissions/${id}`, token);
+export const fetchSubmissionById = (id: string | number, token: string) =>
+  fetchAPI<SubmissionDetail>(`/submissions/${id}`, token);
