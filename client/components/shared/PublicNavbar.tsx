@@ -121,7 +121,7 @@ export default function PublicNavbar() {
             <>
               <Button
                 variant='secondary'
-                className='w-27'
+                className='min-w-27'
                 asChild
               >
                 <Link
