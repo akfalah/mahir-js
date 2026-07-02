@@ -5,11 +5,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import api from '@/lib/api';
+import {
+  fetchSubmissionById,
+  fetchSubmissions,
+  fetchTestCases,
+} from '@/lib/fetch';
+import { getWhatToCheck } from '@/lib/helpers/submission-feedback';
 
 import { useAuthStore } from '@/stores/use-auth-store';
 
 import {
-  ApiResponse,
   Concept,
   Material,
   StudyCase,
@@ -19,16 +24,11 @@ import {
   TestResult,
 } from '@/types';
 
-import {
-  formatCaseValue,
-  formatInputValue,
-  getSubmissionResult,
-} from '../utils/study-case-editor';
+import { formatCaseValue, formatInputValue } from '../utils/study-case-editor';
 import { DisplayedTestCase } from '../utils/types';
 
 import StudyCaseProblemPanel from './StudyCaseProblemPanel';
 import StudyCaseWorkspacePanel from './StudyCaseWorkspacePanel';
-import { getWhatToCheck } from '@/lib/helpers/submission-feedback';
 
 type Props = {
   concept: Concept;
@@ -37,6 +37,10 @@ type Props = {
   prevStudyCase: StudyCase | null;
   nextStudyCase: StudyCase | null;
 };
+
+function normalizeCodeForCompare(code: string) {
+  return code.replace(/\r\n/g, '\n').trim();
+}
 
 export default function StudyCaseEditor({
   concept,
@@ -52,7 +56,7 @@ export default function StudyCaseEditor({
     );
   }, [studyCase.functionName, studyCase.starterCode]);
 
-  const { user, hasHydrated } = useAuthStore();
+  const { user, token, hasHydrated } = useAuthStore();
   const hasUserEditedCode = useRef(false);
 
   const userId = user?.id;
@@ -65,6 +69,7 @@ export default function StudyCaseEditor({
   const [isTesting, setIsTesting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [lastPassedCode, setLastPassedCode] = useState<string | null>(null);
 
   const canInteract = hasHydrated && userRole === 'STUDENT';
 
@@ -92,7 +97,6 @@ export default function StudyCaseEditor({
   });
 
   const sampleTestCase = displayedTestCases[0] ?? null;
-
   const totalTests = displayedTestCases.length;
 
   const passedCount = displayedTestCases.filter(
@@ -147,63 +151,94 @@ export default function StudyCaseEditor({
     };
   }, [allPassed, hasResults, message]);
 
+  const isSameAsLastPassedCode = useMemo(() => {
+    if (!lastPassedCode) {
+      return false;
+    }
+
+    return (
+      normalizeCodeForCompare(code) === normalizeCodeForCompare(lastPassedCode)
+    );
+  }, [code, lastPassedCode]);
+
+  const shouldPreventResubmit = allPassed && isSameAsLastPassedCode;
+
   useEffect(() => {
-    const fetchTestCases = async () => {
+    let isActive = true;
+
+    const fetchStudyCaseTests = async () => {
       setIsFetchingTests(true);
 
       try {
-        const res = await api.get<{ data: TestCase[] }>(
-          `/test-cases?studyCaseId=${studyCase.id}&sortBy=order&orderBy=asc&limit=100`,
-        );
+        const res = await fetchTestCases(undefined, {
+          studyCaseId: studyCase.id,
+          sortBy: 'order',
+          orderBy: 'asc',
+          limit: 100,
+        });
 
-        setTestCases(res.data.data);
+        if (!isActive) {
+          return;
+        }
+
+        setTestCases(res.data);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setTestCases([]);
       } finally {
-        setIsFetchingTests(false);
+        if (isActive) {
+          setIsFetchingTests(false);
+        }
       }
     };
 
-    fetchTestCases();
+    fetchStudyCaseTests();
+
+    return () => {
+      isActive = false;
+    };
   }, [studyCase.id]);
 
   useEffect(() => {
     let isActive = true;
 
     const fetchLatestPassedSubmission = async () => {
-      if (!hasHydrated || !userId || userRole !== 'STUDENT') {
+      if (!hasHydrated || !userId || userRole !== 'STUDENT' || !token) {
         return;
       }
 
       try {
-        const params = new URLSearchParams({
-          studyCaseId: String(studyCase.id),
+        const submissionsRes = await fetchSubmissions(token, {
+          studyCaseId: studyCase.id,
           status: 'PASSED',
           sortBy: 'createdAt',
           orderBy: 'desc',
-          limit: '1',
-          userId: String(userId),
+          limit: 1,
+          userId,
         });
 
-        const res = await api.get<ApiResponse<Submission[]>>(
-          `/submissions?${params.toString()}`,
-        );
-
-        const latestPassedSubmission = res.data.data[0];
+        const latestPassedSubmission = submissionsRes.data[0];
 
         if (!latestPassedSubmission) {
           return;
         }
 
-        const detailRes = await api.get<{ data: SubmissionDetail }>(
-          `/submissions/${latestPassedSubmission.id}`,
+        const detailRes = await fetchSubmissionById(
+          latestPassedSubmission.id,
+          token,
         );
 
-        const completedSubmission = detailRes.data.data;
+        const completedSubmission = detailRes.data;
 
         if (!isActive || hasUserEditedCode.current) {
           return;
         }
 
         setCode(completedSubmission.code);
+        setLastPassedCode(completedSubmission.code);
         setResults(completedSubmission.testResults ?? []);
         setMessage(
           'You have completed this study case. Your submitted code is loaded for review.',
@@ -218,7 +253,7 @@ export default function StudyCaseEditor({
     return () => {
       isActive = false;
     };
-  }, [hasHydrated, studyCase.id, userId, userRole]);
+  }, [hasHydrated, studyCase.id, token, userId, userRole]);
 
   const handleReset = () => {
     hasUserEditedCode.current = true;
@@ -265,9 +300,51 @@ export default function StudyCaseEditor({
     }
   };
 
+  const waitForSubmissionResult = async (submissionId: number) => {
+    const maxAttempts = 15;
+    const delayMs = 1000;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const res = await fetchSubmissionById(submissionId, token!);
+      const submissionResult = res.data;
+
+      if (
+        submissionResult.status === 'PASSED' ||
+        submissionResult.status === 'FAILED' ||
+        submissionResult.status === 'ERROR'
+      ) {
+        return submissionResult;
+      }
+
+      setMessage(
+        `Your answer is being tested. Please wait... (${attempt}/${maxAttempts})`,
+      );
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, delayMs);
+      });
+    }
+
+    throw new Error(
+      'The grading process is taking longer than expected. Please check your submission history later.',
+    );
+  };
+
   const handleSubmit = async () => {
     if (!canInteract) {
       setMessage('Please sign in as a student to submit your answer.');
+      return;
+    }
+
+    if (!token) {
+      setMessage('Please sign in again before submitting your answer.');
+      return;
+    }
+
+    if (shouldPreventResubmit) {
+      setMessage(
+        'This solution has already passed and been saved. You do not need to submit the same code again.',
+      );
       return;
     }
 
@@ -281,13 +358,15 @@ export default function StudyCaseEditor({
       });
 
       const submission = res.data.data;
-      const submissionResult = await getSubmissionResult(submission.id);
+      const submissionResult = await waitForSubmissionResult(submission.id);
 
       setResults(submissionResult.testResults ?? []);
 
       if (submissionResult.status === 'PASSED') {
+        setLastPassedCode(code);
+
         setMessage(
-          'Excellent. Your answer has been submitted successfully. You can continue when you are ready.',
+          'Excellent. Your solution passed all checks and your progress has been saved. You can continue to the next challenge when you are ready.',
         );
       } else if (submissionResult.status === 'FAILED') {
         setMessage(
@@ -296,11 +375,15 @@ export default function StudyCaseEditor({
       } else {
         setMessage(
           submissionResult.errorMessage ||
-            'Your answer was submitted, but an error occurred while testing.',
+            'Your answer was submitted, but the grader could not run your code correctly.',
         );
       }
-    } catch {
-      setMessage('Unable to submit your answer. Please try again.');
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to submit your answer. Please try again.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -328,6 +411,7 @@ export default function StudyCaseEditor({
         canInteract={canInteract}
         isTesting={isTesting}
         isSubmitting={isSubmitting}
+        shouldPreventResubmit={shouldPreventResubmit}
         isProcessingResult={isProcessingResult}
         passedCount={passedCount}
         failedCount={failedCount}

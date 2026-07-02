@@ -63,17 +63,12 @@ export default function StudyCaseProblemPanel({
             {studyCase.parameterNames &&
               studyCase.parameterNames.length > 0 && (
                 <div className='flex flex-col gap-y-2 pt-4'>
-                  <p className='text-sm font-semibold'>Parameters</p>
+                  <p className='text-sm font-semibold'>Function Parameters</p>
 
-                  <ul className='flex flex-col gap-y-1 text-sm text-muted-foreground'>
-                    {studyCase.parameterNames.map((parameterName) => (
-                      <li key={parameterName}>
-                        <code className='rounded bg-background px-1 py-0.5 font-mono text-foreground'>
-                          {parameterName}
-                        </code>
-                      </li>
-                    ))}
-                  </ul>
+                  <code className='w-fit rounded-xl bg-background px-3 py-2 font-mono text-foreground'>
+                    {studyCase.functionName ?? 'solution'}(
+                    {studyCase.parameterNames.join(', ')})
+                  </code>
                 </div>
               )}
           </div>

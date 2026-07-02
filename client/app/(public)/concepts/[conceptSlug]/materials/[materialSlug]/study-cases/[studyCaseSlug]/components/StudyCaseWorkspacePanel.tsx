@@ -1,6 +1,14 @@
 import Editor from '@monaco-editor/react';
+import Link from 'next/link';
 
-import { LockKeyhole, RotateCcw, Send, TestTube2 } from 'lucide-react';
+import {
+  ArrowRight,
+  BookOpenCheck,
+  LockKeyhole,
+  RotateCcw,
+  Send,
+  TestTube2,
+} from 'lucide-react';
 
 import { Concept, Material, StudyCase } from '@/types';
 
@@ -34,6 +42,7 @@ type Props = {
   canInteract: boolean;
   isTesting: boolean;
   isSubmitting: boolean;
+  shouldPreventResubmit: boolean;
   isProcessingResult: boolean;
   passedCount: number;
   failedCount: number;
@@ -60,6 +69,7 @@ export default function StudyCaseWorkspacePanel({
   canInteract,
   isTesting,
   isSubmitting,
+  shouldPreventResubmit,
   isProcessingResult,
   passedCount,
   failedCount,
@@ -75,10 +85,18 @@ export default function StudyCaseWorkspacePanel({
 }: Props) {
   const FeedbackIcon = feedbackContent?.icon;
 
+  const materialHref = `/concepts/${concept.slug}/materials/${material.slug}`;
+
+  const nextHref = nextStudyCase
+    ? `/concepts/${concept.slug}/materials/${material.slug}/study-cases/${nextStudyCase.slug}`
+    : materialHref;
+
+  const nextLabel = nextStudyCase ? 'Next Challenge' : 'Back to Material';
+
   return (
     <section className='flex min-w-0 flex-col rounded-3xl border bg-card shadow-sm'>
       <Card className='flex flex-col overflow-hidden rounded-3xl border-0 shadow-none'>
-        <CardHeader className='flex items-center justify-end gap-4 border-b p-4 md:p-5'>
+        <CardHeader className='flex items-center justify-end gap-4 border-b bg-background p-4 md:p-5'>
           <div className='flex items-center gap-2'>
             <Badge variant='outline'>JavaScript</Badge>
 
@@ -153,6 +171,45 @@ export default function StudyCaseWorkspacePanel({
               </Alert>
             )}
 
+            {allPassed && (
+              <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between rounded-2xl border border-primary/20 bg-primary/5 p-4 text-primary'>
+                <div className='flex items-start gap-3'>
+                  <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary'>
+                    <BookOpenCheck className='size-5' />
+                  </div>
+
+                  <div className='flex flex-col gap-y-1'>
+                    <p className='font-semibold'>Progress saved</p>
+
+                    <p className='text-sm leading-relaxed text-foreground/80'>
+                      Your solution passed all checks. You can continue to the
+                      next challenge or review this material again.
+                    </p>
+                  </div>
+                </div>
+
+                <div className='flex flex-wrap gap-2'>
+                  <Button
+                    className='w-full'
+                    asChild
+                  >
+                    <Link href={nextHref}>
+                      {nextLabel}
+                      <ArrowRight className='size-4' />
+                    </Link>
+                  </Button>
+
+                  <Button
+                    variant='secondary'
+                    className='w-full'
+                    asChild
+                  >
+                    <Link href={materialHref}>Review Material</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {!canInteract && hasHydrated && (
               <Alert>
                 <LockKeyhole className='size-4' />
@@ -160,8 +217,19 @@ export default function StudyCaseWorkspacePanel({
                 <AlertTitle>Student access required</AlertTitle>
 
                 <AlertDescription>
-                  You can read this study case, but you need to sign in as a
-                  student to run tests and submit your answer.
+                  <div className='flex flex-col gap-y-3'>
+                    <p>
+                      You can read this study case, but you need to sign in as a
+                      student to run tests and submit your answer.
+                    </p>
+
+                    <Button
+                      asChild
+                      className='w-fit'
+                    >
+                      <Link href='/sign-in'>Sign In</Link>
+                    </Button>
+                  </div>
                 </AlertDescription>
               </Alert>
             )}
@@ -196,7 +264,12 @@ export default function StudyCaseWorkspacePanel({
               <Button
                 type='button'
                 onClick={onSubmit}
-                disabled={!canInteract || isTesting || isSubmitting}
+                disabled={
+                  !canInteract ||
+                  isTesting ||
+                  isSubmitting ||
+                  shouldPreventResubmit
+                }
                 className='gap-2'
               >
                 {isSubmitting ? (
@@ -204,7 +277,11 @@ export default function StudyCaseWorkspacePanel({
                 ) : (
                   <Send className='size-4' />
                 )}
-                {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+                {isSubmitting
+                  ? 'Submitting...'
+                  : shouldPreventResubmit
+                    ? 'Already Submitted'
+                    : 'Submit Answer'}
               </Button>
             </div>
           </section>
@@ -285,7 +362,7 @@ export default function StudyCaseWorkspacePanel({
                   }
                 : null
             }
-            backHref={`/concepts/${concept.slug}/materials/${material.slug}`}
+            backHref={materialHref}
             backLabel={`Back to ${material.title}`}
           />
         </CardFooter>
