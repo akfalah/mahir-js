@@ -7,7 +7,7 @@ import {
   Layers3,
 } from 'lucide-react';
 
-import { ConceptGroup } from '../utils/learning-types';
+import { ConceptGroup } from '../utils/types';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

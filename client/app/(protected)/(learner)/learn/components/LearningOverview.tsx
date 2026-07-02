@@ -9,7 +9,7 @@ import {
   Trophy,
 } from 'lucide-react';
 
-import { ContinueTarget } from '../utils/learning-types';
+import { ContinueTarget } from '../utils/types';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

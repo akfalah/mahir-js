@@ -23,7 +23,7 @@ import {
   ConceptGroup,
   ContinueTarget,
   LearningDashboard,
-} from '../utils/learning-types';
+} from '../utils/types';
 
 import LearningOverview from './LearningOverview';
 import LearningPath from './LearningPath';
