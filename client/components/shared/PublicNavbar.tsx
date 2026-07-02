@@ -129,15 +129,15 @@ export default function PublicNavbar() {
                 <DropdownMenuTrigger asChild>
                   <button
                     type='button'
-                    className='rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                    className='flex items-center gap-2 rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
                   >
-                    <Avatar className='size-9 cursor-pointer border'>
+                    <Avatar className='size-9 border'>
                       <AvatarImage
-                        src={user.imageUrl ?? undefined}
+                        src={user.imageUrl}
                         alt={user.name}
                       />
 
-                      <AvatarFallback className='bg-primary text-xs font-semibold text-primary-foreground'>
+                      <AvatarFallback className='text-xs font-semibold text-primary-foreground bg-primary'>
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -146,34 +146,38 @@ export default function PublicNavbar() {
 
                 <DropdownMenuContent
                   align='end'
-                  className='w-60'
+                  className='w-56'
                 >
-                  <div className='px-2 py-1.5'>
-                    <p className='text-sm font-medium'>{user.name}</p>
-                    <p className='truncate text-xs text-muted-foreground'>
-                      {user.email}
-                    </p>
-                  </div>
+                  <DropdownMenuLabel>
+                    <div className='flex flex-col gap-y-1'>
+                      <span className='truncate text-sm font-semibold'>
+                        {user.name}
+                      </span>
+
+                      <span className='truncate text-xs font-normal text-muted-foreground'>
+                        {user.email}
+                      </span>
+                    </div>
+                  </DropdownMenuLabel>
 
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem asChild>
-                    <Link href='/profile'>
+                    <Link
+                      href='/profile'
+                      className='gap-2'
+                    >
                       <UserCircle className='size-4' />
                       Profile
                     </Link>
                   </DropdownMenuItem>
 
-                  <DropdownMenuSeparator />
-
                   <DropdownMenuItem
+                    className='group gap-2 text-destructive transition-colors focus:bg-destructive/10 focus:text-destructive [&_svg]:text-destructive'
                     onClick={handleSignOut}
-                    className={
-                      'cursor-pointer text-destructive focus:text-destructive'
-                    }
                   >
-                    <LogOut className='size-4' />
-                    Sign Out
+                    <LogOut className='size-4 text-destructive' />
+                    Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -247,59 +251,56 @@ export default function PublicNavbar() {
                     <Skeleton className='h-10 w-full' />
                   </div>
                 ) : user ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type='button'
-                        className='flex items-center gap-2 rounded-full outline-none ring-offset-background transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                  <div className='flex flex-col gap-y-4'>
+                    <div className='flex items-center gap-3'>
+                      <Avatar className='size-10 border'>
+                        <AvatarImage
+                          src={user.imageUrl}
+                          alt={user.name}
+                        />
+
+                        <AvatarFallback className='bg-primary text-xs font-semibold text-primary-foreground'>
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className='min-w-0'>
+                        <p className='truncate text-sm font-medium'>
+                          {user.name}
+                        </p>
+                        <p className='truncate text-xs text-muted-foreground'>
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <SheetClose asChild>
+                      <Button
+                        className='w-full'
+                        asChild
                       >
-                        <Avatar className='size-9 border'>
-                          <AvatarImage src={user.imageUrl} />
+                        <Link href={dashboardHref}>{dashboardLabel}</Link>
+                      </Button>
+                    </SheetClose>
 
-                          <AvatarFallback className='text-xs font-semibold text-primary-foreground bg-primary'>
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
-                      </button>
-                    </DropdownMenuTrigger>
+                    <SheetClose asChild>
+                      <Button
+                        variant='outline'
+                        className='w-full'
+                        asChild
+                      >
+                        <Link href='/profile'>Profile</Link>
+                      </Button>
+                    </SheetClose>
 
-                    <DropdownMenuContent
-                      align='end'
-                      className='w-56'
+                    <Button
+                      variant='outline'
+                      className='w-full text-destructive'
+                      onClick={handleSignOut}
                     >
-                      <DropdownMenuLabel>
-                        <div className='flex flex-col gap-y-1'>
-                          <span className='truncate text-sm font-semibold'>
-                            {user?.name ?? 'Admin'}
-                          </span>
-
-                          <span className='truncate text-xs font-normal text-muted-foreground'>
-                            {user?.email ?? 'admin@mahirjs.local'}
-                          </span>
-                        </div>
-                      </DropdownMenuLabel>
-
-                      <DropdownMenuSeparator />
-
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href='/profile'
-                          className='gap-2'
-                        >
-                          <UserCircle className='size-4' />
-                          Profile
-                        </Link>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        className='group gap-2 text-destructive transition-colors focus:bg-destructive/10 focus:text-destructive [&_svg]:text-destructive'
-                        onClick={handleSignOut}
-                      >
-                        <LogOut className='size-4 text-destructive' />
-                        Sign out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      Sign Out
+                    </Button>
+                  </div>
                 ) : (
                   <div className='flex flex-col gap-y-2'>
                     <SheetClose asChild>

@@ -100,12 +100,6 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       signOut: async () => {
-        try {
-          await api.post('/auth/sign-out');
-        } catch {
-          // tetap hapus session frontend walaupun backend logout gagal
-        }
-
         Cookies.remove('token');
         Cookies.remove('role');
 

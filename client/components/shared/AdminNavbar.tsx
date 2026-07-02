@@ -138,7 +138,7 @@ export default function AdminNavbar() {
             asChild
             variant='outline'
             size='sm'
-            className='gap-2'
+            className='gap-2 h-9'
           >
             <Link href='/'>
               <Home className='size-4' />

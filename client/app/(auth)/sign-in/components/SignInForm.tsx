@@ -75,7 +75,7 @@ export default function SignInForm() {
   };
 
   return (
-    <div className='container mx-auto grid min-h-[calc(100vh-8rem)] place-items-center px-4 py-10 md:py-12'>
+    <div className='container mx-auto grid min-h-screen place-items-center px-4 py-10 md:py-12'>
       <div className='grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-3xl border bg-card shadow-sm lg:grid-cols-[0.9fr_1.1fr]'>
         <section className='hidden bg-primary p-8 text-primary-foreground lg:flex lg:flex-col lg:justify-between'>
           <div className='flex items-center gap-3'>
