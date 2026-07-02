@@ -3,66 +3,37 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
-import {
-  BookOpenCheck,
-  CheckCircle2,
-  Code2,
-  Layers3,
-  Trophy,
-} from 'lucide-react';
+import { BookOpenCheck, Code2 } from 'lucide-react';
 
-import api from '@/lib/api';
+import {
+  fetchConceptProgresses,
+  fetchMaterialProgresses,
+  fetchPublishedConcepts,
+  fetchPublishedMaterials,
+  fetchPublishedStudyCases,
+  fetchStudyCaseProgresses,
+  fetchSubmissions,
+} from '@/lib/fetch';
 
 import { useAuthStore } from '@/stores/use-auth-store';
 
+import { Concept, Material } from '@/types';
+
 import {
-  Concept,
-  ConceptProgress,
-  Material,
-  MaterialProgress,
-  StudyCase,
-  StudyCaseProgress,
-} from '@/types';
+  ConceptGroup,
+  ContinueTarget,
+  LearningDashboard,
+} from '../utils/learning-types';
+
+import LearningOverview from './LearningOverview';
+import LearningPath from './LearningPath';
+import LearningSubmissions from './LearningSubmissions';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-
-type LearningDashboard = {
-  concepts: Concept[];
-  materials: Material[];
-  studyCases: StudyCase[];
-  conceptProgresses: ConceptProgress[];
-  materialProgresses: MaterialProgress[];
-  studyCaseProgresses: StudyCaseProgress[];
-};
-
-type ContinueTarget = {
-  concept: Concept;
-  material: Material;
-  nextStudyCase: StudyCase | null;
-  href: string;
-};
-
-type MaterialGroup = {
-  material: Material;
-  studyCases: StudyCase[];
-  completedStudyCases: number;
-  totalStudyCases: number;
-  isCompleted: boolean;
-  href: string;
-};
-
-type ConceptGroup = {
-  concept: Concept;
-  materials: MaterialGroup[];
-  completedStudyCases: number;
-  totalStudyCases: number;
-  progress: number;
-  isCompleted: boolean;
-};
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function buildMaterialHref(concept: Concept, material: Material) {
   return `/concepts/${concept.slug}/materials/${material.slug}`;
@@ -80,15 +51,14 @@ function MyLearningSkeleton() {
         </div>
       </section>
 
-      <Skeleton className='h-64 rounded-3xl' />
-      <Skeleton className='h-32 rounded-3xl' />
-      <Skeleton className='h-96 rounded-3xl' />
+      <Skeleton className='h-12 w-full max-w-xl rounded-2xl' />
+      <Skeleton className='h-80 rounded-3xl' />
     </div>
   );
 }
 
 export default function LearningClient() {
-  const { user, hasHydrated } = useAuthStore();
+  const { user, token, hasHydrated } = useAuthStore();
 
   const [dashboard, setDashboard] = useState<LearningDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,71 +66,90 @@ export default function LearningClient() {
   useEffect(() => {
     let isActive = true;
 
-    const safeGet = async <T,>(url: string, fallback: T): Promise<T> => {
-      try {
-        const res = await api.get<{ data: T }>(url);
-
-        return res.data.data ?? fallback;
-      } catch (error) {
-        console.error(`Failed to fetch ${url}:`, error);
-
-        return fallback;
-      }
-    };
-
     const fetchLearningDashboard = async () => {
-      if (!hasHydrated || !user) {
+      if (!hasHydrated) {
         return;
       }
 
-      const concepts = await safeGet<Concept[]>(
-        '/concepts?sortBy=order&orderBy=asc&limit=100',
-        [],
-      );
+      if (!user) {
+        setDashboard(null);
+        setIsLoading(false);
+        return;
+      }
 
-      const materialsByConcept = await Promise.all(
-        concepts.map((concept) =>
-          safeGet<Material[]>(
-            `/materials?conceptId=${concept.id}&sortBy=order&orderBy=asc&limit=100`,
-            [],
+      setIsLoading(true);
+
+      try {
+        const conceptsRes = await fetchPublishedConcepts(token);
+
+        const concepts = conceptsRes.data;
+
+        const materialsResponses = await Promise.all(
+          concepts.map((concept) =>
+            fetchPublishedMaterials(token, {
+              conceptId: concept.id,
+            }),
           ),
-        ),
-      );
+        );
 
-      const materials = materialsByConcept.flat();
+        const materials = materialsResponses.flatMap((res) => res.data);
 
-      const studyCasesByMaterial = await Promise.all(
-        materials.map((material) =>
-          safeGet<StudyCase[]>(
-            `/study-cases?materialId=${material.id}&isPublished=true&sortBy=order&orderBy=asc&limit=100`,
-            [],
+        const studyCaseResponses = await Promise.all(
+          materials.map((material) =>
+            fetchPublishedStudyCases(token, {
+              materialId: material.id,
+            }),
           ),
-        ),
-      );
+        );
 
-      const studyCases = studyCasesByMaterial.flat();
+        const studyCases = studyCaseResponses.flatMap((res) => res.data);
 
-      const [conceptProgresses, materialProgresses, studyCaseProgresses] =
-        await Promise.all([
-          safeGet<ConceptProgress[]>('/progress/concepts', []),
-          safeGet<MaterialProgress[]>('/progress/materials', []),
-          safeGet<StudyCaseProgress[]>('/progress/study-cases', []),
+        const [
+          conceptProgressesRes,
+          materialProgressesRes,
+          studyCaseProgressesRes,
+          submissionsRes,
+        ] = await Promise.all([
+          fetchConceptProgresses(token),
+          fetchMaterialProgresses(token),
+          fetchStudyCaseProgresses(token),
+          fetchSubmissions(token),
         ]);
 
-      if (!isActive) {
-        return;
+        if (!isActive) {
+          return;
+        }
+
+        setDashboard({
+          concepts,
+          materials,
+          studyCases,
+          conceptProgresses: conceptProgressesRes.data,
+          materialProgresses: materialProgressesRes.data,
+          studyCaseProgresses: studyCaseProgressesRes.data,
+          submissions: submissionsRes.data,
+        });
+      } catch (error) {
+        console.error('Failed to fetch learning dashboard:', error);
+
+        if (!isActive) {
+          return;
+        }
+
+        setDashboard({
+          concepts: [],
+          materials: [],
+          studyCases: [],
+          conceptProgresses: [],
+          materialProgresses: [],
+          studyCaseProgresses: [],
+          submissions: [],
+        });
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
-
-      setDashboard({
-        concepts,
-        materials,
-        studyCases,
-        conceptProgresses,
-        materialProgresses,
-        studyCaseProgresses,
-      });
-
-      setIsLoading(false);
     };
 
     fetchLearningDashboard();
@@ -168,7 +157,7 @@ export default function LearningClient() {
     return () => {
       isActive = false;
     };
-  }, [hasHydrated, user]);
+  }, [hasHydrated, token, user]);
 
   const completedStudyCaseIds = useMemo(() => {
     if (!dashboard) {
@@ -306,19 +295,19 @@ export default function LearningClient() {
 
   if (!user) {
     return (
-      <div className='container mx-auto flex flex-col items-center gap-y-5 px-4 py-16 md:py-20 text-center'>
+      <div className='container mx-auto flex flex-col items-center gap-y-5 px-4 py-16 text-center md:py-20'>
         <div className='flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
           <BookOpenCheck className='size-7' />
         </div>
 
         <div className='flex max-w-xl flex-col gap-y-3'>
-          <h1 className='text-3xl md:text-5xl font-bold tracking-tight'>
+          <h1 className='text-3xl font-bold tracking-tight md:text-5xl'>
             Sign in to view your learning progress.
           </h1>
 
           <p className='text-muted-foreground'>
-            Your completed challenges and learning progress will appear here
-            after you sign in.
+            Your completed challenges, submissions, and learning progress will
+            appear here after you sign in.
           </p>
         </div>
 
@@ -331,6 +320,9 @@ export default function LearningClient() {
 
   const totalStudyCases = dashboard?.studyCases.length ?? 0;
   const completedStudyCases = completedStudyCaseIds.size;
+  const submissions = dashboard?.submissions ?? [];
+  const concepts = dashboard?.concepts ?? [];
+  const materials = dashboard?.materials ?? [];
 
   const overallProgress =
     totalStudyCases > 0
@@ -348,32 +340,32 @@ export default function LearningClient() {
         </Badge>
 
         <div className='flex flex-col gap-y-3'>
-          <h1 className='text-3xl md:text-5xl font-bold tracking-tight'>
+          <h1 className='text-3xl font-bold tracking-tight md:text-5xl'>
             Continue learning JavaScript.
           </h1>
 
-          <p className='text-base md:text-lg leading-relaxed text-muted-foreground'>
-            Pelajari materi konsep terlebih dahulu, lalu lanjutkan ke study case
-            untuk menguji pemahaman melalui automated grading.
+          <p className='text-base leading-relaxed text-muted-foreground md:text-lg'>
+            Track your materials, coding challenges, submissions, and automated
+            grading progress in one place.
           </p>
         </div>
       </section>
 
       {totalStudyCases === 0 ? (
         <Card className='rounded-3xl border-dashed'>
-          <CardContent className='flex flex-col items-center gap-y-4 p-6 md:p-8 text-center'>
+          <CardContent className='flex flex-col items-center gap-y-4 p-6 text-center md:p-8'>
             <div className='flex size-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground'>
               <Code2 className='size-7' />
             </div>
 
             <div className='flex max-w-xl flex-col gap-y-2'>
-              <h2 className='text-2xl md:text-3xl font-bold tracking-tight'>
+              <h2 className='text-2xl font-bold tracking-tight md:text-3xl'>
                 No learning data found.
               </h2>
 
               <p className='text-muted-foreground'>
-                Concepts, materials, or study cases could not be loaded. Check
-                the API response in the browser console.
+                Published concepts, materials, or coding challenges could not be
+                loaded.
               </p>
             </div>
 
@@ -386,266 +378,62 @@ export default function LearningClient() {
           </CardContent>
         </Card>
       ) : (
-        <>
-          <section className='grid grid-cols-1 lg:grid-cols-[1.4fr_0.6fr] gap-5'>
-            <Card className='overflow-hidden rounded-3xl border-primary/20 bg-primary/5'>
-              <CardContent className='flex flex-col gap-y-6 p-6 md:p-8'>
-                <div className='flex flex-col gap-y-4'>
-                  <div className='flex flex-wrap gap-2'>
-                    <Badge>Continue Learning</Badge>
+        <Tabs
+          defaultValue='overview'
+          className='flex flex-col gap-y-6'
+        >
+          <TabsList className='grid h-auto w-full grid-cols-3 rounded-2xl p-1'>
+            <TabsTrigger
+              value='overview'
+              className='rounded-xl px-5 text-xs md:text-sm'
+            >
+              Overview
+            </TabsTrigger>
 
-                    {continueTarget && (
-                      <Badge variant='outline'>
-                        {continueTarget.concept.title}
-                      </Badge>
-                    )}
-                  </div>
+            <TabsTrigger
+              value='path'
+              className='rounded-xl px-5 text-xs md:text-sm'
+            >
+              Learning Path
+            </TabsTrigger>
 
-                  {continueTarget ? (
-                    <div className='flex flex-col gap-y-3'>
-                      <h2 className='text-2xl md:text-4xl font-bold tracking-tight'>
-                        {continueTarget.material.title}
-                      </h2>
+            <TabsTrigger
+              value='submissions'
+              className='rounded-xl px-5 text-xs md:text-sm'
+            >
+              Submissions
+            </TabsTrigger>
+          </TabsList>
 
-                      <p className='max-w-2xl leading-relaxed text-muted-foreground'>
-                        Anda sedang berada pada konsep{' '}
-                        <span className='font-medium text-foreground'>
-                          {continueTarget.concept.title}
-                        </span>
-                        . Baca dan pahami materi terlebih dahulu sebelum
-                        mengerjakan study case.
-                      </p>
+          <TabsContent
+            value='overview'
+            className='flex flex-col gap-y-5'
+          >
+            <LearningOverview
+              continueTarget={continueTarget}
+              conceptCount={concepts.length}
+              materialCount={materials.length}
+              totalStudyCases={totalStudyCases}
+              completedStudyCases={completedStudyCases}
+              submissionCount={submissions.length}
+              overallProgress={overallProgress}
+            />
+          </TabsContent>
 
-                      {continueTarget.nextStudyCase && (
-                        <div className='rounded-2xl border bg-background/70 p-4'>
-                          <p className='text-sm font-medium text-foreground'>
-                            Next practice after reading
-                          </p>
+          <TabsContent
+            value='path'
+            className='flex flex-col gap-y-5'
+          >
+            <LearningPath conceptGroups={conceptGroups} />
+          </TabsContent>
 
-                          <p className='pt-1 text-sm text-muted-foreground'>
-                            {continueTarget.nextStudyCase.title}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className='flex flex-col gap-y-3'>
-                      <h2 className='text-2xl md:text-4xl font-bold tracking-tight'>
-                        All materials completed.
-                      </h2>
-
-                      <p className='max-w-2xl leading-relaxed text-muted-foreground'>
-                        Semua materi dan study case yang tersedia sudah selesai.
-                        Anda bisa membuka kembali konsep untuk melakukan review.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className='flex flex-wrap gap-3'>
-                  {continueTarget ? (
-                    <Button
-                      asChild
-                      className='gap-2'
-                    >
-                      <Link href={continueTarget.href}>
-                        Continue Reading
-                        <BookOpenCheck className='size-4' />
-                      </Link>
-                    </Button>
-                  ) : (
-                    <Button
-                      asChild
-                      className='gap-2'
-                    >
-                      <Link href='/concepts'>
-                        Review Concepts
-                        <Layers3 className='size-4' />
-                      </Link>
-                    </Button>
-                  )}
-
-                  <Button
-                    variant='secondary'
-                    asChild
-                  >
-                    <Link href='/concepts'>Browse Concepts</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className='rounded-3xl'>
-              <CardContent className='flex h-full flex-col justify-between gap-y-6 p-6 md:p-8'>
-                <div className='flex flex-col gap-y-3'>
-                  <div className='flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
-                    <Trophy className='size-6' />
-                  </div>
-
-                  <div className='flex flex-col gap-y-1'>
-                    <p className='text-sm text-muted-foreground'>
-                      Overall Progress
-                    </p>
-
-                    <p className='text-4xl font-bold'>{overallProgress}%</p>
-                  </div>
-                </div>
-
-                <div className='flex flex-col gap-y-3'>
-                  <Progress value={overallProgress} />
-
-                  <p className='text-sm text-muted-foreground'>
-                    {completedStudyCases} of {totalStudyCases} study cases
-                    completed.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section className='flex flex-col gap-y-5'>
-            <div className='flex flex-col gap-y-2'>
-              <h2 className='text-2xl font-bold tracking-tight'>
-                Learning Path
-              </h2>
-
-              <p className='text-muted-foreground'>
-                Ikuti urutan konsep, materi, dan study case di bawah ini.
-              </p>
-            </div>
-
-            <div className='flex flex-col gap-y-5'>
-              {conceptGroups.map((conceptGroup) => (
-                <Card
-                  key={conceptGroup.concept.id}
-                  className='overflow-hidden rounded-3xl'
-                >
-                  <CardHeader className='border-b p-5 md:p-6'>
-                    <div className='flex flex-col gap-y-4 md:flex-row md:items-center md:justify-between'>
-                      <div className='flex items-start gap-4'>
-                        <div className='flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
-                          {conceptGroup.isCompleted ? (
-                            <CheckCircle2 className='size-6' />
-                          ) : (
-                            <Layers3 className='size-6' />
-                          )}
-                        </div>
-
-                        <div className='flex flex-col gap-y-2'>
-                          <div className='flex flex-wrap gap-2'>
-                            <Badge
-                              variant={
-                                conceptGroup.isCompleted
-                                  ? 'default'
-                                  : 'secondary'
-                              }
-                            >
-                              {conceptGroup.isCompleted
-                                ? 'Completed'
-                                : `Concept ${conceptGroup.concept.order}`}
-                            </Badge>
-
-                            <Badge variant='outline'>
-                              {conceptGroup.completedStudyCases} /{' '}
-                              {conceptGroup.totalStudyCases} completed
-                            </Badge>
-                          </div>
-
-                          <div className='flex flex-col gap-y-1'>
-                            <h3 className='text-xl md:text-2xl font-bold tracking-tight'>
-                              {conceptGroup.concept.title}
-                            </h3>
-
-                            <p className='text-sm leading-relaxed text-muted-foreground'>
-                              {conceptGroup.concept.description}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className='flex min-w-40 flex-col gap-y-2'>
-                        <div className='flex items-center justify-between gap-4 text-sm'>
-                          <span className='text-muted-foreground'>
-                            Progress
-                          </span>
-
-                          <span className='font-medium'>
-                            {conceptGroup.progress}%
-                          </span>
-                        </div>
-
-                        <Progress value={conceptGroup.progress} />
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className='flex flex-col gap-y-4 p-5 md:p-6'>
-                    {conceptGroup.materials.map((materialGroup) => (
-                      <div
-                        key={materialGroup.material.id}
-                        className='rounded-2xl border bg-card p-4 md:p-5'
-                      >
-                        <div className='flex flex-col gap-y-4 md:flex-row md:items-center md:justify-between'>
-                          <div className='flex items-center gap-3'>
-                            <div className='flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground'>
-                              <BookOpenCheck className='size-5' />
-                            </div>
-
-                            <div className='flex flex-col gap-y-1'>
-                              <p className='font-semibold'>
-                                {materialGroup.material.title}
-                              </p>
-
-                              <p className='text-sm text-muted-foreground'>
-                                Read material first, then continue to{' '}
-                                {materialGroup.totalStudyCases} study case
-                                {materialGroup.totalStudyCases === 1 ? '' : 's'}
-                                .
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className='flex flex-wrap items-center gap-2'>
-                            <Badge
-                              variant={
-                                materialGroup.isCompleted
-                                  ? 'default'
-                                  : 'outline'
-                              }
-                              className='w-fit'
-                            >
-                              {materialGroup.isCompleted
-                                ? 'Completed'
-                                : 'Read First'}
-                            </Badge>
-
-                            <Button
-                              asChild
-                              size='sm'
-                              variant={
-                                materialGroup.isCompleted
-                                  ? 'secondary'
-                                  : 'default'
-                              }
-                              className='gap-2'
-                            >
-                              <Link href={materialGroup.href}>
-                                {materialGroup.isCompleted
-                                  ? 'Review Material'
-                                  : 'Read Material'}
-                                <BookOpenCheck className='size-4' />
-                              </Link>
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-        </>
+          <TabsContent
+            value='submissions'
+            className='flex flex-col gap-y-5'
+          >
+            <LearningSubmissions submissions={submissions} />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

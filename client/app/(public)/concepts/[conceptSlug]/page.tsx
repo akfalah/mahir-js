@@ -1,13 +1,13 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
 import { fetchConceptBySlug, fetchConcepts, fetchMaterials } from '@/lib/fetch';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import PublicBreadcrumb from '@/components/shared/PublicBreadcrumb';
+import PublicPrevNextNavigation from '@/components/shared/PublicPrevNextNavigation';
+
 import MaterialGrid from './components/MaterialGrid';
 
 type Props = {
@@ -103,45 +103,26 @@ export default async function ConceptDetailPage({ params }: Props) {
         )}
       </section>
 
-      <section className='grid grid-cols-1 gap-3 border-t pt-8 md:grid-cols-3 md:items-center'>
-        <div className='flex justify-start'>
-          {prevConcept && (
-            <Button
-              variant='outline'
-              asChild
-              className='gap-2'
-            >
-              <Link href={`/concepts/${prevConcept.slug}`}>
-                <ChevronLeft className='size-4' />
-                Previous
-              </Link>
-            </Button>
-          )}
-        </div>
-
-        <div className='flex justify-center'>
-          <Button
-            variant='secondary'
-            asChild
-          >
-            <Link href='/concepts'>Back to Concepts</Link>
-          </Button>
-        </div>
-
-        <div className='flex justify-end'>
-          {nextConcept && (
-            <Button
-              asChild
-              className='gap-2'
-            >
-              <Link href={`/concepts/${nextConcept.slug}`}>
-                Next
-                <ChevronRight className='size-4' />
-              </Link>
-            </Button>
-          )}
-        </div>
-      </section>
+      <PublicPrevNextNavigation
+        previous={
+          prevConcept
+            ? {
+                href: `/concepts/${prevConcept.slug}`,
+                label: 'Previous',
+              }
+            : null
+        }
+        next={
+          nextConcept
+            ? {
+                href: `/concepts/${nextConcept.slug}`,
+                label: 'Next',
+              }
+            : null
+        }
+        backHref='/concepts'
+        backLabel='Back to Concepts'
+      />
     </div>
   );
 }

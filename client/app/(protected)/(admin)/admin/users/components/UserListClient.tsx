@@ -13,7 +13,7 @@ import {
 
 import { useAdminResource } from '@/hooks/use-admin-resource';
 
-import { formatDate } from '@/lib/helpers/format-date';
+import { formatDate } from '@/lib/helpers/date-formatter';
 
 import { Role, User } from '@/types';
 

@@ -18,7 +18,7 @@ import { useAdminResource } from '@/hooks/use-admin-resource';
 
 import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/get-api-error-message';
-import { formatDate } from '@/lib/helpers/format-date';
+import { formatDate } from '@/lib/helpers/date-formatter';
 
 import {
   ApiResponse,

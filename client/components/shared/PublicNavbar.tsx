@@ -64,7 +64,8 @@ export default function PublicNavbar() {
   const initials = getInitials(user?.name);
 
   const dashboardHref = isAdmin ? '/admin' : '/learn';
-  const dashboardLabel = isAdmin ? 'Admin Dashboard' : 'Continue Learning';
+  const dashboardLabel = isAdmin ? 'Admin Dashboard' : 'My Learning';
+  const isActive = pathname.startsWith(dashboardHref);
 
   const handleSignOut = async () => {
     await signOut();
@@ -120,9 +121,15 @@ export default function PublicNavbar() {
             <>
               <Button
                 variant='secondary'
+                className='w-27'
                 asChild
               >
-                <Link href={dashboardHref}>{dashboardLabel}</Link>
+                <Link
+                  href={dashboardHref}
+                  className={cn(isActive && 'font-semibold')}
+                >
+                  {dashboardLabel}
+                </Link>
               </Button>
 
               <DropdownMenu>

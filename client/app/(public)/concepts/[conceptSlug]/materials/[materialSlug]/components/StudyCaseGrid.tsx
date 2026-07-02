@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import api from '@/lib/api';
+import { fetchStudyCaseProgresses } from '@/lib/fetch';
 
 import { useAuthStore } from '@/stores/use-auth-store';
 
@@ -21,10 +21,9 @@ export default function StudyCaseGrid({
   material,
   studyCases,
 }: Props) {
-  const { user, hasHydrated } = useAuthStore();
+  const { user, token, hasHydrated } = useAuthStore();
 
-  const userRole = user?.role;
-  const shouldShowProgress = hasHydrated && userRole === 'STUDENT';
+  const shouldShowProgress = hasHydrated && user?.role === 'STUDENT';
 
   const [studyCaseProgresses, setStudyCaseProgresses] = useState<
     StudyCaseProgress[]
@@ -33,22 +32,23 @@ export default function StudyCaseGrid({
   useEffect(() => {
     let isActive = true;
 
-    const fetchStudyCaseProgresses = async () => {
-      if (!hasHydrated || userRole !== 'STUDENT') {
+    const fetchProgressData = async () => {
+      if (!shouldShowProgress) {
+        setStudyCaseProgresses([]);
         return;
       }
 
       try {
-        const res = await api.get<{ data: StudyCaseProgress[] }>(
-          '/progress/study-cases',
-        );
+        const res = await fetchStudyCaseProgresses(token);
 
         if (!isActive) {
           return;
         }
 
-        setStudyCaseProgresses(res.data.data);
-      } catch {
+        setStudyCaseProgresses(res.data);
+      } catch (error) {
+        console.error('Failed to fetch study case progress data:', error);
+
         if (!isActive) {
           return;
         }
@@ -57,12 +57,12 @@ export default function StudyCaseGrid({
       }
     };
 
-    fetchStudyCaseProgresses();
+    fetchProgressData();
 
     return () => {
       isActive = false;
     };
-  }, [hasHydrated, userRole]);
+  }, [shouldShowProgress, token]);
 
   const completedStudyCaseIds = useMemo(() => {
     return new Set(

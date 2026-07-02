@@ -17,7 +17,7 @@ import { Concept, Material, ApiResponse } from '@/types';
 
 import { useAdminResource } from '@/hooks/use-admin-resource';
 
-import { formatDate } from '@/lib/helpers/format-date';
+import { formatDate } from '@/lib/helpers/date-formatter';
 import { generateSlug } from '@/lib/helpers/generate-slug';
 import { materialSchema } from '@/lib/validations/material';
 import { getFieldErrors } from '@/lib/validations/get-field-errors';

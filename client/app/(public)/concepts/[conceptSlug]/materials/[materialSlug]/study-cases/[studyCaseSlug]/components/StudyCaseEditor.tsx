@@ -23,12 +23,12 @@ import {
   formatCaseValue,
   formatInputValue,
   getSubmissionResult,
-  getWhatToCheck,
 } from '../utils/study-case-editor';
 import { DisplayedTestCase } from '../utils/types';
 
 import StudyCaseProblemPanel from './StudyCaseProblemPanel';
 import StudyCaseWorkspacePanel from './StudyCaseWorkspacePanel';
+import { getWhatToCheck } from '@/lib/helpers/submission-feedback';
 
 type Props = {
   concept: Concept;

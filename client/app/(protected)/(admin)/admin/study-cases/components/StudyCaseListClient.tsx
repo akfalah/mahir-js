@@ -9,7 +9,7 @@ import { ApiResponse, Material, StudyCase, SyntaxRules } from '@/types';
 
 import { useAdminResource } from '@/hooks/use-admin-resource';
 
-import { formatDate } from '@/lib/helpers/format-date';
+import { formatDate } from '@/lib/helpers/date-formatter';
 import { generateSlug } from '@/lib/helpers/generate-slug';
 import { getFieldErrors } from '@/lib/validations/get-field-errors';
 import { studyCaseSchema } from '@/lib/validations/study-case';

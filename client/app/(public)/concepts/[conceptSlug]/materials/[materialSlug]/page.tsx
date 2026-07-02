@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Code2 } from 'lucide-react';
+
+import { Code2 } from 'lucide-react';
 
 import {
   fetchConceptBySlug,
@@ -10,8 +10,8 @@ import {
 } from '@/lib/fetch';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import PublicBreadcrumb from '@/components/shared/PublicBreadcrumb';
+import PublicPrevNextNavigation from '@/components/shared/PublicPrevNextNavigation';
 
 import MaterialContent from './components/MaterialContent';
 import StudyCaseGrid from './components/StudyCaseGrid';
@@ -93,7 +93,7 @@ export default async function MaterialDetailPage({ params }: Props) {
         <h1 className='text-3xl md:text-5xl font-bold tracking-tight'>
           {material.title}
         </h1>
-        
+
         <MaterialContent content={material.content} />
       </article>
 
@@ -133,51 +133,26 @@ export default async function MaterialDetailPage({ params }: Props) {
         )}
       </section>
 
-      <section className='grid grid-cols-1 gap-3 border-t pt-8 md:grid-cols-3 md:items-center'>
-        <div className='flex justify-start'>
-          {prevMaterial && (
-            <Button
-              variant='outline'
-              asChild
-              className='gap-2'
-            >
-              <Link
-                href={`/concepts/${concept.slug}/materials/${prevMaterial.slug}`}
-              >
-                <ChevronLeft className='size-4' />
-                Previous
-              </Link>
-            </Button>
-          )}
-        </div>
-
-        <div className='flex justify-center'>
-          <Button
-            variant='secondary'
-            asChild
-          >
-            <Link href={`/concepts/${concept.slug}`}>
-              Back to {concept.title}
-            </Link>
-          </Button>
-        </div>
-
-        <div className='flex justify-end'>
-          {nextMaterial && (
-            <Button
-              asChild
-              className='gap-2'
-            >
-              <Link
-                href={`/concepts/${concept.slug}/materials/${nextMaterial.slug}`}
-              >
-                Next
-                <ChevronRight className='size-4' />
-              </Link>
-            </Button>
-          )}
-        </div>
-      </section>
+      <PublicPrevNextNavigation
+        previous={
+          prevMaterial
+            ? {
+                href: `/concepts/${concept.slug}/materials/${prevMaterial.slug}`,
+                label: 'Previous',
+              }
+            : null
+        }
+        next={
+          nextMaterial
+            ? {
+                href: `/concepts/${concept.slug}/materials/${nextMaterial.slug}`,
+                label: 'Next',
+              }
+            : null
+        }
+        backHref={`/concepts/${concept.slug}`}
+        backLabel={`Back to ${concept.title}`}
+      />
     </div>
   );
 }

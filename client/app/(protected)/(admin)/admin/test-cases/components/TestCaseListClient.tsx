@@ -16,7 +16,7 @@ import { ApiResponse, StudyCase, TestCase } from '@/types';
 
 import { useAdminResource } from '@/hooks/use-admin-resource';
 
-import { formatDate } from '@/lib/helpers/format-date';
+import { formatDate } from '@/lib/helpers/date-formatter';
 import { getFieldErrors } from '@/lib/validations/get-field-errors';
 import { testCaseSchema } from '@/lib/validations/test-case';
 

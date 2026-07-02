@@ -1,15 +1,6 @@
-import Link from 'next/link';
 import Editor from '@monaco-editor/react';
 
-import {
-  BookOpenCheck,
-  ChevronLeft,
-  ChevronRight,
-  LockKeyhole,
-  RotateCcw,
-  Send,
-  TestTube2,
-} from 'lucide-react';
+import { LockKeyhole, RotateCcw, Send, TestTube2 } from 'lucide-react';
 
 import { Concept, Material, StudyCase } from '@/types';
 
@@ -25,10 +16,11 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import PublicPrevNextNavigation from '@/components/shared/PublicPrevNextNavigation';
 
 import { DisplayedTestCase, FeedbackContent } from '../utils/types';
 import TestCaseFeedbackCard from './TestCardFeedBack';
-import { Spinner } from '@/components/ui/spinner';
 
 type Props = {
   concept: Concept;
@@ -275,60 +267,27 @@ export default function StudyCaseWorkspacePanel({
           </section>
         </CardContent>
 
-        <CardFooter className='flex flex-col gap-y-4 border-t bg-background p-4 md:p-5'>
-          <div className='grid w-full grid-cols-1 gap-3 md:grid-cols-3 md:items-center'>
-            <div className='flex justify-start'>
-              {prevStudyCase && (
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  asChild
-                  className='gap-2'
-                >
-                  <Link
-                    href={`/concepts/${concept.slug}/materials/${material.slug}/study-cases/${prevStudyCase.slug}`}
-                  >
-                    <ChevronLeft className='size-4' />
-                    Previous
-                  </Link>
-                </Button>
-              )}
-            </div>
-
-            <div className='flex justify-center'>
-              <Button
-                variant='ghost'
-                size='sm'
-                asChild
-                className='gap-2'
-              >
-                <Link
-                  href={`/concepts/${concept.slug}/materials/${material.slug}`}
-                >
-                  <BookOpenCheck className='size-4' />
-                  Back to Material
-                </Link>
-              </Button>
-            </div>
-
-            <div className='flex justify-end'>
-              {nextStudyCase && (
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  asChild
-                  className='gap-2'
-                >
-                  <Link
-                    href={`/concepts/${concept.slug}/materials/${material.slug}/study-cases/${nextStudyCase.slug}`}
-                  >
-                    Next
-                    <ChevronRight className='size-4' />
-                  </Link>
-                </Button>
-              )}
-            </div>
-          </div>
+        <CardFooter className='flex flex-col bg-background p-4 md:p-5'>
+          <PublicPrevNextNavigation
+            previous={
+              prevStudyCase
+                ? {
+                    href: `/concepts/${concept.slug}/materials/${material.slug}/study-cases/${prevStudyCase.slug}`,
+                    label: 'Previous',
+                  }
+                : null
+            }
+            next={
+              nextStudyCase
+                ? {
+                    href: `/concepts/${concept.slug}/materials/${material.slug}/study-cases/${nextStudyCase.slug}`,
+                    label: 'Next',
+                  }
+                : null
+            }
+            backHref={`/concepts/${concept.slug}/materials/${material.slug}`}
+            backLabel={`Back to ${material.title}`}
+          />
         </CardFooter>
       </Card>
     </section>

@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { BookOpen } from 'lucide-react';
 
-import api from '@/lib/api';
+import {
+  fetchPublishedStudyCases,
+  fetchStudyCaseProgresses,
+} from '@/lib/fetch';
 
 import { useAuthStore } from '@/stores/use-auth-store';
 
@@ -24,10 +27,9 @@ type MaterialProgressSummary = {
 };
 
 export default function MaterialGrid({ concept, materials }: Props) {
-  const { user, hasHydrated } = useAuthStore();
+  const { user, token, hasHydrated } = useAuthStore();
 
-  const userRole = user?.role;
-  const shouldShowProgress = hasHydrated && userRole === 'STUDENT';
+  const shouldShowProgress = hasHydrated && user?.role === 'STUDENT';
 
   const [studyCases, setStudyCases] = useState<StudyCase[]>([]);
   const [studyCaseProgresses, setStudyCaseProgresses] = useState<
@@ -37,43 +39,41 @@ export default function MaterialGrid({ concept, materials }: Props) {
   useEffect(() => {
     let isActive = true;
 
-    const safeGet = async <T,>(url: string, fallback: T): Promise<T> => {
-      try {
-        const res = await api.get<{ data: T }>(url);
-
-        return res.data.data ?? fallback;
-      } catch {
-        return fallback;
-      }
-    };
-
     const fetchProgressData = async () => {
-      if (!hasHydrated || userRole !== 'STUDENT') {
+      if (!shouldShowProgress) {
+        setStudyCases([]);
+        setStudyCaseProgresses([]);
         return;
       }
 
-      const studyCasesByMaterial = await Promise.all(
-        materials.map((material) =>
-          safeGet<StudyCase[]>(
-            `/study-cases?materialId=${material.id}&isPublished=true&sortBy=order&orderBy=asc&limit=100`,
-            [],
+      try {
+        const [studyCaseResponses, studyCaseProgressesRes] = await Promise.all([
+          Promise.all(
+            materials.map((material) =>
+              fetchPublishedStudyCases(token, {
+                materialId: material.id,
+              }),
+            ),
           ),
-        ),
-      );
+          fetchStudyCaseProgresses(token),
+        ]);
 
-      const nextStudyCases = studyCasesByMaterial.flat();
+        if (!isActive) {
+          return;
+        }
 
-      const nextStudyCaseProgresses = await safeGet<StudyCaseProgress[]>(
-        '/progress/study-cases',
-        [],
-      );
+        setStudyCases(studyCaseResponses.flatMap((res) => res.data));
+        setStudyCaseProgresses(studyCaseProgressesRes.data);
+      } catch (error) {
+        console.error('Failed to fetch material progress data:', error);
 
-      if (!isActive) {
-        return;
+        if (!isActive) {
+          return;
+        }
+
+        setStudyCases([]);
+        setStudyCaseProgresses([]);
       }
-
-      setStudyCases(nextStudyCases);
-      setStudyCaseProgresses(nextStudyCaseProgresses);
     };
 
     fetchProgressData();
@@ -81,7 +81,17 @@ export default function MaterialGrid({ concept, materials }: Props) {
     return () => {
       isActive = false;
     };
-  }, [hasHydrated, materials, userRole]);
+  }, [materials, shouldShowProgress, token]);
+
+  const materialIds = useMemo(() => {
+    return new Set(materials.map((material) => material.id));
+  }, [materials]);
+
+  const filteredStudyCases = useMemo(() => {
+    return studyCases.filter((studyCase) =>
+      materialIds.has(studyCase.materialId),
+    );
+  }, [materialIds, studyCases]);
 
   const completedStudyCaseIds = useMemo(() => {
     return new Set(
@@ -91,30 +101,40 @@ export default function MaterialGrid({ concept, materials }: Props) {
     );
   }, [studyCaseProgresses]);
 
-  const getMaterialProgress = (material: Material): MaterialProgressSummary => {
-    const materialStudyCases = studyCases.filter(
-      (studyCase) => studyCase.materialId === material.id,
+  const materialProgressMap = useMemo(() => {
+    return new Map<number, MaterialProgressSummary>(
+      materials.map((material) => {
+        const materialStudyCases = filteredStudyCases.filter(
+          (studyCase) => studyCase.materialId === material.id,
+        );
+
+        const completed = materialStudyCases.filter((studyCase) =>
+          completedStudyCaseIds.has(studyCase.id),
+        ).length;
+
+        const total = materialStudyCases.length;
+        const value = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        return [
+          material.id,
+          {
+            completed,
+            total,
+            value,
+          },
+        ];
+      }),
     );
-
-    const completed = materialStudyCases.filter((studyCase) =>
-      completedStudyCaseIds.has(studyCase.id),
-    ).length;
-
-    const total = materialStudyCases.length;
-
-    const value = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-    return {
-      completed,
-      total,
-      value,
-    };
-  };
+  }, [completedStudyCaseIds, filteredStudyCases, materials]);
 
   return (
     <section className='grid items-stretch gap-5 md:grid-cols-2'>
       {materials.map((material) => {
-        const progress = getMaterialProgress(material);
+        const progress = materialProgressMap.get(material.id) ?? {
+          completed: 0,
+          total: 0,
+          value: 0,
+        };
 
         const isCompleted =
           shouldShowProgress &&

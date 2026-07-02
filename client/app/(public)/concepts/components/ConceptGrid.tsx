@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { Layers3 } from 'lucide-react';
 
-import api from '@/lib/api';
+import { fetchMaterialProgresses, fetchPublishedMaterials } from '@/lib/fetch';
 
 import { useAuthStore } from '@/stores/use-auth-store';
 
@@ -23,7 +23,7 @@ type ConceptProgressSummary = {
 };
 
 export default function ConceptGrid({ concepts }: Props) {
-  const { user, hasHydrated } = useAuthStore();
+  const { user, token, hasHydrated } = useAuthStore();
 
   const userRole = user?.role;
   const shouldShowProgress = hasHydrated && userRole === 'STUDENT';
@@ -36,43 +36,40 @@ export default function ConceptGrid({ concepts }: Props) {
   useEffect(() => {
     let isActive = true;
 
-    const safeGet = async <T,>(url: string, fallback: T): Promise<T> => {
-      try {
-        const res = await api.get<{ data: T }>(url);
-
-        return res.data.data ?? fallback;
-      } catch {
-        return fallback;
-      }
-    };
-
     const fetchProgressData = async () => {
-      if (!hasHydrated || userRole !== 'STUDENT') {
+      if (!shouldShowProgress) {
+        setMaterials([]);
+        setMaterialProgresses([]);
         return;
       }
 
-      const materialsByConcept = await Promise.all(
-        concepts.map((concept) =>
-          safeGet<Material[]>(
-            `/materials?conceptId=${concept.id}&sortBy=order&orderBy=asc&limit=100`,
-            [],
+      try {
+        const materialResponses = await Promise.all(
+          concepts.map((concept) =>
+            fetchPublishedMaterials(token, {
+              conceptId: concept.id,
+            }),
           ),
-        ),
-      );
+        );
 
-      const nextMaterials = materialsByConcept.flat();
+        const materialProgressesRes = await fetchMaterialProgresses(token);
 
-      const nextMaterialProgresses = await safeGet<MaterialProgress[]>(
-        '/progress/materials',
-        [],
-      );
+        if (!isActive) {
+          return;
+        }
 
-      if (!isActive) {
-        return;
+        setMaterials(materialResponses.flatMap((res) => res.data));
+        setMaterialProgresses(materialProgressesRes.data);
+      } catch (error) {
+        console.error('Failed to fetch concept progress data:', error);
+
+        if (!isActive) {
+          return;
+        }
+
+        setMaterials([]);
+        setMaterialProgresses([]);
       }
-
-      setMaterials(nextMaterials);
-      setMaterialProgresses(nextMaterialProgresses);
     };
 
     fetchProgressData();
@@ -80,7 +77,7 @@ export default function ConceptGrid({ concepts }: Props) {
     return () => {
       isActive = false;
     };
-  }, [concepts, hasHydrated, userRole]);
+  }, [concepts, shouldShowProgress, token]);
 
   const completedMaterialIds = useMemo(() => {
     return new Set(
