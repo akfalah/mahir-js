@@ -18,7 +18,7 @@ import { useAdminResource } from '@/hooks/use-admin-resource';
 
 import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/get-api-error-message';
-import { formatDate } from '@/lib/helpers/date-formatter';
+import { formatSubmissionDate } from '@/lib/helpers/date-formatter';
 
 import {
   ApiResponse,
@@ -391,7 +391,7 @@ export default function SubmissionListClient() {
                     </TableCell>
 
                     <TableCell className='hidden text-sm text-muted-foreground md:table-cell'>
-                      {formatDate(submission.createdAt)}
+                      {formatSubmissionDate(submission.createdAt)}
                     </TableCell>
 
                     <TableCell>
@@ -505,7 +505,7 @@ export default function SubmissionListClient() {
                   </div>
 
                   <p className='pt-2 text-sm text-muted-foreground'>
-                    {formatDate(selectedSubmission.createdAt)}
+                    {formatSubmissionDate(selectedSubmission.createdAt)}
                   </p>
                 </div>
               </div>
