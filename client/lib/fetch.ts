@@ -1,7 +1,7 @@
 import { ApiResponse, FetchParams } from '@/types';
 
 const SERVER_API_URL =
-  process.env.SERVER_API_URL || 'http://localhost:8888/api';
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8888/api';
 
 async function fetchAPI<T>(
   path: string,
@@ -64,8 +64,8 @@ async function fetchAPI<T>(
 
 export const fetchConcepts = (token?: string, params?: FetchParams) =>
   fetchAPI<import('@/types').Concept[]>('/concepts', token, {
-    sortBy: 'order',
-    orderBy: 'asc',
+    sortBy: 'createdAt',
+    orderBy: 'desc',
     limit: 100,
     ...params,
   });
@@ -75,8 +75,8 @@ export const fetchConceptBySlug = (slug: string, token?: string) =>
 
 export const fetchMaterials = (token?: string, params?: FetchParams) =>
   fetchAPI<import('@/types').Material[]>('/materials', token, {
-    sortBy: 'order',
-    orderBy: 'asc',
+    sortBy: 'createdAt',
+    orderBy: 'desc',
     limit: 100,
     ...params,
   });
@@ -86,8 +86,8 @@ export const fetchMaterialBySlug = (slug: string, token?: string) =>
 
 export const fetchStudyCases = (token?: string, params?: FetchParams) =>
   fetchAPI<import('@/types').StudyCase[]>('/study-cases', token, {
-    sortBy: 'order',
-    orderBy: 'asc',
+    sortBy: 'createdAt',
+    orderBy: 'desc',
     limit: 100,
     ...params,
   });
@@ -97,8 +97,8 @@ export const fetchStudyCaseBySlug = (slug: string, token?: string) =>
 
 export const fetchTestCases = (token?: string, params?: FetchParams) =>
   fetchAPI<import('@/types').TestCase[]>('/test-cases', token, {
-    sortBy: 'order',
-    orderBy: 'asc',
+    sortBy: 'createdAt',
+    orderBy: 'desc',
     limit: 100,
     ...params,
   });

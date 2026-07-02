@@ -45,7 +45,6 @@ export default async function StudyCaseDetailPage({ params }: Props) {
     materialId: material.id,
     sortBy: 'order',
     orderBy: 'asc',
-    limit: 100,
   });
 
   const currentIndex = studyCases.findIndex((item) => item.id === studyCase.id);

@@ -32,7 +32,6 @@ export default async function ConceptDetailPage({ params }: Props) {
     conceptId: concept.id,
     sortBy: 'order',
     orderBy: 'asc',
-    limit: 10,
   });
 
   const currentIndex = concepts.findIndex((c) => c.order === concept.order);

@@ -44,13 +44,11 @@ export default async function MaterialDetailPage({ params }: Props) {
       conceptId: concept.id,
       sortBy: 'order',
       orderBy: 'asc',
-      limit: 100,
     }),
     fetchStudyCases(undefined, {
       materialId: material.id,
       sortBy: 'order',
       orderBy: 'asc',
-      limit: 100,
     }),
   ]);
 

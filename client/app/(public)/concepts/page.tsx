@@ -15,7 +15,10 @@ const pageContent = {
 };
 
 export default async function ConceptsPage() {
-  const { data: concepts } = await fetchConcepts();
+  const { data: concepts } = await fetchConcepts(undefined, {
+    sortBy: 'order',
+    orderBy: 'asc',
+  });
 
   return (
     <div className='container mx-auto px-4 py-10 md:py-12 flex flex-col gap-y-8'>
