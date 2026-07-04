@@ -163,7 +163,9 @@ export default function StudyCaseEditor({
     );
   }, [code, lastPassedCode]);
 
-  const shouldPreventResubmit = allPassed && isSameAsLastPassedCode;
+  const hasSavedProgress = isSameAsLastPassedCode;
+
+  const shouldPreventResubmit = hasSavedProgress;
 
   useEffect(() => {
     let isActive = true;
@@ -286,15 +288,15 @@ export default function StudyCaseEditor({
 
       setResults(data.testResults ?? []);
 
-      if (data.status === 'PASSED') {
-        setMessage(
-          'All tests passed. Review your code and run the test again if you make changes.',
-        );
-      } else {
-        setMessage(
-          'Some tests are still failing. Read the feedback and improve your code.',
-        );
-      }
+      const hasAllPassed =
+        data.testResults.length > 0 &&
+        data.testResults.every((result) => result.status === 'PASSED');
+
+      setMessage(
+        hasAllPassed
+          ? 'Great. Your code passed all checks. Submit your answer to save your progress.'
+          : 'Some checks still need attention. Review the feedback below.',
+      );
     } catch {
       setMessage('Unable to run tests. Please check your code and try again.');
     } finally {
@@ -407,8 +409,10 @@ export default function StudyCaseEditor({
         hasResults={hasResults}
         hasHydrated={hasHydrated}
         canInteract={canInteract}
+        userRole={userRole}
         isTesting={isTesting}
         isSubmitting={isSubmitting}
+        hasSavedProgress={hasSavedProgress}
         shouldPreventResubmit={shouldPreventResubmit}
         isProcessingResult={isProcessingResult}
         passedCount={passedCount}

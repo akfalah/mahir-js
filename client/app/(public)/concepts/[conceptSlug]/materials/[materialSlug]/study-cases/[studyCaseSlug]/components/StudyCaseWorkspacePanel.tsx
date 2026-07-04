@@ -10,7 +10,7 @@ import {
   TestTube2,
 } from 'lucide-react';
 
-import { Concept, Material, StudyCase } from '@/types';
+import { Concept, Material, Role, StudyCase } from '@/types';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -40,8 +40,10 @@ type Props = {
   hasResults: boolean;
   hasHydrated: boolean;
   canInteract: boolean;
+  userRole: Role | undefined;
   isTesting: boolean;
   isSubmitting: boolean;
+  hasSavedProgress: boolean;
   shouldPreventResubmit: boolean;
   isProcessingResult: boolean;
   passedCount: number;
@@ -67,8 +69,10 @@ export default function StudyCaseWorkspacePanel({
   hasResults,
   hasHydrated,
   canInteract,
+  userRole,
   isTesting,
   isSubmitting,
+  hasSavedProgress,
   shouldPreventResubmit,
   isProcessingResult,
   passedCount,
@@ -171,7 +175,7 @@ export default function StudyCaseWorkspacePanel({
               </Alert>
             )}
 
-            {allPassed && (
+            {hasSavedProgress && (
               <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between rounded-2xl border border-primary/20 bg-primary/5 p-4 text-primary'>
                 <div className='flex items-start gap-3'>
                   <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary'>
@@ -218,17 +222,28 @@ export default function StudyCaseWorkspacePanel({
 
                 <AlertDescription>
                   <div className='flex flex-col gap-y-3'>
-                    <p>
-                      You can read this study case, but you need to sign in as a
-                      student to run tests and submit your answer.
-                    </p>
+                    {userRole !== 'ADMIN' ? (
+                      <p>
+                        You can read this study case, but you need to sign in as
+                        a student to run tests and submit your answer.
+                      </p>
+                    ) : (
+                      <p>
+                        You are currently signed in with a{' '}
+                        {userRole?.toLowerCase()} account. You can read this
+                        study case, but only student accounts can run tests and
+                        submit answers.
+                      </p>
+                    )}
 
-                    <Button
-                      asChild
-                      className='w-fit'
-                    >
-                      <Link href='/sign-in'>Sign In</Link>
-                    </Button>
+                    {userRole !== 'ADMIN' && (
+                      <Button
+                        asChild
+                        className='w-fit'
+                      >
+                        <Link href='/sign-in'>Sign In</Link>
+                      </Button>
+                    )}
                   </div>
                 </AlertDescription>
               </Alert>
