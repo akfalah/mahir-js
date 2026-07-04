@@ -21,6 +21,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 
 type SignInErrors = {
   email?: string;
@@ -187,6 +188,7 @@ export default function SignInForm() {
                 disabled={isSubmitting}
                 className='w-full'
               >
+                {isSubmitting && <Spinner className='size-4' />}
                 {isSubmitting ? 'Signing in...' : 'Sign In'}
               </Button>
 

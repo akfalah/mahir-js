@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
 import { Code2, UserPlus } from 'lucide-react';
 
 import { useAuthStore } from '@/stores/use-auth-store';
@@ -20,6 +21,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 
 type SignUpErrors = {
   email?: string;
@@ -257,6 +259,7 @@ export default function SignUpForm() {
                 disabled={isSubmitting}
                 className='w-full'
               >
+                {isSubmitting && <Spinner className='size-4' />}
                 {isSubmitting ? 'Creating account...' : 'Create Account'}
               </Button>
 
