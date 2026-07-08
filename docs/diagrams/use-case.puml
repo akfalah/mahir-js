@@ -1,0 +1,53 @@
+@startuml usecase
+left to right direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 60
+
+actor Pelajar
+actor Guest
+actor Admin
+
+rectangle "Mahir.js System" {
+  usecase "Autentikasi" as UC_AUTH
+  usecase "Mengakses Konten\nPembelajaran" as UC_PUBLIC
+
+  usecase "Mengakses\nLearning Dashboard" as UC_DASHBOARD
+  usecase "Mengerjakan\nStudi Kasus" as UC_STUDY
+  usecase "Menjalankan Test" as UC_RUN_TEST
+  usecase "Mengirim Jawaban" as UC_SUBMIT
+  usecase "Melihat Umpan\nBalik Pengujian" as UC_FEEDBACK
+
+  usecase "Automated Grading\nSystem" as UC_AGS
+
+  usecase "Mengelola Pengguna" as UC_USERS
+  usecase "Mengelola Konten\nPembelajaran" as UC_CONTENT
+  usecase "Mengelola Test Case" as UC_TEST_CASE
+  usecase "Melihat Submission" as UC_ADMIN_SUBMISSION
+}
+
+Guest --> UC_AUTH
+Guest --> UC_PUBLIC
+
+Pelajar --> UC_AUTH
+Pelajar --> UC_PUBLIC
+Pelajar --> UC_DASHBOARD
+Pelajar --> UC_STUDY
+Pelajar --> UC_RUN_TEST
+Pelajar --> UC_SUBMIT
+Pelajar --> UC_FEEDBACK
+
+Admin --> UC_AUTH
+Admin --> UC_USERS
+Admin --> UC_CONTENT
+Admin --> UC_TEST_CASE
+Admin --> UC_ADMIN_SUBMISSION
+
+UC_RUN_TEST ..> UC_AGS : <<include>>
+UC_SUBMIT ..> UC_AGS : <<include>>
+UC_AGS ..> UC_FEEDBACK : <<include>>
+
+@enduml

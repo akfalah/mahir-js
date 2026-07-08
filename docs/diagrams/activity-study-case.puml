@@ -1,0 +1,34 @@
+@startuml activity
+title Activity Diagram Alur Pengerjaan Studi Kasus
+
+skinparam shadowing false
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+}
+
+start
+
+:Pelajar membuka halaman studi kasus;
+:Sistem menampilkan instruksi soal dan code editor;
+:Pelajar membaca instruksi soal;
+:Pelajar menulis kode jawaban;
+
+repeat
+  :Pelajar menjalankan test;
+  :Sistem mengirim kode ke backend;
+  :Automated grading worker menjalankan unit test;
+  :Sistem menampilkan feedback pengujian;
+
+  if (Seluruh test passed?) then (Ya)
+    :Pelajar mengirim jawaban;
+    :Sistem menyimpan submission dan test result;
+    :Sistem memperbarui progress belajar;
+    :Sistem menampilkan status progress tersimpan;
+    stop
+  else (Tidak)
+    :Pelajar memperbaiki kode berdasarkan feedback;
+  endif
+repeat while (Kode belum memenuhi test case?) is (Ya)
+
+@enduml

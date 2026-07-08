@@ -1,0 +1,45 @@
+@startuml sequence
+title Sequence Diagram Proses Automated Grading
+
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #333333
+  LifeLineBorderColor #333333
+  LifeLineBackgroundColor #FFFFFF
+  ParticipantBorderColor #333333
+  ParticipantBackgroundColor #FFFFFF
+}
+
+actor Pelajar
+participant "Frontend\nNext.js" as Frontend
+participant "Backend API\nNode.js" as Backend
+participant "Automated Grading\nWorker" as Worker
+participant "Jest Runner" as Jest
+database "PostgreSQL" as DB
+
+Pelajar -> Frontend : Menulis kode
+Pelajar -> Frontend : Klik Run Test / Submit
+Frontend -> Backend : Mengirim kode dan studyCaseId
+
+Backend -> Backend : Validasi request
+Backend -> Worker : Menjalankan proses grading
+
+Worker -> Worker : Membuat temporary files\nsolution.js dan solution.test.js
+Worker -> Jest : Menjalankan unit test
+Jest --> Worker : Mengembalikan hasil test
+
+Worker --> Backend : Mengirim hasil grading
+
+alt Submit jawaban
+  Backend -> DB : Menyimpan submission
+  Backend -> DB : Menyimpan test result
+
+  alt Semua test passed
+    Backend -> DB : Memperbarui progress belajar
+  end
+end
+
+Backend --> Frontend : Mengirim status dan feedback
+Frontend --> Pelajar : Menampilkan hasil pengujian
+
+@enduml

@@ -1,0 +1,34 @@
+@startuml 
+title Arsitektur Sistem Mahir.js
+
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+actor "Guest / Pelajar / Admin" as User
+
+node "Client Side" {
+  component "Frontend\nNext.js" as Frontend
+}
+
+node "Server Side" {
+  component "Backend API\nNode.js + Express" as Backend
+  component "Automated Grading\nWorker" as Worker
+  component "Jest Test Runner" as Jest
+}
+
+database "PostgreSQL\nDatabase" as DB
+database "Redis" as Redis
+
+User --> Frontend : Mengakses sistem
+Frontend --> Backend : HTTP Request / API Call
+Backend --> DB : Membaca dan menyimpan data
+Backend --> Redis : Cache / temporary process
+Backend --> Worker : Memproses grading
+Worker --> Jest : Menjalankan unit test
+Jest --> Worker : Hasil pengujian
+Worker --> Backend : Status dan feedback
+Backend --> Frontend : Response API
+Frontend --> User : Menampilkan halaman dan feedback
+
+@enduml

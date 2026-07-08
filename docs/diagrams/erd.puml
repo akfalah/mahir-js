@@ -1,0 +1,139 @@
+@startuml
+title Entity Relationship Diagram Mahir.js
+
+skinparam shadowing false
+skinparam linetype ortho
+
+entity "users" as users {
+  * id : int
+  --
+  name : string
+  email : string
+  password : string
+  role : enum
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "concepts" as concepts {
+  * id : int
+  --
+  title : string
+  slug : string
+  description : text
+  order : int
+  is_published : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "materials" as materials {
+  * id : int
+  --
+  concept_id : int
+  title : string
+  slug : string
+  content : text
+  order : int
+  is_published : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "study_cases" as study_cases {
+  * id : int
+  --
+  material_id : int
+  title : string
+  slug : string
+  description : text
+  starter_code : text
+  function_name : string
+  parameter_names : json
+  order : int
+  is_published : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "test_cases" as test_cases {
+  * id : int
+  --
+  study_case_id : int
+  description : text
+  input : json
+  expected_output : json
+  order : int
+  is_hidden : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "submissions" as submissions {
+  * id : int
+  --
+  user_id : int
+  study_case_id : int
+  code : text
+  status : enum
+  score : int
+  created_at : datetime
+}
+
+entity "test_results" as test_results {
+  * id : int
+  --
+  submission_id : int
+  test_case_id : int
+  status : enum
+  expected : text
+  received : text
+  error_message : text
+  created_at : datetime
+}
+
+entity "concept_progresses" as concept_progresses {
+  * id : int
+  --
+  user_id : int
+  concept_id : int
+  status : enum
+  completed_at : datetime
+}
+
+entity "material_progresses" as material_progresses {
+  * id : int
+  --
+  user_id : int
+  material_id : int
+  status : enum
+  completed_at : datetime
+}
+
+entity "study_case_progresses" as study_case_progresses {
+  * id : int
+  --
+  user_id : int
+  study_case_id : int
+  status : enum
+  completed_at : datetime
+}
+
+concepts ||--o{ materials
+materials ||--o{ study_cases
+study_cases ||--o{ test_cases
+study_cases ||--o{ submissions
+users ||--o{ submissions
+submissions ||--o{ test_results
+test_cases ||--o{ test_results
+
+users ||--o{ concept_progresses
+concepts ||--o{ concept_progresses
+
+users ||--o{ material_progresses
+materials ||--o{ material_progresses
+
+users ||--o{ study_case_progresses
+study_cases ||--o{ study_case_progresses
+
+@enduml
