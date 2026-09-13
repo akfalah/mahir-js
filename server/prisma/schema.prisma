@@ -33,19 +33,18 @@ model User {
   role      Role     @default(STUDENT)
   password  String
   imageUrl  String?  @map("image_url")
-  bio       String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  submissions         Submission[]
-  studyCaseProgresses StudyCaseProgress[]
-  materialProgresses  MaterialProgress[]
-  conceptProgresses   ConceptProgress[]
+  submissions        Submission[]
+  exerciseProgresses ExerciseProgress[]
+  materialProgresses MaterialProgress[]
+  moduleProgresses   ModuleProgress[]
 
   @@map("users")
 }
 
-model Concept {
+model Module {
   id          Int      @id @default(autoincrement())
   slug        String   @unique
   title       String
@@ -55,15 +54,15 @@ model Concept {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  materials         Material[]
-  conceptProgresses ConceptProgress[]
+  materials        Material[]
+  moduleProgresses ModuleProgress[]
 
-  @@map("concepts")
+  @@map("modules")
 }
 
 model Material {
   id          Int      @id @default(autoincrement())
-  conceptId   Int      @map("concept_id")
+  moduleId    Int      @map("module_id")
   slug        String   @unique
   title       String
   description String
@@ -73,16 +72,16 @@ model Material {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  concept Concept @relation(fields: [conceptId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 
-  studyCases         StudyCase[]
+  exercises          Exercise[]
   materialProgresses MaterialProgress[]
 
-  @@unique([conceptId, order])
+  @@unique([moduleId, order])
   @@map("materials")
 }
 
-model StudyCase {
+model Exercise {
   id             Int      @id @default(autoincrement())
   materialId     Int      @map("material_id")
   slug           String   @unique
@@ -90,7 +89,7 @@ model StudyCase {
   description    String
   order          Int
   hint           String?
-  starterCode    String   @map("starter_code")
+  starterCode    String?  @map("starter_code")
   parameterNames Json?    @map("parameter_names")
   functionName   String?  @map("function_name")
   syntaxRules    Json?    @map("syntax_rules")
@@ -100,17 +99,17 @@ model StudyCase {
 
   material Material @relation(fields: [materialId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 
-  testCases           TestCase[]
-  submissions         Submission[]
-  studyCaseProgresses StudyCaseProgress[]
+  testCases          TestCase[]
+  submissions        Submission[]
+  exerciseProgresses ExerciseProgress[]
 
   @@unique([materialId, order])
-  @@map("study_cases")
+  @@map("exercises")
 }
 
 model TestCase {
   id          Int      @id @default(autoincrement())
-  studyCaseId Int      @map("study_case_id")
+  exerciseId  Int      @map("exercise_id")
   description String
   input       Json
   expected    Json
@@ -119,25 +118,26 @@ model TestCase {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  studyCase StudyCase @relation(fields: [studyCaseId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 
   testResults TestResult[]
 
-  @@unique([studyCaseId, order])
+  @@unique([exerciseId, order])
   @@map("test_cases")
 }
 
 model Submission {
   id           Int              @id @default(autoincrement())
   userId       Int              @map("user_id")
-  studyCaseId  Int              @map("study_case_id")
+  exerciseId   Int              @map("exercise_id")
   code         String
   status       SubmissionStatus @default(PENDING)
   errorMessage String?          @map("error_message")
   createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
 
-  user      User      @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
-  studyCase StudyCase @relation(fields: [studyCaseId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 
   testResults TestResult[]
 
@@ -160,20 +160,19 @@ model TestResult {
   @@map("test_results")
 }
 
-model StudyCaseProgress {
+model ExerciseProgress {
   id          Int       @id @default(autoincrement())
   userId      Int       @map("user_id")
-  studyCaseId Int       @map("study_case_id")
+  exerciseId  Int       @map("exercise_id")
   isCompleted Boolean   @default(false) @map("is_completed")
   completedAt DateTime? @map("completed_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 
-  studyCase StudyCase @relation(fields: [studyCaseId], references: [id], onUpdate: Cascade, onDelete: Cascade)
-
-  @@unique([userId, studyCaseId])
-  @@map("study_case_progresses")
+  @@unique([userId, exerciseId])
+  @@map("exercise_progresses")
 }
 
 model MaterialProgress {
@@ -184,26 +183,24 @@ model MaterialProgress {
   completedAt DateTime? @map("completed_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
-
+  user     User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   material Material @relation(fields: [materialId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 
   @@unique([userId, materialId])
   @@map("material_progresses")
 }
 
-model ConceptProgress {
+model ModuleProgress {
   id          Int       @id @default(autoincrement())
   userId      Int       @map("user_id")
-  conceptId   Int       @map("concept_id")
+  moduleId    Int       @map("module_id")
   isCompleted Boolean   @default(false) @map("is_completed")
   completedAt DateTime? @map("completed_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 
-  concept Concept @relation(fields: [conceptId], references: [id], onUpdate: Cascade, onDelete: Cascade)
-
-  @@unique([userId, conceptId])
-  @@map("concept_progresses")
+  @@unique([userId, moduleId])
+  @@map("module_progresses")
 }
