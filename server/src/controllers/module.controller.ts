@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { ConceptPaginationRequest } from '../models/concept.model';
+import { ModulePaginationRequest } from '../models/module.model';
 
-import { ConceptService } from '../services/concept.service';
+import { ModuleService } from '../services/module.service';
 
-export class ConceptController {
+export class ModuleController {
   static async index(req: Request, res: Response, next: NextFunction) {
     try {
       const request = {
@@ -14,9 +14,9 @@ export class ConceptController {
         sortBy: req.query.sortBy,
         orderBy: req.query.orderBy,
         isPublished: req.query.isPublished,
-      } as unknown as ConceptPaginationRequest;
+      } as unknown as ModulePaginationRequest;
 
-      const response = await ConceptService.getConcepts(req.user, request);
+      const response = await ModuleService.getModules(req.user, request);
 
       res.status(200).json(response);
     } catch (e) {
@@ -26,7 +26,7 @@ export class ConceptController {
 
   static async show(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await ConceptService.getConceptBySlug(
+      const response = await ModuleService.getModuleBySlug(
         req.user,
         req.params.slug.toString(),
       );
@@ -39,7 +39,7 @@ export class ConceptController {
 
   static async store(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await ConceptService.createConcept(req.body);
+      const response = await ModuleService.createModule(req.body);
 
       res.status(201).json({ data: response });
     } catch (e) {
@@ -49,7 +49,7 @@ export class ConceptController {
 
   static async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const response = await ConceptService.updateConcept(
+      const response = await ModuleService.updateModule(
         Number(req.params.id),
         req.body,
       );
@@ -62,7 +62,7 @@ export class ConceptController {
 
   static async destroy(req: Request, res: Response, next: NextFunction) {
     try {
-      await ConceptService.deleteConcept(Number(req.params.id));
+      await ModuleService.deleteModule(Number(req.params.id));
 
       res.status(200).json({ data: 'Concept deleted successfully' });
     } catch (e) {

@@ -5,7 +5,7 @@ import { errorMiddleware } from '../middlewares/error.middleware';
 
 import { authRouter } from '../routes/auth.route';
 import { userRouter } from '../routes/user.route';
-import { conceptRouter } from '../routes/concept.route';
+import { moduleRouter } from '../routes/module.route';
 import { materialRouter } from '../routes/material.route';
 import { studyCaseRouter } from '../routes/study-case.route';
 import { testCaseRouter } from '../routes/test-case.route';
@@ -28,7 +28,7 @@ server.use(express.json());
 
 server.use('/api/auth', authRouter);
 server.use('/api/users', userRouter);
-server.use('/api/concepts', conceptRouter);
+server.use('/api/modules', moduleRouter);
 server.use('/api/materials', materialRouter);
 server.use('/api/study-cases', studyCaseRouter);
 server.use('/api/test-cases', testCaseRouter);

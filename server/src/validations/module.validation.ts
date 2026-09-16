@@ -3,14 +3,14 @@ import z, { ZodType } from 'zod';
 import { PaginationValidation } from './pagination.validation';
 
 import {
-  ConceptPaginationRequest,
-  ConceptSortBy,
-  CreateConceptRequest,
-  UpdateConceptRequest,
-} from '../models/concept.model';
+  ModulePaginationRequest,
+  ModuleSortBy,
+  CreateModuleRequest,
+  UpdateModuleRequest,
+} from '../models/module.model';
 
-export class ConceptValidation {
-  static readonly GET: ZodType<ConceptPaginationRequest> = z.object({
+export class ModuleValidation {
+  static readonly GET: ZodType<ModulePaginationRequest> = z.object({
     ...PaginationValidation.BaseSchema,
     sortBy: z
       .enum([
@@ -19,7 +19,7 @@ export class ConceptValidation {
         'title',
         'order',
         'createdAt',
-      ] as const satisfies readonly ConceptSortBy[])
+      ] as const satisfies readonly ModuleSortBy[])
       .default('createdAt'),
     orderBy: z.enum(['asc', 'desc']).default('desc'),
     isPublished: z
@@ -28,7 +28,7 @@ export class ConceptValidation {
       .optional(),
   });
 
-  static readonly CREATE: ZodType<CreateConceptRequest> = z.object({
+  static readonly CREATE: ZodType<CreateModuleRequest> = z.object({
     slug: z.string().min(3),
     title: z.string().min(3),
     description: z.string().min(3),
@@ -36,7 +36,7 @@ export class ConceptValidation {
     isPublished: z.boolean().optional(),
   });
 
-  static readonly UPDATE: ZodType<UpdateConceptRequest> = z.object({
+  static readonly UPDATE: ZodType<UpdateModuleRequest> = z.object({
     slug: z.string().min(3).optional(),
     title: z.string().min(3).optional(),
     description: z.string().min(3).optional(),
