@@ -1,13 +1,13 @@
 import {
-  ConceptProgress,
+  ModuleProgress,
   MaterialProgress,
-  StudyCaseProgress,
+  ExerciseProgress,
 } from '../../generated/prisma/client';
 
-export type StudyCaseProgressResponse = {
+export type ExerciseProgressResponse = {
   id: number;
   userId: number;
-  studyCaseId: number;
+  exerciseId: number;
   isCompleted: boolean;
   completedAt: Date | null;
   updatedAt: Date;
@@ -22,22 +22,22 @@ export type MaterialProgressResponse = {
   updatedAt: Date;
 };
 
-export type ConceptProgressResponse = {
+export type ModuleProgressResponse = {
   id: number;
   userId: number;
-  conceptId: number;
+  moduleId: number;
   isCompleted: boolean;
   completedAt: Date | null;
   updatedAt: Date;
 };
 
-export function toStudyCaseProgressResponse(
-  progress: StudyCaseProgress,
-): StudyCaseProgressResponse {
+export function toExerciseProgressResponse(
+  progress: ExerciseProgress,
+): ExerciseProgressResponse {
   return {
     id: progress.id,
     userId: progress.userId,
-    studyCaseId: progress.studyCaseId,
+    exerciseId: progress.exerciseId,
     isCompleted: progress.isCompleted,
     completedAt: progress.completedAt,
     updatedAt: progress.updatedAt,
@@ -57,13 +57,13 @@ export function toMaterialProgressResponse(
   };
 }
 
-export function toConceptProgressResponse(
-  progress: ConceptProgress,
-): ConceptProgressResponse {
+export function toModuleProgressResponse(
+  progress: ModuleProgress,
+): ModuleProgressResponse {
   return {
     id: progress.id,
     userId: progress.userId,
-    conceptId: progress.conceptId,
+    moduleId: progress.moduleId,
     isCompleted: progress.isCompleted,
     completedAt: progress.completedAt,
     updatedAt: progress.updatedAt,

@@ -1,8 +1,8 @@
-import { Prisma, StudyCase } from '../../generated/prisma/client';
+import { Prisma, Exercise } from '../../generated/prisma/client';
 
-import { PaginationRequest, PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './pagination.model';
 
-export type StudyCaseSortBy =
+export type ExerciseSortBy =
   | 'id'
   | 'slug'
   | 'materialId'
@@ -11,7 +11,7 @@ export type StudyCaseSortBy =
   | 'isPublished'
   | 'createdAt';
 
-export type StudyCasePaginationRequest = PaginationRequest<StudyCaseSortBy> & {
+export type ExercisePaginationRequest = PaginationRequest<ExerciseSortBy> & {
   materialId?: number;
   isPublished?: boolean;
 };
@@ -21,7 +21,7 @@ export type SyntaxRules = {
   forbidden?: string[];
 };
 
-export type CreateStudyCaseRequest = {
+export type CreateExerciseRequest = {
   materialId: number;
   slug: string;
   title: string;
@@ -35,7 +35,7 @@ export type CreateStudyCaseRequest = {
   isPublished?: boolean;
 };
 
-export type UpdateStudyCaseRequest = {
+export type UpdateExerciseRequest = {
   slug?: string;
   title?: string;
   description?: string;
@@ -48,14 +48,14 @@ export type UpdateStudyCaseRequest = {
   isPublished?: boolean;
 };
 
-export const studyCaseRelationInclude = {
+export const ExerciseRelationInclude = {
   material: {
     select: {
       id: true,
       slug: true,
       title: true,
       isPublished: true,
-      concept: {
+      module: {
         select: {
           id: true,
           slug: true,
@@ -65,13 +65,13 @@ export const studyCaseRelationInclude = {
       },
     },
   },
-} satisfies Prisma.StudyCaseInclude;
+} satisfies Prisma.ExerciseInclude;
 
-export type StudyCaseWithRelations = Prisma.StudyCaseGetPayload<{
-  include: typeof studyCaseRelationInclude;
+export type ExerciseWithRelations = Prisma.ExerciseGetPayload<{
+  include: typeof ExerciseRelationInclude;
 }>;
 
-export type StudyCaseConceptResponse = {
+export type ExerciseModuleResponse = {
   id: number;
   slug: string;
   title: string;
@@ -83,10 +83,10 @@ export type StudyCaseMaterialResponse = {
   slug: string;
   title: string;
   isPublished: boolean;
-  concept: StudyCaseConceptResponse;
+  module: ExerciseModuleResponse;
 };
 
-export type StudyCaseResponse = {
+export type ExerciseeResponse = {
   id: number;
   materialId: number;
   slug: string;
@@ -94,7 +94,7 @@ export type StudyCaseResponse = {
   description: string;
   hint: string | null;
   order: number;
-  starterCode: string;
+  starterCode: string | null;
   syntaxRules: SyntaxRules;
   parameterNames: string[] | null;
   functionName: string | null;
@@ -104,12 +104,12 @@ export type StudyCaseResponse = {
   material?: StudyCaseMaterialResponse;
 };
 
-export type StudyCasePaginationResponse = PaginationResponse<StudyCaseResponse>;
+export type StudyCasePaginationResponse = PaginationResponse<ExerciseeResponse>;
 
-export function toStudyCaseResponse(
-  studyCase: StudyCase | StudyCaseWithRelations,
-): StudyCaseResponse {
-  const response: StudyCaseResponse = {
+export function toExerciseeResponse(
+  studyCase: Exercise | ExerciseWithRelations,
+): ExerciseeResponse {
+  const response: ExerciseeResponse = {
     id: studyCase.id,
     materialId: studyCase.materialId,
     slug: studyCase.slug,

@@ -1,21 +1,21 @@
 import { Prisma, TestCase } from '../../generated/prisma/client';
 
-import { PaginationRequest, PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './pagination.model';
 
 export type TestCaseSortBy =
   | 'id'
-  | 'studyCaseId'
+  | 'exerciseId'
   | 'order'
   | 'isPublished'
   | 'createdAt';
 
 export type TestCasePaginationRequest = PaginationRequest<TestCaseSortBy> & {
-  studyCaseId?: number;
+  exerciseId?: number;
   isPublished?: boolean;
 };
 
 export type CreateTestCaseRequest = {
-  studyCaseId: number;
+  exerciseId: number;
   description: string;
   input: Record<string, unknown>;
   expected: Record<string, unknown>;
@@ -32,7 +32,7 @@ export type UpdateTestCaseRequest = {
 };
 
 export const testCaseRelationInclude = {
-  studyCase: {
+  exercise: {
     select: {
       id: true,
       slug: true,
@@ -44,7 +44,7 @@ export const testCaseRelationInclude = {
           slug: true,
           title: true,
           isPublished: true,
-          concept: {
+          module: {
             select: {
               id: true,
               slug: true,
@@ -62,7 +62,7 @@ export type TestCaseWithRelations = Prisma.TestCaseGetPayload<{
   include: typeof testCaseRelationInclude;
 }>;
 
-export type TestCaseConceptResponse = {
+export type TestCaseModuleResponse = {
   id: number;
   slug: string;
   title: string;
@@ -74,10 +74,10 @@ export type TestCaseMaterialResponse = {
   slug: string;
   title: string;
   isPublished: boolean;
-  concept: TestCaseConceptResponse;
+  module: TestCaseModuleResponse;
 };
 
-export type TestCaseStudyCaseResponse = {
+export type TestCaseExerciseResponse = {
   id: number;
   slug: string;
   title: string;
@@ -87,7 +87,7 @@ export type TestCaseStudyCaseResponse = {
 
 export type TestCaseResponse = {
   id: number;
-  studyCaseId: number;
+  exerciseId: number;
   description: string;
   input: Record<string, unknown>;
   expected: Record<string, unknown>;
@@ -95,7 +95,7 @@ export type TestCaseResponse = {
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
-  studyCase?: TestCaseStudyCaseResponse;
+  exercise?: TestCaseExerciseResponse;
 };
 
 export type TestCaseInput = {
@@ -112,7 +112,7 @@ export function toTestCaseResponse(
 ): TestCaseResponse {
   const response: TestCaseResponse = {
     id: testCase.id,
-    studyCaseId: testCase.studyCaseId,
+    exerciseId: testCase.exerciseId,
     description: testCase.description,
     input: testCase.input as Record<string, unknown>,
     expected: testCase.expected as Record<string, unknown>,
@@ -122,8 +122,8 @@ export function toTestCaseResponse(
     updatedAt: testCase.updatedAt,
   };
 
-  if ('studyCase' in testCase) {
-    response.studyCase = testCase.studyCase;
+  if ('exercise' in testCase) {
+    response.exercise = testCase.exercise;
   }
 
   return response;

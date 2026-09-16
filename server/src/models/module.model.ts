@@ -1,6 +1,6 @@
-import { Concept } from '../../generated/prisma/client';
+import { Module } from '../../generated/prisma/client';
 
-import { PaginationRequest, PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './pagination.model';
 
 export type ConceptSortBy =
   | 'id'
@@ -43,7 +43,7 @@ export type ConceptResponse = {
 
 export type ConceptPaginationResponse = PaginationResponse<ConceptResponse>;
 
-export function toConceptResponse(concept: Concept): ConceptResponse {
+export function toConceptResponse(concept: Module): ConceptResponse {
   return {
     id: concept.id,
     slug: concept.slug,

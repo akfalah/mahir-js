@@ -1,22 +1,22 @@
 import { Material, Prisma } from '../../generated/prisma/client';
 
-import { PaginationRequest, PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './pagination.model';
 
 export type MaterialSortBy =
   | 'id'
-  | 'conceptId'
+  | 'moduleId'
   | 'title'
   | 'order'
   | 'isPublished'
   | 'createdAt';
 
 export type MaterialPaginationRequest = PaginationRequest<MaterialSortBy> & {
-  conceptId?: number;
+  moduleId?: number;
   isPublished?: boolean;
 };
 
 export type CreateMaterialRequest = {
-  conceptId: number;
+  moduleId: number;
   slug: string;
   title: string;
   description: string;
@@ -35,7 +35,7 @@ export type UpdateMaterialRequest = {
 };
 
 export const materialRelationInclude = {
-  concept: {
+  module: {
     select: {
       id: true,
       slug: true,
@@ -49,7 +49,7 @@ export type MaterialWithRelations = Prisma.MaterialGetPayload<{
   include: typeof materialRelationInclude;
 }>;
 
-export type MaterialConceptResponse = {
+export type MaterialModuleResponse = {
   id: number;
   slug: string;
   title: string;
@@ -58,7 +58,7 @@ export type MaterialConceptResponse = {
 
 export type MaterialResponse = {
   id: number;
-  conceptId: number;
+  moduleId: number;
   slug: string;
   title: string;
   description: string;
@@ -67,7 +67,7 @@ export type MaterialResponse = {
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
-  concept?: MaterialConceptResponse;
+  module?: MaterialModuleResponse;
 };
 
 export type MaterialPaginationResponse = PaginationResponse<MaterialResponse>;
@@ -77,7 +77,7 @@ export function toMaterialResponse(
 ): MaterialResponse {
   const response: MaterialResponse = {
     id: material.id,
-    conceptId: material.conceptId,
+    moduleId: material.moduleId,
     slug: material.slug,
     title: material.title,
     description: material.description,
@@ -88,8 +88,8 @@ export function toMaterialResponse(
     updatedAt: material.updatedAt,
   };
 
-  if ('concept' in material) {
-    response.concept = material.concept;
+  if ('module' in material) {
+    response.module = material.module;
   }
 
   return response;

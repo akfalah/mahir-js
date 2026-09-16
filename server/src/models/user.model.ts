@@ -1,7 +1,7 @@
 import { User } from '../../generated/prisma/client';
 import { Role } from '../../generated/prisma/enums';
 
-import { PaginationRequest, PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './pagination.model';
 
 export type UserSortBy = 'id' | 'name' | 'email' | 'role' | 'createdAt';
 
@@ -15,7 +15,6 @@ export type CreateUserRequest = {
   role: Role;
   password: string;
   imageUrl?: string;
-  bio?: string;
 };
 
 export type UpdateUserRequest = {
@@ -24,7 +23,6 @@ export type UpdateUserRequest = {
   role?: Role;
   password?: string;
   imageUrl?: string;
-  bio?: string;
 };
 
 export type UserResponse = {
@@ -33,7 +31,6 @@ export type UserResponse = {
   name: string;
   role: Role;
   imageUrl: string | null;
-  bio: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -47,7 +44,6 @@ export function toUserResponse(user: User): UserResponse {
     name: user.name,
     role: user.role,
     imageUrl: user.imageUrl,
-    bio: user.bio,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
