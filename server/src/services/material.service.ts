@@ -29,8 +29,8 @@ export class MaterialService {
   ): Promise<MaterialPaginationResponse> {
     const data = Validation.validate(MaterialValidation.GET, request);
 
-    if (data.sortBy === 'order' && !data.conceptId) {
-      throw new ResponseError(400, 'sortBy order requires conceptId filter');
+    if (data.sortBy === 'order' && !data.moduleId) {
+      throw new ResponseError(400, 'sortBy order requires moduleId filter');
     }
     const isAdmin = user?.role === Role.ADMIN;
 
@@ -38,7 +38,7 @@ export class MaterialService {
       ...(!isAdmin && { isPublished: true }),
       ...(isAdmin &&
         data.isPublished !== undefined && { isPublished: data.isPublished }),
-      ...(data.conceptId && { conceptId: data.conceptId }),
+      ...(data.moduleId && { moduleId: data.moduleId }),
       ...(data.search && {
         OR: [
           { title: { contains: data.search, mode: 'insensitive' as const } },
@@ -92,16 +92,16 @@ export class MaterialService {
   ): Promise<MaterialResponse> {
     const data = Validation.validate(MaterialValidation.CREATE, request);
 
-    const concept = await prisma.concept.findUnique({
-      where: { id: data.conceptId },
+    const module = await prisma.module.findUnique({
+      where: { id: data.moduleId },
     });
 
-    if (!concept) throw new ResponseError(404, 'Concept not found');
+    if (!module) throw new ResponseError(404, 'Module not found');
 
     const [slugExists, orderExists] = await Promise.all([
       prisma.material.count({ where: { slug: data.slug } }),
       prisma.material.count({
-        where: { conceptId: data.conceptId, order: data.order },
+        where: { moduleId: data.moduleId, order: data.order },
       }),
     ]);
 
@@ -142,7 +142,7 @@ export class MaterialService {
 
     if (data.order) {
       const orderExists = await prisma.material.count({
-        where: { conceptId: exists.conceptId, order: data.order, NOT: { id } },
+        where: { moduleId: exists.moduleId, order: data.order, NOT: { id } },
       });
 
       if (orderExists) throw new ResponseError(400, 'Order already exists');

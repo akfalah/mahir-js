@@ -15,14 +15,14 @@ export class MaterialValidation {
     sortBy: z
       .enum([
         'id',
-        'conceptId',
+        'moduleId',
         'title',
         'order',
         'createdAt',
       ] as const satisfies readonly MaterialSortBy[])
       .default('createdAt'),
     orderBy: z.enum(['asc', 'desc']).default('desc'),
-    conceptId: z.coerce.number().min(1).optional(),
+    moduleId: z.coerce.number().min(1).optional(),
     isPublished: z
       .enum(['true', 'false'])
       .transform((v) => v === 'true')
@@ -30,7 +30,7 @@ export class MaterialValidation {
   });
 
   static readonly CREATE: ZodType<CreateMaterialRequest> = z.object({
-    conceptId: z.number().min(1),
+    moduleId: z.number().min(1),
     slug: z.string().min(3),
     title: z.string().min(3),
     description: z.string().min(3),
