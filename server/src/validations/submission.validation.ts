@@ -21,12 +21,12 @@ export class SubmissionValidation {
       .default('createdAt'),
     orderBy: z.enum(['asc', 'desc']).default('desc'),
     userId: z.coerce.number().min(1).optional(),
-    studyCaseId: z.coerce.number().min(1).optional(),
+    exerciseId: z.coerce.number().min(1).optional(),
     status: z.enum(SubmissionStatus).optional(),
   });
 
   static readonly CREATE: ZodType<CreateSubmissionRequest> = z.object({
-    studyCaseId: z.number().min(1),
+    exerciseId: z.number().min(1),
     code: z.string().min(1),
   });
 }

@@ -43,7 +43,7 @@ export class SubmissionService {
     const where = {
       ...(user.role === Role.STUDENT && { userId: user.id }),
       ...(user.role === Role.ADMIN && data.userId && { userId: data.userId }),
-      ...(data.studyCaseId && { studyCaseId: data.studyCaseId }),
+      ...(data.exerciseId && { exerciseId: data.exerciseId }),
       ...(data.status && { status: data.status }),
     };
 
@@ -98,12 +98,12 @@ export class SubmissionService {
   ): Promise<RunSubmissionResponse> {
     const data = Validation.validate(SubmissionValidation.CREATE, request);
 
-    const studyCase = await prisma.studyCase.findUnique({
-      where: { id: data.studyCaseId },
+    const exercise = await prisma.exercise.findUnique({
+      where: { id: data.exerciseId },
       include: {
         material: {
           include: {
-            concept: true,
+            module: true,
           },
         },
         testCases: {
@@ -117,20 +117,20 @@ export class SubmissionService {
       },
     });
 
-    if (!studyCase) {
-      throw new ResponseError(404, 'Study case not found');
+    if (!exercise) {
+      throw new ResponseError(404, 'Exercise not found');
     }
 
     if (
       user.role === Role.STUDENT &&
-      (!studyCase.isPublished ||
-        !studyCase.material.isPublished ||
-        !studyCase.material.concept.isPublished)
+      (!exercise.isPublished ||
+        !exercise.material.isPublished ||
+        !exercise.material.module.isPublished)
     ) {
-      throw new ResponseError(404, 'Study case not found');
+      throw new ResponseError(404, 'Exercise not found');
     }
 
-    const testCaseInputs = studyCase.testCases.map((tc) => ({
+    const testCaseInputs = exercise.testCases.map((tc) => ({
       id: tc.id,
       description: tc.description,
       input: tc.input as Record<string, unknown>,
@@ -140,10 +140,10 @@ export class SubmissionService {
     try {
       const results = await runSubmissionCode(
         data.code,
-        studyCase.functionName ?? '',
-        (studyCase.parameterNames as string[]) ?? [],
+        exercise.functionName ?? '',
+        (exercise.parameterNames as string[]) ?? [],
         testCaseInputs,
-        studyCase.syntaxRules as Record<string, string[]> | null,
+        exercise.syntaxRules as Record<string, string[]> | null,
       );
 
       const allPassed = results.every(
@@ -194,34 +194,34 @@ export class SubmissionService {
   ): Promise<SubmissionResponse> {
     const data = Validation.validate(SubmissionValidation.CREATE, request);
 
-    const studyCase = await prisma.studyCase.findUnique({
-      where: { id: data.studyCaseId },
+    const exercise = await prisma.exercise.findUnique({
+      where: { id: data.exerciseId },
       include: {
         material: {
           include: {
-            concept: true,
+            module: true,
           },
         },
       },
     });
 
-    if (!studyCase) {
-      throw new ResponseError(404, 'Study case not found');
+    if (!exercise) {
+      throw new ResponseError(404, 'Exercise not found');
     }
 
     if (
       user.role === Role.STUDENT &&
-      (!studyCase.isPublished ||
-        !studyCase.material.isPublished ||
-        !studyCase.material.concept.isPublished)
+      (!exercise.isPublished ||
+        !exercise.material.isPublished ||
+        !exercise.material.module.isPublished)
     ) {
-      throw new ResponseError(404, 'Study case not found');
+      throw new ResponseError(404, 'Exercise not found');
     }
 
     const latestPassedSubmission = await prisma.submission.findFirst({
       where: {
         userId: user.id,
-        studyCaseId: data.studyCaseId,
+        exerciseId: data.exerciseId,
         status: 'PASSED',
       },
       orderBy: {
@@ -243,7 +243,7 @@ export class SubmissionService {
     const submission = await prisma.submission.create({
       data: {
         userId: user.id,
-        studyCaseId: data.studyCaseId,
+        exerciseId: data.exerciseId,
         code: data.code,
       },
     });

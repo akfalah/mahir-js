@@ -4,25 +4,25 @@ import {
   TestResultStatus,
 } from '../../generated/prisma/enums';
 
-import { PaginationRequest, PaginationResponse } from './paginations.model';
+import { PaginationRequest, PaginationResponse } from './pagination.model';
 import { TestResultResponse, toTestResultResponse } from './test-result.model';
 
 export type SubmissionSortBy =
   | 'id'
   | 'userId'
-  | 'studyCaseId'
+  | 'exerciseId'
   | 'status'
   | 'createdAt';
 
 export type SubmissionPaginationRequest =
   PaginationRequest<SubmissionSortBy> & {
     userId?: number;
-    studyCaseId?: number;
+    exerciseId?: number;
     status?: SubmissionStatus;
   };
 
 export type CreateSubmissionRequest = {
-  studyCaseId: number;
+  exerciseId: number;
   code: string;
 };
 
@@ -34,7 +34,7 @@ export const submissionRelationInclude = {
       email: true,
     },
   },
-  studyCase: {
+  exercise: {
     select: {
       id: true,
       title: true,
@@ -42,7 +42,7 @@ export const submissionRelationInclude = {
         select: {
           id: true,
           title: true,
-          concept: {
+          module: {
             select: {
               id: true,
               title: true,
@@ -77,7 +77,7 @@ export type SubmissionUserResponse = {
   email: string;
 };
 
-export type SubmissionConceptResponse = {
+export type SubmissionModuleResponse = {
   id: number;
   title: string;
 };
@@ -85,10 +85,10 @@ export type SubmissionConceptResponse = {
 export type SubmissionMaterialResponse = {
   id: number;
   title: string;
-  concept: SubmissionConceptResponse;
+  module: SubmissionModuleResponse;
 };
 
-export type SubmissionStudyCaseResponse = {
+export type SubmissionExerciseResponse = {
   id: number;
   title: string;
   material: SubmissionMaterialResponse;
@@ -97,13 +97,13 @@ export type SubmissionStudyCaseResponse = {
 export type SubmissionResponse = {
   id: number;
   userId: number;
-  studyCaseId: number;
+  exerciseId: number;
   code: string;
   status: SubmissionStatus;
   errorMessage: string | null;
   createdAt: Date;
   user?: SubmissionUserResponse;
-  studyCase?: SubmissionStudyCaseResponse;
+  exercise?: SubmissionExerciseResponse;
 };
 
 export type SubmissionDetailResponse = SubmissionResponse & {
@@ -134,7 +134,7 @@ export function toSubmissionResponse(
   const response: SubmissionResponse = {
     id: submission.id,
     userId: submission.userId,
-    studyCaseId: submission.studyCaseId,
+    exerciseId: submission.exerciseId,
     code: submission.code,
     status: submission.status,
     errorMessage: submission.errorMessage,
@@ -145,8 +145,8 @@ export function toSubmissionResponse(
     response.user = submission.user;
   }
 
-  if ('studyCase' in submission) {
-    response.studyCase = submission.studyCase;
+  if ('exercise' in submission) {
+    response.exercise = submission.exercise;
   }
 
   return response;
