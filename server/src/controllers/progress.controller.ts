@@ -11,7 +11,10 @@ export class ProgressController {
     try {
       const response = await ProgressService.getModuleProgresses(req.user!);
 
-      res.status(200).json({ data: response });
+      res.status(200).json({
+        message: 'Successfully retrieved module progresses',
+        data: response,
+      });
     } catch (e) {
       next(e);
     }
@@ -23,15 +26,18 @@ export class ProgressController {
     next: NextFunction,
   ) {
     try {
-      const conceptId = req.query.conceptId
-        ? Number(req.query.conceptId)
+      const moduleId = req.query.moduleId
+        ? Number(req.query.moduleId)
         : undefined;
       const response = await ProgressService.getMaterialProgresses(
         req.user!,
-        conceptId,
+        moduleId,
       );
 
-      res.status(200).json({ data: response });
+      res.status(200).json({
+        message: 'Successfully retrieved material progresses',
+        data: response,
+      });
     } catch (e) {
       next(e);
     }
@@ -51,7 +57,10 @@ export class ProgressController {
         materialId,
       );
 
-      res.status(200).json({ data: response });
+      res.status(200).json({
+        message: 'Successfully retrieved exercise progresses',
+        data: response,
+      });
     } catch (e) {
       next(e);
     }

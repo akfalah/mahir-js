@@ -7,7 +7,9 @@ export class AuthController {
     try {
       const response = await AuthService.signUp(req.body);
 
-      res.status(201).json({ data: response });
+      res
+        .status(201)
+        .json({ message: 'Successfully signed up', data: response });
     } catch (e) {
       next(e);
     }
@@ -17,7 +19,9 @@ export class AuthController {
     try {
       const response = await AuthService.signIn(req.body);
 
-      res.status(200).json({ data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully signed in', data: response });
     } catch (e) {
       next(e);
     }
@@ -27,7 +31,9 @@ export class AuthController {
     try {
       const response = await AuthService.profile(req.user!.id);
 
-      res.status(200).json({ data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully retrieved user', data: response });
     } catch (e) {
       next(e);
     }
@@ -37,7 +43,9 @@ export class AuthController {
     try {
       const response = await AuthService.updateProfile(req.user!.id, req.body);
 
-      res.status(200).json({ data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully updated user', data: response });
     } catch (e) {
       next(e);
     }
@@ -46,7 +54,7 @@ export class AuthController {
   static async updatePassword(req: Request, res: Response, next: NextFunction) {
     try {
       await AuthService.updatePassword(req.user!.id, req.body);
-      res.status(200).json({ data: 'Password changed successfully' });
+      res.status(200).json({ message: 'Successfully updated password' });
     } catch (e) {
       next(e);
     }

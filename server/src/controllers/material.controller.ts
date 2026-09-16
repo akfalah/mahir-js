@@ -19,7 +19,9 @@ export class MaterialController {
 
       const response = await MaterialService.getMaterials(req.user, request);
 
-      res.status(200).json(response);
+      res
+        .status(200)
+        .json({ message: 'Successfully retrieved meterials', ...response });
     } catch (e) {
       next(e);
     }
@@ -32,7 +34,9 @@ export class MaterialController {
         req.params.slug.toString(),
       );
 
-      res.status(200).json({ data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully retrieved meterial', data: response });
     } catch (e) {
       next(e);
     }
@@ -42,7 +46,9 @@ export class MaterialController {
     try {
       const response = await MaterialService.createMaterial(req.body);
 
-      res.status(201).json({ data: response });
+      res
+        .status(201)
+        .json({ message: 'Successfully stored meterial', data: response });
     } catch (e) {
       next(e);
     }
@@ -55,7 +61,9 @@ export class MaterialController {
         req.body,
       );
 
-      res.status(200).json({ data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully updated meterial', data: response });
     } catch (e) {
       next(e);
     }
@@ -65,7 +73,7 @@ export class MaterialController {
     try {
       await MaterialService.deleteMaterial(Number(req.params.id));
 
-      res.status(200).json({ data: 'Material deleted successfully' });
+      res.status(200).json({ message: 'Successfully deleted meterial' });
     } catch (e) {
       next(e);
     }

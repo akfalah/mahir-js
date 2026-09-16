@@ -19,7 +19,9 @@ export class TestCaseController {
 
       const response = await TestCaseService.getTestCases(req.user, request);
 
-      res.status(200).json(response);
+      res
+        .status(200)
+        .json({ message: 'Successfully retrieved test cases', ...response });
     } catch (e) {
       next(e);
     }
@@ -32,7 +34,9 @@ export class TestCaseController {
         Number(req.params.id),
       );
 
-      res.status(200).json({ data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully retrieved test case', data: response });
     } catch (e) {
       next(e);
     }
@@ -42,7 +46,9 @@ export class TestCaseController {
     try {
       const response = await TestCaseService.createTestCase(req.body);
 
-      res.status(201).json({ data: response });
+      res
+        .status(201)
+        .json({ message: 'Successfully stored test case', data: response });
     } catch (e) {
       next(e);
     }
@@ -55,7 +61,9 @@ export class TestCaseController {
         req.body,
       );
 
-      res.status(200).json({ data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully updated test case', data: response });
     } catch (e) {
       next(e);
     }
@@ -65,7 +73,7 @@ export class TestCaseController {
     try {
       await TestCaseService.deleteTestCase(Number(req.params.id));
 
-      res.status(200).json({ data: 'Study case deleted successfully' });
+      res.status(200).json({ message: 'Successfully deelted test case' });
     } catch (e) {
       next(e);
     }

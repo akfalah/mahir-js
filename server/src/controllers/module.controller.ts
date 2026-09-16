@@ -18,7 +18,9 @@ export class ModuleController {
 
       const response = await ModuleService.getModules(req.user, request);
 
-      res.status(200).json(response);
+      res
+        .status(200)
+        .json({ message: 'Successfully retrieved modules', ...response });
     } catch (e) {
       next(e);
     }
@@ -31,7 +33,9 @@ export class ModuleController {
         req.params.slug.toString(),
       );
 
-      res.status(200).json({ data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully retrieved module', data: response });
     } catch (e) {
       next(e);
     }
@@ -41,7 +45,9 @@ export class ModuleController {
     try {
       const response = await ModuleService.createModule(req.body);
 
-      res.status(201).json({ data: response });
+      res
+        .status(201)
+        .json({ message: 'Successfully stored module', data: response });
     } catch (e) {
       next(e);
     }
@@ -54,7 +60,9 @@ export class ModuleController {
         req.body,
       );
 
-      res.status(200).json({ data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully updated module', data: response });
     } catch (e) {
       next(e);
     }
@@ -64,7 +72,7 @@ export class ModuleController {
     try {
       await ModuleService.deleteModule(Number(req.params.id));
 
-      res.status(200).json({ data: 'Concept deleted successfully' });
+      res.status(200).json({ message: 'Successfully deleted module' });
     } catch (e) {
       next(e);
     }

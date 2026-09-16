@@ -17,15 +17,15 @@ export const errorMiddleware = async (
     });
 
     res.status(400).json({
-      errors: messages.length === 1 ? messages[0] : messages,
+      message: messages.length === 1 ? messages[0] : messages,
     });
   } else if (error instanceof ResponseError) {
     res.status(error.status).json({
-      errors: error.message,
+      message: error.message,
     });
   } else {
     res.status(500).json({
-      errors: error.message,
+      message: error.message,
     });
   }
 };
