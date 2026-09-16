@@ -26,8 +26,8 @@ export class TestCaseService {
   ): Promise<TestCasePaginationResponse> {
     const data = Validation.validate(TestCaseValidation.GET, request);
 
-    if (data.sortBy === 'order' && !data.studyCaseId) {
-      throw new ResponseError(400, 'sortBy order requires studyCaseId filter');
+    if (data.sortBy === 'order' && !data.exerciseId) {
+      throw new ResponseError(400, 'sortBy order requires exerciseId filter');
     }
 
     const isAdmin = user?.role === Role.ADMIN;
@@ -36,7 +36,7 @@ export class TestCaseService {
       ...(!isAdmin && { isPublished: true }),
       ...(isAdmin &&
         data.isPublished !== undefined && { isPublished: data.isPublished }),
-      ...(data.studyCaseId && { studyCaseId: data.studyCaseId }),
+      ...(data.exerciseId && { exerciseId: data.exerciseId }),
       ...(data.search && {
         description: { contains: data.search, mode: 'insensitive' as const },
       }),
@@ -87,14 +87,14 @@ export class TestCaseService {
   ): Promise<TestCaseResponse> {
     const data = Validation.validate(TestCaseValidation.CREATE, request);
 
-    const studyCase = await prisma.studyCase.findUnique({
-      where: { id: data.studyCaseId },
+    const exercise = await prisma.exercise.findUnique({
+      where: { id: data.exerciseId },
     });
 
-    if (!studyCase) throw new ResponseError(404, 'Study case not found');
+    if (!exercise) throw new ResponseError(404, 'Exercise not found');
 
     const orderExists = await prisma.testCase.count({
-      where: { studyCaseId: data.studyCaseId, order: data.order },
+      where: { exerciseId: data.exerciseId, order: data.order },
     });
 
     if (orderExists) throw new ResponseError(400, 'Order already exists');
@@ -123,7 +123,7 @@ export class TestCaseService {
     if (data.order) {
       const orderExists = await prisma.testCase.count({
         where: {
-          studyCaseId: exists.studyCaseId,
+          exerciseId: exists.exerciseId,
           order: data.order,
           NOT: { id },
         },

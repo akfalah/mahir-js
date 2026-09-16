@@ -15,14 +15,14 @@ export class TestCaseValidation {
     sortBy: z
       .enum([
         'id',
-        'studyCaseId',
+        'exerciseId',
         'isPublished',
         'order',
         'createdAt',
       ] as const satisfies readonly TestCaseSortBy[])
       .default('createdAt'),
     orderBy: z.enum(['asc', 'desc']).default('desc'),
-    studyCaseId: z.coerce.number().min(1).optional(),
+    exerciseId: z.coerce.number().min(1).optional(),
     isPublished: z
       .enum(['true', 'false'])
       .transform((v) => v === 'true')
@@ -30,7 +30,7 @@ export class TestCaseValidation {
   });
 
   static readonly CREATE: ZodType<CreateTestCaseRequest> = z.object({
-    studyCaseId: z.number().min(1),
+    exerciseId: z.number().min(1),
     description: z.string().min(3),
     input: z.record(z.string(), z.unknown()),
     expected: z.record(z.string(), z.unknown()),
