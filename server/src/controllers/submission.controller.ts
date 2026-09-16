@@ -14,7 +14,7 @@ export class SubmissionController {
         sortBy: req.query.sortBy,
         orderBy: req.query.orderBy,
         userId: req.query.userId,
-        studyCaseId: req.query.studyCaseId,
+        exerciseId: req.query.exerciseId,
         status: req.query.status,
       } as unknown as SubmissionPaginationRequest;
 
