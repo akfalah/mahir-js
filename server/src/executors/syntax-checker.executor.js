@@ -69,7 +69,7 @@ function checkSyntax(code, syntaxRules) {
       const description =
         AST_NODE_DESCRIPTIONS[forbidden_node] ?? forbidden_node;
       errors.push(
-        `You are not allowed to use ${description} in this study case`,
+        `You are not allowed to use ${description} in this exercise`,
       );
     }
   }
@@ -78,7 +78,7 @@ function checkSyntax(code, syntaxRules) {
   for (const required_node of required) {
     if (!nodeTypes.has(required_node)) {
       const description = AST_NODE_DESCRIPTIONS[required_node] ?? required_node;
-      errors.push(`You must use ${description} in this study case`);
+      errors.push(`You must use ${description} in this exercise`);
     }
   }
 

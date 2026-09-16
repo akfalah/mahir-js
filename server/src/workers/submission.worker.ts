@@ -102,7 +102,7 @@ export async function executeSubmission(submissionId: number): Promise<void> {
   const submission = await prisma.submission.findUnique({
     where: { id: submissionId },
     include: {
-      studyCase: {
+      exercise: {
         include: {
           testCases: {
             where: {
@@ -119,8 +119,8 @@ export async function executeSubmission(submissionId: number): Promise<void> {
 
   if (!submission) return;
 
-  const { code, studyCase } = submission;
-  const { testCases, functionName, parameterNames } = studyCase;
+  const { code, exercise } = submission;
+  const { testCases, functionName, parameterNames } = exercise;
 
   try {
     const testCaseInputs: TestCaseInput[] = testCases.map((tc) => ({
@@ -135,7 +135,7 @@ export async function executeSubmission(submissionId: number): Promise<void> {
       functionName ?? '',
       (parameterNames as string[]) ?? [],
       testCaseInputs,
-      studyCase.syntaxRules as Record<string, string[]> | null,
+      exercise.syntaxRules as Record<string, string[]> | null,
     );
 
     await prisma.testResult.deleteMany({
@@ -171,7 +171,7 @@ export async function executeSubmission(submissionId: number): Promise<void> {
     if (allPassed) {
       await ProgressService.updateOnSubmissionPassed(
         submission.userId,
-        submission.studyCaseId,
+        submission.exerciseId,
       );
     }
 
