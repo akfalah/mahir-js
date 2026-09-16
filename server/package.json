@@ -1,6 +1,6 @@
 {
   "name": "mahirjs-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "license": "MIT",
   "scripts": {
     "dev": "nodemon",
@@ -18,8 +18,8 @@
     ]
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "acorn": "^8.17.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.78.0",
@@ -28,7 +28,7 @@
     "express": "^5.2.1",
     "ioredis": "^5.11.0",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.20.0",
+    "pg": "^8.23.0",
     "sanitize-html": "^2.17.5",
     "winston": "^3.19.0",
     "zod": "^4.4.2"
@@ -44,13 +44,13 @@
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.6.0",
-    "@types/pg": "^8.20.0",
+    "@types/pg": "^8.23.1",
     "@types/sanitize-html": "^2.16.1",
     "@types/supertest": "^7.2.0",
     "babel-jest": "^30.3.0",
     "jest": "^30.3.0",
     "nodemon": "^3.1.14",
-    "prisma": "^7.8.0",
+    "prisma": "^7.10.0",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
