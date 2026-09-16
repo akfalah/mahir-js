@@ -3,115 +3,115 @@ import { prisma } from '../applications/database';
 import { JwtPayload } from '../models/auth.model';
 
 import {
-  ConceptProgressResponse,
+  ModuleProgressResponse,
   MaterialProgressResponse,
-  StudyCaseProgressResponse,
-  toConceptProgressResponse,
+  ExerciseProgressResponse,
+  toModuleProgressResponse,
   toMaterialProgressResponse,
-  toStudyCaseProgressResponse,
+  toExerciseProgressResponse,
 } from '../models/progress.model';
 
 export class ProgressService {
-  static async getConceptProgresses(
+  static async getModuleProgresses(
     user: JwtPayload,
-  ): Promise<ConceptProgressResponse[]> {
-    const progresses = await prisma.conceptProgress.findMany({
+  ): Promise<ModuleProgressResponse[]> {
+    const progresses = await prisma.moduleProgress.findMany({
       where: { userId: user.id },
-      orderBy: { concept: { order: 'asc' } },
+      orderBy: { module: { order: 'asc' } },
     });
 
-    return progresses.map(toConceptProgressResponse);
+    return progresses.map(toModuleProgressResponse);
   }
 
   static async getMaterialProgresses(
     user: JwtPayload,
-    conceptId?: number,
+    moduleId?: number,
   ): Promise<MaterialProgressResponse[]> {
     const progresses = await prisma.materialProgress.findMany({
-      where: { userId: user.id, ...(conceptId && { material: { conceptId } }) },
+      where: { userId: user.id, ...(moduleId && { material: { moduleId } }) },
       orderBy: { material: { order: 'asc' } },
     });
 
     return progresses.map(toMaterialProgressResponse);
   }
 
-  static async getStudyCaseProgresses(
+  static async getExerciseProgresses(
     user: JwtPayload,
     materialId?: number,
-  ): Promise<StudyCaseProgressResponse[]> {
-    const progresses = await prisma.studyCaseProgress.findMany({
+  ): Promise<ExerciseProgressResponse[]> {
+    const progresses = await prisma.exerciseProgress.findMany({
       where: {
         userId: user.id,
-        ...(materialId && { studyCase: { materialId } }),
+        ...(materialId && { exercise: { materialId } }),
       },
-      orderBy: { studyCase: { order: 'asc' } },
+      orderBy: { exercise: { order: 'asc' } },
     });
 
-    return progresses.map(toStudyCaseProgressResponse);
+    return progresses.map(toExerciseProgressResponse);
   }
 
   static async updateOnSubmissionPassed(
     userId: number,
-    studyCaseId: number,
+    exerciseId: number,
   ): Promise<void> {
     const now = new Date();
 
-    await prisma.studyCaseProgress.upsert({
-      where: { userId_studyCaseId: { userId, studyCaseId } },
+    await prisma.exerciseProgress.upsert({
+      where: { userId_exerciseId: { userId, exerciseId } },
       update: { isCompleted: true, completedAt: now },
       create: {
         userId,
-        studyCaseId,
+        exerciseId,
         isCompleted: true,
         completedAt: now,
       },
     });
 
-    const currentStudyCase = await prisma.studyCase.findUnique({
-      where: { id: studyCaseId },
+    const currentExercise = await prisma.exercise.findUnique({
+      where: { id: exerciseId },
     });
 
-    if (currentStudyCase) {
-      const nextStudyCase = await prisma.studyCase.findFirst({
+    if (currentExercise) {
+      const nextExercise = await prisma.exercise.findFirst({
         where: {
-          materialId: currentStudyCase.materialId,
-          order: currentStudyCase.order + 1,
+          materialId: currentExercise.materialId,
+          order: currentExercise.order + 1,
         },
       });
 
-      if (nextStudyCase) {
-        await prisma.studyCaseProgress.upsert({
+      if (nextExercise) {
+        await prisma.exerciseProgress.upsert({
           where: {
-            userId_studyCaseId: { userId, studyCaseId: nextStudyCase.id },
+            userId_exerciseId: { userId, exerciseId: nextExercise.id },
           },
           update: {},
-          create: { userId, studyCaseId: nextStudyCase.id },
+          create: { userId, exerciseId: nextExercise.id },
         });
       } else {
         await prisma.materialProgress.upsert({
           where: {
             userId_materialId: {
               userId,
-              materialId: currentStudyCase.materialId,
+              materialId: currentExercise.materialId,
             },
           },
           update: { isCompleted: true, completedAt: now },
           create: {
             userId,
-            materialId: currentStudyCase.materialId,
+            materialId: currentExercise.materialId,
             isCompleted: true,
             completedAt: now,
           },
         });
 
         const currentMaterial = await prisma.material.findUnique({
-          where: { id: currentStudyCase.materialId },
+          where: { id: currentExercise.materialId },
         });
 
         if (currentMaterial) {
           const nextMaterial = await prisma.material.findFirst({
             where: {
-              conceptId: currentMaterial.conceptId,
+              moduleId: currentMaterial.moduleId,
               order: currentMaterial.order + 1,
             },
           });
@@ -125,66 +125,66 @@ export class ProgressService {
               create: { userId, materialId: nextMaterial.id },
             });
 
-            const firstStudyCase = await prisma.studyCase.findFirst({
+            const firstExercise = await prisma.exercise.findFirst({
               where: { materialId: nextMaterial.id },
               orderBy: { order: 'asc' },
             });
 
-            if (firstStudyCase) {
-              await prisma.studyCaseProgress.upsert({
+            if (firstExercise) {
+              await prisma.exerciseProgress.upsert({
                 where: {
-                  userId_studyCaseId: {
+                  userId_exerciseId: {
                     userId,
-                    studyCaseId: firstStudyCase.id,
+                    exerciseId: firstExercise.id,
                   },
                 },
                 update: {},
                 create: {
                   userId,
-                  studyCaseId: firstStudyCase.id,
+                  exerciseId: firstExercise.id,
                 },
               });
             }
           } else {
-            await prisma.conceptProgress.upsert({
+            await prisma.moduleProgress.upsert({
               where: {
-                userId_conceptId: {
+                userId_moduleId: {
                   userId,
-                  conceptId: currentMaterial.conceptId,
+                  moduleId: currentMaterial.moduleId,
                 },
               },
               update: { isCompleted: true, completedAt: now },
               create: {
                 userId,
-                conceptId: currentMaterial.conceptId,
+                moduleId: currentMaterial.moduleId,
                 isCompleted: true,
                 completedAt: now,
               },
             });
 
-            const currentConcept = await prisma.concept.findUnique({
-              where: { id: currentMaterial.conceptId },
+            const currentModule = await prisma.module.findUnique({
+              where: { id: currentMaterial.moduleId },
             });
 
-            if (currentConcept) {
-              const nextConcept = await prisma.concept.findFirst({
-                where: { order: currentConcept.order + 1 },
+            if (currentModule) {
+              const nextModule = await prisma.module.findFirst({
+                where: { order: currentModule.order + 1 },
               });
 
-              if (nextConcept) {
-                await prisma.conceptProgress.upsert({
+              if (nextModule) {
+                await prisma.moduleProgress.upsert({
                   where: {
-                    userId_conceptId: { userId, conceptId: nextConcept.id },
+                    userId_moduleId: { userId, moduleId: nextModule.id },
                   },
                   update: {},
                   create: {
                     userId,
-                    conceptId: nextConcept.id,
+                    moduleId: nextModule.id,
                   },
                 });
 
                 const firstMaterial = await prisma.material.findFirst({
-                  where: { conceptId: nextConcept.id },
+                  where: { moduleId: nextModule.id },
                   orderBy: { order: 'asc' },
                 });
 
@@ -203,23 +203,23 @@ export class ProgressService {
                     },
                   });
 
-                  const firstStudyCase = await prisma.studyCase.findFirst({
+                  const firstExercise = await prisma.exercise.findFirst({
                     where: { materialId: firstMaterial.id },
                     orderBy: { order: 'asc' },
                   });
 
-                  if (firstStudyCase) {
-                    await prisma.studyCaseProgress.upsert({
+                  if (firstExercise) {
+                    await prisma.exerciseProgress.upsert({
                       where: {
-                        userId_studyCaseId: {
+                        userId_exerciseId: {
                           userId,
-                          studyCaseId: firstStudyCase.id,
+                          exerciseId: firstExercise.id,
                         },
                       },
                       update: {},
                       create: {
                         userId,
-                        studyCaseId: firstStudyCase.id,
+                        exerciseId: firstExercise.id,
                       },
                     });
                   }

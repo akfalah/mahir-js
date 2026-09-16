@@ -3,13 +3,13 @@ import { NextFunction, Request, Response } from 'express';
 import { ProgressService } from '../services/progress.service';
 
 export class ProgressController {
-  static async conceptProgresses(
+  static async moduleProgresses(
     req: Request,
     res: Response,
     next: NextFunction,
   ) {
     try {
-      const response = await ProgressService.getConceptProgresses(req.user!);
+      const response = await ProgressService.getModuleProgresses(req.user!);
 
       res.status(200).json({ data: response });
     } catch (e) {
@@ -37,7 +37,7 @@ export class ProgressController {
     }
   }
 
-  static async studyCaseProgresses(
+  static async exerciseProgresses(
     req: Request,
     res: Response,
     next: NextFunction,
@@ -46,7 +46,7 @@ export class ProgressController {
       const materialId = req.query.materialId
         ? Number(req.query.materialId)
         : undefined;
-      const response = await ProgressService.getStudyCaseProgresses(
+      const response = await ProgressService.getExerciseProgresses(
         req.user!,
         materialId,
       );

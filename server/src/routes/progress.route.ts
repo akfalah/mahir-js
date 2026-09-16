@@ -7,9 +7,9 @@ import { ProgressController } from '../controllers/progress.controller';
 export const progressRouter = Router();
 
 progressRouter.get(
-  '/concepts',
+  '/modules',
   authMiddleware,
-  ProgressController.conceptProgresses,
+  ProgressController.moduleProgresses,
 );
 progressRouter.get(
   '/materials',
@@ -17,7 +17,7 @@ progressRouter.get(
   ProgressController.materialProgresses,
 );
 progressRouter.get(
-  '/study-cases',
+  '/exercises',
   authMiddleware,
-  ProgressController.studyCaseProgresses,
+  ProgressController.exerciseProgresses,
 );
