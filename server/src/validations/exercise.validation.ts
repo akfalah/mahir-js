@@ -3,14 +3,14 @@ import z, { ZodType } from 'zod';
 import { PaginationValidation } from './pagination.validation';
 
 import {
-  CreateStudyCaseRequest,
-  StudyCaeSortBy,
-  StudyCasePaginationRequest,
-  UpdateStudyCaseRequest,
-} from '../models/study-case.model';
+  CreateExerciseRequest,
+  ExerciseSortBy,
+  ExercisePaginationRequest,
+  UpdateExerciseRequest,
+} from '../models/exercise.model';
 
-export class StudyCaseValidation {
-  static readonly GET: ZodType<StudyCasePaginationRequest> = z.object({
+export class ExerciseValidation {
+  static readonly GET: ZodType<ExercisePaginationRequest> = z.object({
     ...PaginationValidation.BaseSchema,
     sortBy: z
       .enum([
@@ -19,7 +19,7 @@ export class StudyCaseValidation {
         'title',
         'order',
         'createdAt',
-      ] as const satisfies readonly StudyCaeSortBy[])
+      ] as const satisfies readonly ExerciseSortBy[])
       .default('createdAt'),
     orderBy: z.enum(['asc', 'desc']).default('desc'),
     materialId: z.coerce.number().min(1).optional(),
@@ -29,7 +29,7 @@ export class StudyCaseValidation {
       .optional(),
   });
 
-  static readonly CREATE: ZodType<CreateStudyCaseRequest> = z.object({
+  static readonly CREATE: ZodType<CreateExerciseRequest> = z.object({
     materialId: z.number().min(1),
     slug: z.string().min(3),
     title: z.string().min(3),
@@ -46,7 +46,7 @@ export class StudyCaseValidation {
     isPublished: z.boolean().optional(),
   });
 
-  static readonly UPDATE: ZodType<UpdateStudyCaseRequest> = z.object({
+  static readonly UPDATE: ZodType<UpdateExerciseRequest> = z.object({
     slug: z.string().min(3).optional(),
     title: z.string().min(3).optional(),
     description: z.string().min(3).optional(),

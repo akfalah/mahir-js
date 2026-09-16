@@ -4,25 +4,25 @@ import { Role } from '../../generated/prisma/enums';
 import { ResponseError } from '../errors/response.error';
 
 import { Validation } from '../validations/validation';
-import { StudyCaseValidation } from '../validations/study-case.validation';
+import { ExerciseValidation } from '../validations/exercise.validation';
 
 import { JwtPayload } from '../models/auth.model';
 import {
-  CreateStudyCaseRequest,
-  StudyCasePaginationRequest,
-  StudyCasePaginationResponse,
-  studyCaseRelationInclude,
-  StudyCaseResponse,
-  toStudyCaseResponse,
-  UpdateStudyCaseRequest,
-} from '../models/study-case.model';
+  CreateExerciseRequest,
+  ExercisePaginationRequest,
+  ExercisePaginationResponse,
+  ExerciseRelationInclude,
+  ExerciseResponse,
+  toExerciseeResponse,
+  UpdateExerciseRequest,
+} from '../models/exercise.model';
 
-export class StudyCaseService {
-  static async getStudyCases(
+export class ExerciseService {
+  static async getExercises(
     user: JwtPayload | undefined,
-    request: StudyCasePaginationRequest,
-  ): Promise<StudyCasePaginationResponse> {
-    const data = Validation.validate(StudyCaseValidation.GET, request);
+    request: ExercisePaginationRequest,
+  ): Promise<ExercisePaginationResponse> {
+    const data = Validation.validate(ExerciseValidation.GET, request);
 
     if (data.sortBy === 'order' && !data.materialId) {
       throw new ResponseError(400, 'sortBy order requires materialId filter');
@@ -56,19 +56,19 @@ export class StudyCaseService {
 
     const skip = (data.page - 1) * data.limit;
 
-    const [studyCases, total] = await Promise.all([
-      prisma.studyCase.findMany({
+    const [exercises, total] = await Promise.all([
+      prisma.exercise.findMany({
         where,
-        include: studyCaseRelationInclude,
+        include: ExerciseRelationInclude,
         skip,
         take: data.limit,
         orderBy: { [data.sortBy as string]: data.orderBy },
       }),
-      prisma.studyCase.count({ where }),
+      prisma.exercise.count({ where }),
     ]);
 
     return {
-      data: studyCases.map(toStudyCaseResponse),
+      data: exercises.map(toExerciseeResponse),
       pagination: {
         page: data.page,
         limit: data.limit,
@@ -78,26 +78,26 @@ export class StudyCaseService {
     };
   }
 
-  static async getStudyCaseBySlug(
+  static async getExerciseBySlug(
     user: JwtPayload | undefined,
     slug: string,
-  ): Promise<StudyCaseResponse> {
+  ): Promise<ExerciseResponse> {
     const isAdmin = user?.role === Role.ADMIN;
 
-    const studyCase = await prisma.studyCase.findUnique({
+    const exercise = await prisma.exercise.findUnique({
       where: { slug, ...(!isAdmin && { isPublished: true }) },
-      include: studyCaseRelationInclude,
+      include: ExerciseRelationInclude,
     });
 
-    if (!studyCase) throw new ResponseError(404, 'Study case not found');
+    if (!exercise) throw new ResponseError(404, 'Exercise not found');
 
-    return toStudyCaseResponse(studyCase);
+    return toExerciseeResponse(exercise);
   }
 
-  static async createStudyCase(
-    request: CreateStudyCaseRequest,
-  ): Promise<StudyCaseResponse> {
-    const data = Validation.validate(StudyCaseValidation.CREATE, request);
+  static async createExercise(
+    request: CreateExerciseRequest,
+  ): Promise<ExerciseResponse> {
+    const data = Validation.validate(ExerciseValidation.CREATE, request);
 
     const material = await prisma.material.findUnique({
       where: { id: data.materialId },
@@ -106,8 +106,8 @@ export class StudyCaseService {
     if (!material) throw new ResponseError(404, 'Material not found');
 
     const [slugExists, orderExists] = await Promise.all([
-      prisma.studyCase.count({ where: { slug: data.slug } }),
-      prisma.studyCase.count({
+      prisma.exercise.count({ where: { slug: data.slug } }),
+      prisma.exercise.count({
         where: { materialId: data.materialId, order: data.order },
       }),
     ]);
@@ -115,23 +115,23 @@ export class StudyCaseService {
     if (slugExists) throw new ResponseError(400, 'Slug already exists');
     if (orderExists) throw new ResponseError(400, 'Order already exists');
 
-    const studyCase = await prisma.studyCase.create({ data });
+    const exercise = await prisma.exercise.create({ data });
 
-    return toStudyCaseResponse(studyCase);
+    return toExerciseeResponse(exercise);
   }
 
-  static async updateStudyCase(
+  static async updateExercise(
     id: number,
-    request: UpdateStudyCaseRequest,
-  ): Promise<StudyCaseResponse> {
-    const data = Validation.validate(StudyCaseValidation.UPDATE, request);
+    request: UpdateExerciseRequest,
+  ): Promise<ExerciseResponse> {
+    const data = Validation.validate(ExerciseValidation.UPDATE, request);
 
-    const exists = await prisma.studyCase.findUnique({ where: { id } });
+    const exists = await prisma.exercise.findUnique({ where: { id } });
 
-    if (!exists) throw new ResponseError(404, 'Study case not found');
+    if (!exists) throw new ResponseError(404, 'Exercise not found');
 
     if (data.slug) {
-      const slugExists = await prisma.studyCase.count({
+      const slugExists = await prisma.exercise.count({
         where: { slug: data.slug, NOT: { id } },
       });
 
@@ -139,7 +139,7 @@ export class StudyCaseService {
     }
 
     if (data.order) {
-      const orderExists = await prisma.studyCase.count({
+      const orderExists = await prisma.exercise.count({
         where: {
           materialId: exists.materialId,
           order: data.order,
@@ -150,16 +150,16 @@ export class StudyCaseService {
       if (orderExists) throw new ResponseError(400, 'Order already exists');
     }
 
-    const studyCase = await prisma.studyCase.update({ where: { id }, data });
+    const exercise = await prisma.exercise.update({ where: { id }, data });
 
-    return toStudyCaseResponse(studyCase);
+    return toExerciseeResponse(exercise);
   }
 
-  static async deleteStudyCase(id: number): Promise<void> {
-    const studyCase = await prisma.studyCase.findUnique({ where: { id } });
+  static async deleteExercise(id: number): Promise<void> {
+    const exercise = await prisma.exercise.findUnique({ where: { id } });
 
-    if (!studyCase) throw new ResponseError(404, 'Study case not found');
+    if (!exercise) throw new ResponseError(404, 'Exercise not found');
 
-    await prisma.studyCase.delete({ where: { id } });
+    await prisma.exercise.delete({ where: { id } });
   }
 }

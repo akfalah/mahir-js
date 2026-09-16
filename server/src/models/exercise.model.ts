@@ -78,7 +78,7 @@ export type ExerciseModuleResponse = {
   isPublished: boolean;
 };
 
-export type StudyCaseMaterialResponse = {
+export type ExerciseMaterialResponse = {
   id: number;
   slug: string;
   title: string;
@@ -86,7 +86,7 @@ export type StudyCaseMaterialResponse = {
   module: ExerciseModuleResponse;
 };
 
-export type ExerciseeResponse = {
+export type ExerciseResponse = {
   id: number;
   materialId: number;
   slug: string;
@@ -101,33 +101,33 @@ export type ExerciseeResponse = {
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
-  material?: StudyCaseMaterialResponse;
+  material?: ExerciseMaterialResponse;
 };
 
-export type StudyCasePaginationResponse = PaginationResponse<ExerciseeResponse>;
+export type ExercisePaginationResponse = PaginationResponse<ExerciseResponse>;
 
 export function toExerciseeResponse(
-  studyCase: Exercise | ExerciseWithRelations,
-): ExerciseeResponse {
-  const response: ExerciseeResponse = {
-    id: studyCase.id,
-    materialId: studyCase.materialId,
-    slug: studyCase.slug,
-    title: studyCase.title,
-    description: studyCase.description,
-    hint: studyCase.hint,
-    order: studyCase.order,
-    starterCode: studyCase.starterCode,
-    syntaxRules: studyCase.syntaxRules as SyntaxRules,
-    parameterNames: studyCase.parameterNames as string[] | null,
-    functionName: studyCase.functionName,
-    isPublished: studyCase.isPublished,
-    createdAt: studyCase.createdAt,
-    updatedAt: studyCase.updatedAt,
+  exercise: Exercise | ExerciseWithRelations,
+): ExerciseResponse {
+  const response: ExerciseResponse = {
+    id: exercise.id,
+    materialId: exercise.materialId,
+    slug: exercise.slug,
+    title: exercise.title,
+    description: exercise.description,
+    hint: exercise.hint,
+    order: exercise.order,
+    starterCode: exercise.starterCode,
+    syntaxRules: exercise.syntaxRules as SyntaxRules,
+    parameterNames: exercise.parameterNames as string[] | null,
+    functionName: exercise.functionName,
+    isPublished: exercise.isPublished,
+    createdAt: exercise.createdAt,
+    updatedAt: exercise.updatedAt,
   };
 
-  if ('material' in studyCase) {
-    response.material = studyCase.material;
+  if ('material' in exercise) {
+    response.material = exercise.material;
   }
 
   return response;
