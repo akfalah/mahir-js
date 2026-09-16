@@ -13,7 +13,7 @@ export class MaterialController {
         search: req.query.search,
         sortBy: req.query.sortBy,
         orderBy: req.query.orderBy,
-        conceptId: req.query.conceptId,
+        moduleId: req.query.moduleId,
         isPublished: req.query.isPublished,
       } as unknown as MaterialPaginationRequest;
 

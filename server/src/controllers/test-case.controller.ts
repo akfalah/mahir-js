@@ -13,7 +13,7 @@ export class TestCaseController {
         search: req.query.search,
         sortBy: req.query.sortBy,
         orderBy: req.query.orderBy,
-        studyCaseId: req.query.studyCaseId,
+        exerciseId: req.query.exerciseId,
         isPublished: req.query.isPublished,
       } as unknown as TestCasePaginationRequest;
 
