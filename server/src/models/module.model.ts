@@ -2,7 +2,7 @@ import { Module } from '../../generated/prisma/client';
 
 import { PaginationRequest, PaginationResponse } from './pagination.model';
 
-export type ConceptSortBy =
+export type ModuleSortBy =
   | 'id'
   | 'slug'
   | 'title'
@@ -10,11 +10,11 @@ export type ConceptSortBy =
   | 'isPublished'
   | 'createdAt';
 
-export type ConceptPaginationRequest = PaginationRequest<ConceptSortBy> & {
+export type ModulePaginationRequest = PaginationRequest<ModuleSortBy> & {
   isPublished?: boolean;
 };
 
-export type CreateConceptRequest = {
+export type CreateModuleRequest = {
   slug: string;
   title: string;
   description: string;
@@ -22,7 +22,7 @@ export type CreateConceptRequest = {
   isPublished?: boolean;
 };
 
-export type UpdateConceptRequest = {
+export type UpdateModuleRequest = {
   slug?: string;
   title?: string;
   description?: string;
@@ -30,7 +30,7 @@ export type UpdateConceptRequest = {
   isPublished?: boolean;
 };
 
-export type ConceptResponse = {
+export type ModuleResponse = {
   id: number;
   slug: string;
   title: string;
@@ -41,17 +41,17 @@ export type ConceptResponse = {
   updatedAt: Date;
 };
 
-export type ConceptPaginationResponse = PaginationResponse<ConceptResponse>;
+export type ModulePaginationResponse = PaginationResponse<ModuleResponse>;
 
-export function toConceptResponse(concept: Module): ConceptResponse {
+export function toModuleResponse(module: Module): ModuleResponse {
   return {
-    id: concept.id,
-    slug: concept.slug,
-    title: concept.title,
-    description: concept.description,
-    order: concept.order,
-    isPublished: concept.isPublished,
-    createdAt: concept.createdAt,
-    updatedAt: concept.updatedAt,
+    id: module.id,
+    slug: module.slug,
+    title: module.title,
+    description: module.description,
+    order: module.order,
+    isPublished: module.isPublished,
+    createdAt: module.createdAt,
+    updatedAt: module.updatedAt,
   };
 }
