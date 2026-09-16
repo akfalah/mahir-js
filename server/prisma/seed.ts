@@ -12,7 +12,7 @@ const prisma = new PrismaClient({
 });
 
 type TestCaseSeed = {
-  studyCaseId: number;
+  exerciseId: number;
   description: string;
   input: Prisma.InputJsonValue;
   expected: Prisma.InputJsonValue;
@@ -27,8 +27,8 @@ function html(value: string) {
 async function upsertTestCase(data: TestCaseSeed) {
   await prisma.testCase.upsert({
     where: {
-      studyCaseId_order: {
-        studyCaseId: data.studyCaseId,
+      exerciseId_order: {
+        exerciseId: data.exerciseId,
         order: data.order,
       },
     },
@@ -39,7 +39,7 @@ async function upsertTestCase(data: TestCaseSeed) {
       isPublished: data.isPublished ?? true,
     },
     create: {
-      studyCaseId: data.studyCaseId,
+      exerciseId: data.exerciseId,
       description: data.description,
       input: data.input,
       expected: data.expected,
@@ -52,7 +52,7 @@ async function upsertTestCase(data: TestCaseSeed) {
 async function main() {
   console.log('🌱 Seeding database...');
 
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  const hashedPassword = await bcrypt.hash('12345678', 10);
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@mahirjs.local' },
@@ -65,7 +65,6 @@ async function main() {
       name: 'Admin Mahir.js',
       password: hashedPassword,
       role: Role.ADMIN,
-      bio: 'Mahir.js content administrator.',
     },
   });
 
@@ -80,17 +79,16 @@ async function main() {
       name: 'Student Demo',
       password: hashedPassword,
       role: Role.STUDENT,
-      bio: 'Demo student account.',
     },
   });
 
   console.log('✅ Users seeded', {
     admin: admin.email,
     student: student.email,
-    password: 'password123',
+    password: '12345678',
   });
 
-  const conceptConditional = await prisma.concept.upsert({
+  const moduleConditional = await prisma.module.upsert({
     where: { slug: 'conditional' },
     update: {
       title: 'Conditional',
@@ -109,7 +107,7 @@ async function main() {
     },
   });
 
-  const conceptLooping = await prisma.concept.upsert({
+  const moduleLooping = await prisma.module.upsert({
     where: { slug: 'looping' },
     update: {
       title: 'Looping',
@@ -128,7 +126,7 @@ async function main() {
     },
   });
 
-  const conceptFunction = await prisma.concept.upsert({
+  const moduleFunction = await prisma.module.upsert({
     where: { slug: 'function' },
     update: {
       title: 'Function',
@@ -147,12 +145,12 @@ async function main() {
     },
   });
 
-  console.log('✅ Concepts seeded');
+  console.log('✅ Modules seeded');
 
   const materialIfElse = await prisma.material.upsert({
     where: {
-      conceptId_order: {
-        conceptId: conceptConditional.id,
+      moduleId_order: {
+        moduleId: moduleConditional.id,
         order: 1,
       },
     },
@@ -177,7 +175,7 @@ if (age &gt;= 18) {
       isPublished: true,
     },
     create: {
-      conceptId: conceptConditional.id,
+      moduleId: moduleConditional.id,
       slug: 'if-else',
       title: 'If and Else',
       description:
@@ -201,8 +199,8 @@ if (age &gt;= 18) {
 
   const materialSwitch = await prisma.material.upsert({
     where: {
-      conceptId_order: {
-        conceptId: conceptConditional.id,
+      moduleId_order: {
+        moduleId: moduleConditional.id,
         order: 2,
       },
     },
@@ -231,7 +229,7 @@ switch (role) {
       isPublished: true,
     },
     create: {
-      conceptId: conceptConditional.id,
+      moduleId: moduleConditional.id,
       slug: 'switch-statement',
       title: 'Switch Statement',
       description:
@@ -259,8 +257,8 @@ switch (role) {
 
   const materialForLoop = await prisma.material.upsert({
     where: {
-      conceptId_order: {
-        conceptId: conceptLooping.id,
+      moduleId_order: {
+        moduleId: moduleLooping.id,
         order: 1,
       },
     },
@@ -280,7 +278,7 @@ switch (role) {
       isPublished: true,
     },
     create: {
-      conceptId: conceptLooping.id,
+      moduleId: moduleLooping.id,
       slug: 'for-loop',
       title: 'For Loop',
       description:
@@ -299,8 +297,8 @@ switch (role) {
 
   const materialWhileLoop = await prisma.material.upsert({
     where: {
-      conceptId_order: {
-        conceptId: conceptLooping.id,
+      moduleId_order: {
+        moduleId: moduleLooping.id,
         order: 2,
       },
     },
@@ -322,7 +320,7 @@ while (count &gt; 0) {
       isPublished: true,
     },
     create: {
-      conceptId: conceptLooping.id,
+      moduleId: moduleLooping.id,
       slug: 'while-loop',
       title: 'While Loop',
       description: 'Learn how to repeat code while a condition remains true.',
@@ -343,8 +341,8 @@ while (count &gt; 0) {
 
   const materialFunctionBasics = await prisma.material.upsert({
     where: {
-      conceptId_order: {
-        conceptId: conceptFunction.id,
+      moduleId_order: {
+        moduleId: moduleFunction.id,
         order: 1,
       },
     },
@@ -366,7 +364,7 @@ greet('Ani');</code></pre>
       isPublished: true,
     },
     create: {
-      conceptId: conceptFunction.id,
+      moduleId: moduleFunction.id,
       slug: 'function-basics',
       title: 'Function Basics',
       description:
@@ -387,8 +385,8 @@ greet('Ani');</code></pre>
 
   const materialArrowFunction = await prisma.material.upsert({
     where: {
-      conceptId_order: {
-        conceptId: conceptFunction.id,
+      moduleId_order: {
+        moduleId: moduleFunction.id,
         order: 2,
       },
     },
@@ -408,7 +406,7 @@ greet('Ani');</code></pre>
       isPublished: true,
     },
     create: {
-      conceptId: conceptFunction.id,
+      moduleId: moduleFunction.id,
       slug: 'arrow-function',
       title: 'Arrow Function',
       description:
@@ -427,7 +425,7 @@ greet('Ani');</code></pre>
 
   console.log('✅ Materials seeded');
 
-  const scCheckAdult = await prisma.studyCase.upsert({
+  const scCheckAdult = await prisma.exercise.upsert({
     where: {
       materialId_order: {
         materialId: materialIfElse.id,
@@ -470,7 +468,7 @@ greet('Ani');</code></pre>
     },
   });
 
-  const scMaxOfTwo = await prisma.studyCase.upsert({
+  const scMaxOfTwo = await prisma.exercise.upsert({
     where: {
       materialId_order: {
         materialId: materialIfElse.id,
@@ -513,7 +511,7 @@ greet('Ani');</code></pre>
     },
   });
 
-  const scDayName = await prisma.studyCase.upsert({
+  const scDayName = await prisma.exercise.upsert({
     where: {
       materialId_order: {
         materialId: materialSwitch.id,
@@ -556,7 +554,7 @@ greet('Ani');</code></pre>
     },
   });
 
-  const scSumArray = await prisma.studyCase.upsert({
+  const scSumArray = await prisma.exercise.upsert({
     where: {
       materialId_order: {
         materialId: materialForLoop.id,
@@ -603,7 +601,7 @@ return total;`,
     },
   });
 
-  const scFizzBuzz = await prisma.studyCase.upsert({
+  const scFizzBuzz = await prisma.exercise.upsert({
     where: {
       materialId_order: {
         materialId: materialForLoop.id,
@@ -650,7 +648,7 @@ return result;`,
     },
   });
 
-  const scCountdown = await prisma.studyCase.upsert({
+  const scCountdown = await prisma.exercise.upsert({
     where: {
       materialId_order: {
         materialId: materialWhileLoop.id,
@@ -699,7 +697,7 @@ return result;`,
     },
   });
 
-  const scGreet = await prisma.studyCase.upsert({
+  const scGreet = await prisma.exercise.upsert({
     where: {
       materialId_order: {
         materialId: materialFunctionBasics.id,
@@ -738,7 +736,7 @@ return result;`,
     },
   });
 
-  const scDouble = await prisma.studyCase.upsert({
+  const scDouble = await prisma.exercise.upsert({
     where: {
       materialId_order: {
         materialId: materialArrowFunction.id,
@@ -777,11 +775,11 @@ return result;`,
     },
   });
 
-  console.log('✅ Study cases seeded');
+  console.log('✅ Exercises seeded');
 
   await Promise.all([
     upsertTestCase({
-      studyCaseId: scCheckAdult.id,
+      exerciseId: scCheckAdult.id,
       description: 'should return true for age 18',
       input: { age: 18 },
       expected: { result: true },
@@ -789,7 +787,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scCheckAdult.id,
+      exerciseId: scCheckAdult.id,
       description: 'should return true for age 25',
       input: { age: 25 },
       expected: { result: true },
@@ -797,7 +795,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scCheckAdult.id,
+      exerciseId: scCheckAdult.id,
       description: 'should return false for age 17',
       input: { age: 17 },
       expected: { result: false },
@@ -806,7 +804,7 @@ return result;`,
     }),
 
     upsertTestCase({
-      studyCaseId: scMaxOfTwo.id,
+      exerciseId: scMaxOfTwo.id,
       description: 'should return 5 when comparing 3 and 5',
       input: { a: 3, b: 5 },
       expected: { result: 5 },
@@ -814,7 +812,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scMaxOfTwo.id,
+      exerciseId: scMaxOfTwo.id,
       description: 'should return 10 when comparing 10 and 2',
       input: { a: 10, b: 2 },
       expected: { result: 10 },
@@ -822,7 +820,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scMaxOfTwo.id,
+      exerciseId: scMaxOfTwo.id,
       description: 'should return 4 when both values are equal',
       input: { a: 4, b: 4 },
       expected: { result: 4 },
@@ -831,7 +829,7 @@ return result;`,
     }),
 
     upsertTestCase({
-      studyCaseId: scDayName.id,
+      exerciseId: scDayName.id,
       description: 'should return Monday for 1',
       input: { day: 1 },
       expected: { result: 'Monday' },
@@ -839,7 +837,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scDayName.id,
+      exerciseId: scDayName.id,
       description: 'should return Sunday for 7',
       input: { day: 7 },
       expected: { result: 'Sunday' },
@@ -847,7 +845,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scDayName.id,
+      exerciseId: scDayName.id,
       description: 'should return Invalid for 8',
       input: { day: 8 },
       expected: { result: 'Invalid' },
@@ -856,7 +854,7 @@ return result;`,
     }),
 
     upsertTestCase({
-      studyCaseId: scSumArray.id,
+      exerciseId: scSumArray.id,
       description: 'should return 6 for [1, 2, 3]',
       input: { numbers: [1, 2, 3] },
       expected: { result: 6 },
@@ -864,7 +862,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scSumArray.id,
+      exerciseId: scSumArray.id,
       description: 'should return 0 for empty array',
       input: { numbers: [] },
       expected: { result: 0 },
@@ -872,7 +870,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scSumArray.id,
+      exerciseId: scSumArray.id,
       description: 'should return 15 for [1, 2, 3, 4, 5]',
       input: { numbers: [1, 2, 3, 4, 5] },
       expected: { result: 15 },
@@ -881,7 +879,7 @@ return result;`,
     }),
 
     upsertTestCase({
-      studyCaseId: scFizzBuzz.id,
+      exerciseId: scFizzBuzz.id,
       description: 'should return correct array for n = 5',
       input: { n: 5 },
       expected: { result: [1, 2, 'Fizz', 4, 'Buzz'] },
@@ -889,7 +887,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scFizzBuzz.id,
+      exerciseId: scFizzBuzz.id,
       description: 'should return FizzBuzz for n = 15',
       input: { n: 15 },
       expected: {
@@ -916,7 +914,7 @@ return result;`,
     }),
 
     upsertTestCase({
-      studyCaseId: scCountdown.id,
+      exerciseId: scCountdown.id,
       description: 'should return [3, 2, 1] for n = 3',
       input: { n: 3 },
       expected: { result: [3, 2, 1] },
@@ -924,7 +922,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scCountdown.id,
+      exerciseId: scCountdown.id,
       description: 'should return [1] for n = 1',
       input: { n: 1 },
       expected: { result: [1] },
@@ -933,7 +931,7 @@ return result;`,
     }),
 
     upsertTestCase({
-      studyCaseId: scGreet.id,
+      exerciseId: scGreet.id,
       description: "should return 'Hello, Ani!' for name Ani",
       input: { name: 'Ani' },
       expected: { result: 'Hello, Ani!' },
@@ -941,7 +939,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scGreet.id,
+      exerciseId: scGreet.id,
       description: "should return 'Hello, Budi!' for name Budi",
       input: { name: 'Budi' },
       expected: { result: 'Hello, Budi!' },
@@ -950,7 +948,7 @@ return result;`,
     }),
 
     upsertTestCase({
-      studyCaseId: scDouble.id,
+      exerciseId: scDouble.id,
       description: 'should return 10 for n = 5',
       input: { n: 5 },
       expected: { result: 10 },
@@ -958,7 +956,7 @@ return result;`,
       isPublished: true,
     }),
     upsertTestCase({
-      studyCaseId: scDouble.id,
+      exerciseId: scDouble.id,
       description: 'should return 0 for n = 0',
       input: { n: 0 },
       expected: { result: 0 },
@@ -969,20 +967,20 @@ return result;`,
 
   console.log('✅ Test cases seeded');
 
-  await prisma.conceptProgress.createMany({
+  await prisma.moduleProgress.createMany({
     skipDuplicates: true,
     data: [
       {
         userId: student.id,
-        conceptId: conceptConditional.id,
+        moduleId: moduleConditional.id,
       },
       {
         userId: student.id,
-        conceptId: conceptLooping.id,
+        moduleId: moduleLooping.id,
       },
       {
         userId: student.id,
-        conceptId: conceptFunction.id,
+        moduleId: moduleFunction.id,
       },
     ],
   });
@@ -1017,40 +1015,40 @@ return result;`,
     ],
   });
 
-  await prisma.studyCaseProgress.createMany({
+  await prisma.exerciseProgress.createMany({
     skipDuplicates: true,
     data: [
       {
         userId: student.id,
-        studyCaseId: scCheckAdult.id,
+        exerciseId: scCheckAdult.id,
       },
       {
         userId: student.id,
-        studyCaseId: scMaxOfTwo.id,
+        exerciseId: scMaxOfTwo.id,
       },
       {
         userId: student.id,
-        studyCaseId: scDayName.id,
+        exerciseId: scDayName.id,
       },
       {
         userId: student.id,
-        studyCaseId: scSumArray.id,
+        exerciseId: scSumArray.id,
       },
       {
         userId: student.id,
-        studyCaseId: scFizzBuzz.id,
+        exerciseId: scFizzBuzz.id,
       },
       {
         userId: student.id,
-        studyCaseId: scCountdown.id,
+        exerciseId: scCountdown.id,
       },
       {
         userId: student.id,
-        studyCaseId: scGreet.id,
+        exerciseId: scGreet.id,
       },
       {
         userId: student.id,
-        studyCaseId: scDouble.id,
+        exerciseId: scDouble.id,
       },
     ],
   });
