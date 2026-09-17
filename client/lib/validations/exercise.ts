@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const studyCaseSchema = z.object({
+export const exerciseSchema = z.object({
   materialId: z.coerce
     .number()
     .int('Material is required.')

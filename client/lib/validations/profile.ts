@@ -12,11 +12,6 @@ export const updateProfileSchema = z.object({
     .trim()
     .max(300, 'Bio must be less than 300 characters.')
     .optional(),
-  bio: z
-    .string()
-    .trim()
-    .max(300, 'Bio must be less than 300 characters.')
-    .optional(),
 });
 
 export const updatePasswordSchema = z

@@ -3,14 +3,15 @@ import { Geist } from 'next/font/google';
 
 import './globals.css';
 
-import { Toaster } from '@/components/ui/sonner';
-import AuthProvider from '@/components/shared/AuthProvider';
+import { AuthProvider } from '@/providers/auth-provider';
+
+// import { Toaster } from '@/components/ui/sonner';
 
 const geist = Geist({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Mahir.js',
-  description: 'Platform belajar JavaScript interaktif',
+  title: 'MahirJS',
+  description: 'Learning Platform for Basic JavaScript',
 };
 
 export default function RootLayout({
@@ -19,11 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang='id'>
+    <html lang='en'>
       <body className={geist.className}>
         <AuthProvider>{children}</AuthProvider>
 
-        <Toaster
+        {/* <Toaster
           theme='light'
           richColors
           closeButton
@@ -35,7 +36,7 @@ export default function RootLayout({
               description: 'text-sm',
             },
           }}
-        />
+        /> */}
       </body>
     </html>
   );

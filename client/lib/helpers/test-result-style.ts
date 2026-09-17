@@ -1,6 +1,6 @@
-import { AlertCircle, CheckCircle2, Circle, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Circle, XCircle } from 'lucide-react';
 
-import { DisplayedTestStatus } from "@/types";
+import { DisplayedTestStatus } from '@/types';
 
 export function getTestCaseStatusStyle(
   status: DisplayedTestStatus = 'PENDING',

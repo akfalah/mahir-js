@@ -23,10 +23,10 @@ function parseJsonRecord(value: string) {
 }
 
 export const testCaseSchema = z.object({
-  studyCaseId: z.coerce
+  exerciseId: z.coerce
     .number()
-    .int('Study case is required.')
-    .min(1, 'Study case is required.'),
+    .int('Exercise is required.')
+    .min(1, 'Exercise is required.'),
   description: z
     .string()
     .trim()

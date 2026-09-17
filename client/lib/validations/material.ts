@@ -8,7 +8,7 @@ function getPlainTextFromHtml(value: string) {
 }
 
 export const materialSchema = z.object({
-  conceptId: z.coerce
+  moduleId: z.coerce
     .number()
     .int('Concept is required.')
     .min(1, 'Concept is required.'),

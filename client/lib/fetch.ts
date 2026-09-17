@@ -3,13 +3,13 @@ import { getApiErrorMessage } from '@/lib/get-api-error-message';
 
 import {
   ApiResponse,
-  Concept,
-  ConceptProgress,
+  Module,
+  ModuleProgress,
   FetchParams,
   Material,
   MaterialProgress,
-  StudyCase,
-  StudyCaseProgress,
+  Exercise,
+  ExerciseProgress,
   Submission,
   SubmissionDetail,
   TestCase,
@@ -75,27 +75,27 @@ async function fetchProtectedList<T>(
   return fetchAPI<T[]>(path, token, params);
 }
 
-// ===== Concepts =====
+// ===== Modules =====
 
-export const fetchConcepts = (token?: AuthToken, params?: FetchParams) =>
-  fetchAPI<Concept[]>('/concepts', token, {
+export const fetchModules = (token?: AuthToken, params?: FetchParams) =>
+  fetchAPI<Module[]>('/modules', token, {
     sortBy: 'order',
     orderBy: 'asc',
     limit: 100,
     ...params,
   });
 
-export const fetchPublishedConcepts = (
+export const fetchPublishedModules = (
   token?: AuthToken,
   params?: FetchParams,
 ) =>
-  fetchConcepts(token, {
+  fetchModules(token, {
     isPublished: true,
     ...params,
   });
 
-export const fetchConceptBySlug = (slug: string, token?: AuthToken) =>
-  fetchAPI<Concept>(`/concepts/${slug}`, token);
+export const fetchModuleBySlug = (slug: string, token?: AuthToken) =>
+  fetchAPI<Module>(`/modules/${slug}`, token);
 
 // ===== Materials =====
 
@@ -119,27 +119,27 @@ export const fetchPublishedMaterials = (
 export const fetchMaterialBySlug = (slug: string, token?: AuthToken) =>
   fetchAPI<Material>(`/materials/${slug}`, token);
 
-// ===== Study Cases =====
+// ===== Exercises =====
 
-export const fetchStudyCases = (token?: AuthToken, params?: FetchParams) =>
-  fetchAPI<StudyCase[]>('/study-cases', token, {
+export const fetchExercises = (token?: AuthToken, params?: FetchParams) =>
+  fetchAPI<Exercise[]>('/exercises', token, {
     sortBy: 'order',
     orderBy: 'asc',
     limit: 100,
     ...params,
   });
 
-export const fetchPublishedStudyCases = (
+export const fetchPublishedExercises = (
   token?: AuthToken,
   params?: FetchParams,
 ) =>
-  fetchStudyCases(token, {
+  fetchExercises(token, {
     isPublished: true,
     ...params,
   });
 
-export const fetchStudyCaseBySlug = (slug: string, token?: AuthToken) =>
-  fetchAPI<StudyCase>(`/study-cases/${slug}`, token);
+export const fetchExerciseBySlug = (slug: string, token?: AuthToken) =>
+  fetchAPI<Exercise>(`/exercises/${slug}`, token);
 
 // ===== Test Cases =====
 
@@ -155,11 +155,11 @@ export const fetchTestCases = (token?: AuthToken, params?: FetchParams) =>
 // Protected data.
 // Guest users get empty data instead of 401.
 
-export const fetchConceptProgresses = (
+export const fetchModuleProgresses = (
   token?: AuthToken,
   params?: FetchParams,
 ) =>
-  fetchProtectedList<ConceptProgress>('/progress/concepts', token, {
+  fetchProtectedList<ModuleProgress>('/progress/modules', token, {
     ...params,
   });
 
@@ -171,11 +171,11 @@ export const fetchMaterialProgresses = (
     ...params,
   });
 
-export const fetchStudyCaseProgresses = (
+export const fetchExerciseProgresses = (
   token?: AuthToken,
   params?: FetchParams,
 ) =>
-  fetchProtectedList<StudyCaseProgress>('/progress/study-cases', token, {
+  fetchProtectedList<ExerciseProgress>('/progress/Exercises', token, {
     ...params,
   });
 

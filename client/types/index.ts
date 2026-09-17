@@ -18,7 +18,6 @@ export type User = {
   name: string;
   role: Role;
   imageUrl?: string;
-  bio?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -42,7 +41,7 @@ export type ApiResponse<T> = {
 };
 
 // ===== Shared Relation Types =====
-export type ConceptRelation = {
+export type ModuleRelation = {
   id: number;
   slug: string;
   title: string;
@@ -54,10 +53,10 @@ export type MaterialRelation = {
   slug: string;
   title: string;
   isPublished: boolean;
-  concept: ConceptRelation;
+  module: ModuleRelation;
 };
 
-export type StudyCaseRelation = {
+export type ExerciseRelation = {
   id: number;
   slug: string;
   title: string;
@@ -65,8 +64,8 @@ export type StudyCaseRelation = {
   material: MaterialRelation;
 };
 
-// ===== Concept =====
-export type Concept = {
+// ===== Module =====
+export type Module = {
   id: number;
   slug: string;
   title: string;
@@ -80,7 +79,7 @@ export type Concept = {
 // ===== Material =====
 export type Material = {
   id: number;
-  conceptId: number;
+  moduleId: number;
   slug: string;
   title: string;
   description: string;
@@ -89,16 +88,16 @@ export type Material = {
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
-  concept?: ConceptRelation;
+  module?: ModuleRelation;
 };
 
-// ===== Study Case =====
+// ===== Exercise =====
 export type SyntaxRules = {
   required?: string[];
   forbidden?: string[];
 };
 
-export type StudyCase = {
+export type Exercise = {
   id: number;
   materialId: number;
   slug: string;
@@ -119,7 +118,7 @@ export type StudyCase = {
 // ===== Test Case =====
 export type TestCase = {
   id: number;
-  studyCaseId: number;
+  ExerciseId: number;
   description: string;
   input: Record<string, unknown>;
   expected: Record<string, unknown>;
@@ -127,7 +126,7 @@ export type TestCase = {
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
-  studyCase?: StudyCaseRelation;
+  exercise?: ExerciseRelation;
 };
 
 // ===== Submission =====
@@ -144,13 +143,13 @@ export type SubmissionUser = {
   email: string;
 };
 
-export type SubmissionStudyCase = {
+export type SubmissionExercise = {
   id: number;
   title: string;
   material: {
     id: number;
     title: string;
-    concept: {
+    module: {
       id: number;
       title: string;
     };
@@ -160,13 +159,13 @@ export type SubmissionStudyCase = {
 export type Submission = {
   id: number;
   userId: number;
-  studyCaseId: number;
+  ExerciseId: number;
   code: string;
   status: SubmissionStatus;
   errorMessage: string | null;
   createdAt: string;
   user?: SubmissionUser;
-  studyCase?: SubmissionStudyCase;
+  studyCase?: SubmissionExercise;
 };
 
 // ===== Test Result =====
@@ -190,10 +189,10 @@ export type SubmissionDetail = Submission & {
 };
 
 // ===== Progress =====
-export type ConceptProgress = {
+export type ModuleProgress = {
   id: number;
   userId: number;
-  conceptId: number;
+  moduleId: number;
   isCompleted: boolean;
   completedAt: string | null;
   updatedAt: string;
@@ -208,10 +207,10 @@ export type MaterialProgress = {
   updatedAt: string;
 };
 
-export type StudyCaseProgress = {
+export type ExerciseProgress = {
   id: number;
   userId: number;
-  studyCaseId: number;
+  exerciseId: number;
   isCompleted: boolean;
   completedAt: string | null;
   updatedAt: string;
