@@ -13,6 +13,8 @@ import {
   Submission,
   SubmissionDetail,
   TestCase,
+  LearningStreak,
+  OverviewProgress,
 } from '@/types';
 
 type AuthToken = string | null | undefined;
@@ -155,7 +157,15 @@ export const fetchTestCases = (token?: AuthToken, params?: FetchParams) =>
 // Protected data.
 // Guest users get empty data instead of 401.
 
-export const fetchModuleProgresses = (
+export const fetchOverviewProgress = (
+  token?: AuthToken,
+  params?: FetchParams,
+) =>
+  fetchProtectedList<OverviewProgress>('/progress', token, {
+    ...params,
+  });
+
+export const fetchModuleProgress = (
   token?: AuthToken,
   params?: FetchParams,
 ) =>
@@ -163,7 +173,7 @@ export const fetchModuleProgresses = (
     ...params,
   });
 
-export const fetchMaterialProgresses = (
+export const fetchMaterialProgress = (
   token?: AuthToken,
   params?: FetchParams,
 ) =>
@@ -171,11 +181,11 @@ export const fetchMaterialProgresses = (
     ...params,
   });
 
-export const fetchExerciseProgresses = (
+export const fetchExerciseProgress = (
   token?: AuthToken,
   params?: FetchParams,
 ) =>
-  fetchProtectedList<ExerciseProgress>('/progress/Exercises', token, {
+  fetchProtectedList<ExerciseProgress>('/progress/exercises', token, {
     ...params,
   });
 
@@ -193,3 +203,10 @@ export const fetchSubmissions = (token?: AuthToken, params?: FetchParams) =>
 
 export const fetchSubmissionById = (id: string | number, token: string) =>
   fetchAPI<SubmissionDetail>(`/submissions/${id}`, token);
+
+// ===== Learning Streak =====
+// Protected data.
+// Guest users get empty data instead of 401.
+
+export const fetchLearningStreak = (token?: AuthToken) =>
+  fetchAPI<LearningStreak>('/learning-streak', token);

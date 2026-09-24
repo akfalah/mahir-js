@@ -118,7 +118,7 @@ export type Exercise = {
 // ===== Test Case =====
 export type TestCase = {
   id: number;
-  ExerciseId: number;
+  exerciseId: number;
   description: string;
   input: Record<string, unknown>;
   expected: Record<string, unknown>;
@@ -159,7 +159,7 @@ export type SubmissionExercise = {
 export type Submission = {
   id: number;
   userId: number;
-  ExerciseId: number;
+  exerciseId: number;
   code: string;
   status: SubmissionStatus;
   errorMessage: string | null;
@@ -189,6 +189,15 @@ export type SubmissionDetail = Submission & {
 };
 
 // ===== Progress =====
+type Count = { completed: number; total: number };
+
+export type OverviewProgress = {
+  modules: Count;
+  materials: Count;
+  exercises: Count;
+  percentage: number;
+};
+
 export type ModuleProgress = {
   id: number;
   userId: number;
@@ -214,4 +223,11 @@ export type ExerciseProgress = {
   isCompleted: boolean;
   completedAt: string | null;
   updatedAt: string;
+};
+
+// ===== Learning Streak =====
+export type LearningStreak = {
+  currentStreak: number;
+  today: string; // YYYY-MM-DD, from the BE
+  activeDates: string[]; // YYYY-MM-DD
 };
