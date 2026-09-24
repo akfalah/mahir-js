@@ -11,6 +11,7 @@ import { exerciseRouter } from '../routes/exercise.route';
 import { testCaseRouter } from '../routes/test-case.route';
 import { submissionRouter } from '../routes/submission.route';
 import { progressRouter } from '../routes/progress.route';
+import { learningStreakRouter } from '../routes/learning-streak.route';
 
 import '../queues/submission.queue';
 
@@ -34,5 +35,6 @@ server.use('/api/exercises', exerciseRouter);
 server.use('/api/test-cases', testCaseRouter);
 server.use('/api/submissions', submissionRouter);
 server.use('/api/progress', progressRouter);
+server.use('/api/learning-streak', learningStreakRouter);
 
 server.use(errorMiddleware);

@@ -1,23 +1,33 @@
 import { Router } from 'express';
 
-import { authMiddleware } from '../middlewares/auth.middleware';
+import { authMiddleware, roleMiddleware } from '../middlewares/auth.middleware';
 
 import { ProgressController } from '../controllers/progress.controller';
+import { Role } from '../../generated/prisma/enums';
 
 export const progressRouter = Router();
 
 progressRouter.get(
+  '/',
+  authMiddleware,
+  roleMiddleware(Role.STUDENT),
+  ProgressController.overviewProgress,
+);
+progressRouter.get(
   '/modules',
   authMiddleware,
-  ProgressController.moduleProgresses,
+  roleMiddleware(Role.STUDENT),
+  ProgressController.moduleProgress,
 );
 progressRouter.get(
   '/materials',
   authMiddleware,
-  ProgressController.materialProgresses,
+  roleMiddleware(Role.STUDENT),
+  ProgressController.materialProgress,
 );
 progressRouter.get(
   '/exercises',
   authMiddleware,
-  ProgressController.exerciseProgresses,
+  roleMiddleware(Role.STUDENT),
+  ProgressController.exerciseProgress,
 );

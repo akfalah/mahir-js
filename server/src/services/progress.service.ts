@@ -12,34 +12,72 @@ import {
 } from '../models/progress.model';
 
 export class ProgressService {
-  static async getModuleProgresses(
+  static async getOverview(user: JwtPayload) {
+    const userId = user.id;
+
+    const [
+      totalModules,
+      totalMaterials,
+      totalExercises,
+      completedModules,
+      completedMaterials,
+      completedExercises,
+    ] = await Promise.all([
+      prisma.module.count({ where: { isPublished: true } }),
+      prisma.material.count({
+        where: { isPublished: true, module: { isPublished: true } },
+      }),
+      prisma.exercise.count({ where: { isPublished: true } }),
+      prisma.moduleProgress.count({
+        where: { userId, isCompleted: true, module: { isPublished: true } },
+      }),
+      prisma.materialProgress.count({
+        where: { userId, isCompleted: true, material: { isPublished: true } },
+      }),
+      prisma.exerciseProgress.count({
+        where: { userId, isCompleted: true, exercise: { isPublished: true } },
+      }),
+    ]);
+
+    const total = totalMaterials + totalExercises;
+    const done = completedMaterials + completedExercises;
+
+    return {
+      modules: { completed: completedModules, total: totalModules },
+      materials: { completed: completedMaterials, total: totalMaterials },
+      exercises: { completed: completedExercises, total: totalExercises },
+      percentage: total > 0 ? Math.round((done / total) * 100) : 0,
+    };
+  }
+
+  static async getModuleProgress(
     user: JwtPayload,
   ): Promise<ModuleProgressResponse[]> {
-    const progresses = await prisma.moduleProgress.findMany({
+    const progress = await prisma.moduleProgress.findMany({
       where: { userId: user.id },
       orderBy: { module: { order: 'asc' } },
     });
 
-    return progresses.map(toModuleProgressResponse);
+    return progress.map(toModuleProgressResponse);
   }
 
-  static async getMaterialProgresses(
+  static async getMaterialProgress(
     user: JwtPayload,
     moduleId?: number,
   ): Promise<MaterialProgressResponse[]> {
-    const progresses = await prisma.materialProgress.findMany({
+    const progress = await prisma.materialProgress.findMany({
       where: { userId: user.id, ...(moduleId && { material: { moduleId } }) },
       orderBy: { material: { order: 'asc' } },
     });
 
-    return progresses.map(toMaterialProgressResponse);
+    return progress.map(toMaterialProgressResponse);
   }
 
-  static async getExerciseProgresses(
+  static async getExerciseProgress(
     user: JwtPayload,
     materialId?: number,
   ): Promise<ExerciseProgressResponse[]> {
-    const progresses = await prisma.exerciseProgress.findMany({
+    const progress = await prisma.exerciseProgress.findMany({
       where: {
         userId: user.id,
         ...(materialId && { exercise: { materialId } }),
@@ -47,7 +85,7 @@ export class ProgressService {
       orderBy: { exercise: { order: 'asc' } },
     });
 
-    return progresses.map(toExerciseProgressResponse);
+    return progress.map(toExerciseProgressResponse);
   }
 
   static async updateOnSubmissionPassed(
