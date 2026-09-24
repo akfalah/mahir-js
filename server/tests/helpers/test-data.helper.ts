@@ -35,7 +35,7 @@ export async function cleanupTestData(prefix: string) {
         { submission: { user: { email: { endsWith: `@${TEST_DOMAIN}` } } } },
         {
           testCase: {
-            studyCase: { material: { concept: { slug: { startsWith: prefix } } } },
+            exercise: { material: { module: { slug: { startsWith: prefix } } } },
           },
         },
       ],
@@ -46,16 +46,16 @@ export async function cleanupTestData(prefix: string) {
     where: {
       OR: [
         { user: { email: { endsWith: `@${TEST_DOMAIN}` } } },
-        { studyCase: { material: { concept: { slug: { startsWith: prefix } } } } },
+        { exercise: { material: { module: { slug: { startsWith: prefix } } } } },
       ],
     },
   });
 
-  await prisma.studyCaseProgress.deleteMany({
+  await prisma.exerciseProgress.deleteMany({
     where: {
       OR: [
         { user: { email: { endsWith: `@${TEST_DOMAIN}` } } },
-        { studyCase: { material: { concept: { slug: { startsWith: prefix } } } } },
+        { exercise: { material: { module: { slug: { startsWith: prefix } } } } },
       ],
     },
   });
@@ -64,33 +64,33 @@ export async function cleanupTestData(prefix: string) {
     where: {
       OR: [
         { user: { email: { endsWith: `@${TEST_DOMAIN}` } } },
-        { material: { concept: { slug: { startsWith: prefix } } } },
+        { material: { module: { slug: { startsWith: prefix } } } },
       ],
     },
   });
 
-  await prisma.conceptProgress.deleteMany({
+  await prisma.moduleProgress.deleteMany({
     where: {
       OR: [
         { user: { email: { endsWith: `@${TEST_DOMAIN}` } } },
-        { concept: { slug: { startsWith: prefix } } },
+        { module: { slug: { startsWith: prefix } } },
       ],
     },
   });
 
   await prisma.testCase.deleteMany({
-    where: { studyCase: { material: { concept: { slug: { startsWith: prefix } } } } },
+    where: { exercise: { material: { module: { slug: { startsWith: prefix } } } } },
   });
 
-  await prisma.studyCase.deleteMany({
-    where: { material: { concept: { slug: { startsWith: prefix } } } },
+  await prisma.exercise.deleteMany({
+    where: { material: { module: { slug: { startsWith: prefix } } } },
   });
 
   await prisma.material.deleteMany({
-    where: { concept: { slug: { startsWith: prefix } } },
+    where: { module: { slug: { startsWith: prefix } } },
   });
 
-  await prisma.concept.deleteMany({
+  await prisma.module.deleteMany({
     where: { slug: { startsWith: prefix } },
   });
 
@@ -103,7 +103,7 @@ export async function createUserFixture({
   prefix,
   label,
   role = Role.STUDENT,
-  password = 'password123',
+  password = '12345678',
 }: {
   prefix: string;
   label: string;
@@ -131,9 +131,9 @@ export async function createUserFixture({
   return { user, token };
 }
 
-export async function createConceptFixture({
+export async function createModuleFixture({
   prefix,
-  label = 'concept',
+  label = 'module',
   order = nextOrder(),
   isPublished = true,
 }: {
@@ -142,7 +142,7 @@ export async function createConceptFixture({
   order?: number;
   isPublished?: boolean;
 }) {
-  return prisma.concept.create({
+  return prisma.module.create({
     data: {
       slug: `${prefix}-${label}`,
       title: `${prefix} ${label}`,
@@ -155,14 +155,14 @@ export async function createConceptFixture({
 
 export async function createMaterialFixture({
   prefix,
-  conceptId,
+  moduleId,
   label = 'material',
   order = 1,
   isPublished = true,
   content = '<h2>Learning Material</h2><p>This material explains a JavaScript concept.</p>',
 }: {
   prefix: string;
-  conceptId: number;
+  moduleId: number;
   label?: string;
   order?: number;
   isPublished?: boolean;
@@ -170,7 +170,7 @@ export async function createMaterialFixture({
 }) {
   return prisma.material.create({
     data: {
-      conceptId,
+      moduleId,
       slug: `${prefix}-${label}`,
       title: `${prefix} ${label}`,
       description: `Description for ${prefix} ${label}`,
@@ -181,10 +181,10 @@ export async function createMaterialFixture({
   });
 }
 
-export async function createStudyCaseFixture({
+export async function createExerciseFixture({
   prefix,
   materialId,
-  label = 'study-case',
+  label = 'exercise',
   order = 1,
   isPublished = true,
   functionName = 'isAdult',
@@ -202,7 +202,7 @@ export async function createStudyCaseFixture({
   starterCode?: string;
   syntaxRules?: Record<string, string[]>;
 }) {
-  return prisma.studyCase.create({
+  return prisma.exercise.create({
     data: {
       materialId,
       slug: `${prefix}-${label}`,
@@ -220,14 +220,14 @@ export async function createStudyCaseFixture({
 }
 
 export async function createTestCaseFixture({
-  studyCaseId,
+  exerciseId,
   description = 'should return true for age 18',
   input = { age: 18 },
   expected = { result: true },
   order = 1,
   isPublished = true,
 }: {
-  studyCaseId: number;
+  exerciseId: number;
   description?: string;
   input?: Record<string, unknown>;
   expected?: Record<string, unknown>;
@@ -236,7 +236,7 @@ export async function createTestCaseFixture({
 }) {
   return prisma.testCase.create({
     data: {
-      studyCaseId,
+      exerciseId,
       description,
       input: input as Prisma.InputJsonValue,
       expected: expected as Prisma.InputJsonValue,
@@ -247,12 +247,12 @@ export async function createTestCaseFixture({
 }
 
 export async function createLearningPathFixture(prefix: string) {
-  const concept = await createConceptFixture({ prefix, label: 'conditional', order: nextOrder() });
-  const material = await createMaterialFixture({ prefix, conceptId: concept.id, label: 'if-else' });
-  const studyCase = await createStudyCaseFixture({ prefix, materialId: material.id, label: 'is-adult' });
+  const module = await createModuleFixture({ prefix, label: 'conditional', order: nextOrder() });
+  const material = await createMaterialFixture({ prefix, moduleId: module.id, label: 'if-else' });
+  const exercise = await createExerciseFixture({ prefix, materialId: material.id, label: 'is-adult' });
 
   const testCaseOne = await createTestCaseFixture({
-    studyCaseId: studyCase.id,
+    exerciseId: exercise.id,
     description: 'should return true for age 18',
     input: { age: 18 },
     expected: { result: true },
@@ -260,31 +260,31 @@ export async function createLearningPathFixture(prefix: string) {
   });
 
   const testCaseTwo = await createTestCaseFixture({
-    studyCaseId: studyCase.id,
+    exerciseId: exercise.id,
     description: 'should return false for age 17',
     input: { age: 17 },
     expected: { result: false },
     order: 2,
   });
 
-  return { concept, material, studyCase, testCases: [testCaseOne, testCaseTwo] };
+  return { module, material, exercise, testCases: [testCaseOne, testCaseTwo] };
 }
 
 export async function createSubmissionFixture({
   userId,
-  studyCaseId,
+  exerciseId,
   status = SubmissionStatus.PASSED,
   code = 'return age >= 18;',
 }: {
   userId: number;
-  studyCaseId: number;
+  exerciseId: number;
   status?: SubmissionStatus;
   code?: string;
 }) {
   return prisma.submission.create({
     data: {
       userId,
-      studyCaseId,
+      exerciseId,
       status,
       code,
     },

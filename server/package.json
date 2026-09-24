@@ -10,13 +10,16 @@
     "build": "tsc"
   },
   "jest": {
-    "transform": {
-      "^.+\\.[t|j]sx?$": "babel-jest"
-    },
-    "setupFiles": [
-      "./tests/jest.setup.ts"
-    ]
+  "transform": {
+    "^.+\\.[t|j]sx?$": "babel-jest"
   },
+  "moduleNameMapper": {
+    "^sanitize-html$": "<rootDir>/tests/__mocks__/sanitize-html.ts"
+  },
+  "setupFiles": [
+    "./tests/jest.setup.ts"
+  ]
+},
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",

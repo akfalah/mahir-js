@@ -93,7 +93,6 @@ describe('user endpoints', () => {
           name: 'Crud User',
           password: 'password123',
           role: 'STUDENT',
-          bio: 'Created by admin',
         });
 
       const userInDb = await prisma.user.findUnique({ where: { email: uniqueEmail(prefix, 'crud') } });

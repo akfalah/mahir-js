@@ -30,7 +30,7 @@ server.use('/api/auth', authRouter);
 server.use('/api/users', userRouter);
 server.use('/api/modules', moduleRouter);
 server.use('/api/materials', materialRouter);
-server.use('/api/Exercises', exerciseRouter);
+server.use('/api/exercises', exerciseRouter);
 server.use('/api/test-cases', testCaseRouter);
 server.use('/api/submissions', submissionRouter);
 server.use('/api/progress', progressRouter);

@@ -29,7 +29,7 @@ describe('auth endpoints', () => {
       const res = await api.post('/api/auth/sign-up').send({
         email: uniqueEmail(prefix, 'signup'),
         name: 'Signup User',
-        password: 'password123',
+        password: '12345678',
       });
 
       expect(res.status).toBe(201);
@@ -45,15 +45,15 @@ describe('auth endpoints', () => {
       const res = await api.post('/api/auth/sign-up').send({
         email: uniqueEmail(prefix, 'signup'),
         name: 'Signup User',
-        password: 'password123',
+        password: '12345678',
       });
 
       expect(res.status).toBe(400);
     });
 
     it.each([
-      ['invalid email', { email: 'not-email', name: 'Valid Name', password: 'password123' }],
-      ['short name', { email: uniqueEmail(prefix, 'short-name'), name: 'ab', password: 'password123' }],
+      ['invalid email', { email: 'not-email', name: 'Valid Name', password: '12345678' }],
+      ['short name', { email: uniqueEmail(prefix, 'short-name'), name: 'ab', password: '12345678' }],
       ['short password', { email: uniqueEmail(prefix, 'short-password'), name: 'Valid Name', password: '123' }],
     ])('rejects %s', async (_caseName, payload) => {
       const res = await api.post('/api/auth/sign-up').send(payload);
@@ -66,7 +66,7 @@ describe('auth endpoints', () => {
     it('signs in with valid credentials', async () => {
       const res = await api.post('/api/auth/sign-in').send({
         email: uniqueEmail(prefix, 'signup'),
-        password: 'password123',
+        password: '12345678',
       });
 
       expect(res.status).toBe(200);
@@ -82,7 +82,7 @@ describe('auth endpoints', () => {
 
       const unknownEmail = await api.post('/api/auth/sign-in').send({
         email: uniqueEmail(prefix, 'unknown'),
-        password: 'password123',
+        password: '12345678',
       });
 
       expect(wrongPassword.status).toBe(401);
@@ -95,8 +95,8 @@ describe('auth endpoints', () => {
       const profile = await api.get('/api/auth/profile');
       const update = await api.patch('/api/auth/profile').send({ name: 'New Name' });
       const password = await api.patch('/api/auth/profile/password').send({
-        currentPassword: 'password123',
-        newPassword: 'newpassword123',
+        currentPassword: '12345678',
+        newPassword: 'new12345678',
       });
 
       expect(profile.status).toBe(401);
@@ -124,14 +124,12 @@ describe('auth endpoints', () => {
         .set(authHeader(token))
         .send({
           name: 'Updated Profile',
-          bio: 'Learning JavaScript with Mahir.js',
           imageUrl: 'https://example.com/avatar.png',
         });
 
       expect(profile.status).toBe(200);
       expect(update.status).toBe(200);
       expect(update.body.data.name).toBe('Updated Profile');
-      expect(update.body.data.bio).toBe('Learning JavaScript with Mahir.js');
       expect(update.body.data.password).toBeUndefined();
     });
 
@@ -159,21 +157,21 @@ describe('auth endpoints', () => {
       const wrongCurrent = await api
         .patch('/api/auth/profile/password')
         .set(authHeader(token))
-        .send({ currentPassword: 'wrongpassword', newPassword: 'newpassword123' });
+        .send({ currentPassword: 'wrongpassword', newPassword: 'new12345678' });
 
       const shortNew = await api
         .patch('/api/auth/profile/password')
         .set(authHeader(token))
-        .send({ currentPassword: 'password123', newPassword: '123' });
+        .send({ currentPassword: '12345678', newPassword: '123' });
 
       const success = await api
         .patch('/api/auth/profile/password')
         .set(authHeader(token))
-        .send({ currentPassword: 'password123', newPassword: 'newpassword123' });
+        .send({ currentPassword: '12345678', newPassword: 'new12345678' });
 
       const signIn = await api.post('/api/auth/sign-in').send({
         email: user.email,
-        password: 'newpassword123',
+        password: 'new12345678',
       });
 
       expect(wrongCurrent.status).toBe(400);

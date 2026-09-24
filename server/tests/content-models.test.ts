@@ -7,9 +7,9 @@ import { server } from '../src/applications/server';
 import {
   authHeader,
   cleanupTestData,
-  createConceptFixture,
+  createModuleFixture,
   createMaterialFixture,
-  createStudyCaseFixture,
+  createExerciseFixture,
   createTestCaseFixture,
   createTestPrefix,
   createUserFixture,
@@ -34,57 +34,57 @@ describe('content model endpoints', () => {
     await cleanupTestData(prefix);
   });
 
-  describe('concepts', () => {
-    let conceptId: number;
-    let unpublishedConceptId: number;
-    const conceptOrder = nextOrder();
-    const unpublishedConceptOrder = nextOrder();
+  describe('modules', () => {
+    let moduleId: number;
+    let unpublishedModuleId: number;
+    const moduleOrder = nextOrder();
+    const unpublishedModuleOrder = nextOrder();
 
-    it('creates published and unpublished concepts as admin', async () => {
+    it('creates published and unpublished modules as admin', async () => {
       const published = await api
-        .post('/api/concepts')
+        .post('/api/modules')
         .set(authHeader(adminToken))
         .send({
-          slug: `${prefix}-concept`,
-          title: `${prefix} Concept`,
-          description: 'Concept description',
-          order: conceptOrder,
+          slug: `${prefix}-module`,
+          title: `${prefix} Module`,
+          description: 'Module description',
+          order: moduleOrder,
           isPublished: true,
         });
 
       const unpublished = await api
-        .post('/api/concepts')
+        .post('/api/modules')
         .set(authHeader(adminToken))
         .send({
-          slug: `${prefix}-concept-draft`,
-          title: `${prefix} Draft Concept`,
-          description: 'Draft concept description',
-          order: unpublishedConceptOrder,
+          slug: `${prefix}-module-draft`,
+          title: `${prefix} Draft Module`,
+          description: 'Draft module description',
+          order: unpublishedModuleOrder,
           isPublished: false,
         });
 
       expect(published.status).toBe(201);
       expect(unpublished.status).toBe(201);
-      conceptId = published.body.data.id;
-      unpublishedConceptId = unpublished.body.data.id;
+      moduleId = published.body.data.id;
+      unpublishedModuleId = unpublished.body.data.id;
     });
 
-    it('enforces concept authorization and validation', async () => {
-      const guest = await api.post('/api/concepts').send({});
+    it('enforces module authorization and validation', async () => {
+      const guest = await api.post('/api/modules').send({});
       const student = await api
-        .post('/api/concepts')
+        .post('/api/modules')
         .set(authHeader(studentToken))
         .send({ slug: `${prefix}-forbidden`, title: 'Forbidden', description: 'Forbidden', order: nextOrder() });
       const duplicateSlug = await api
-        .post('/api/concepts')
+        .post('/api/modules')
         .set(authHeader(adminToken))
-        .send({ slug: `${prefix}-concept`, title: 'Duplicate', description: 'Duplicate', order: nextOrder() });
+        .send({ slug: `${prefix}-module`, title: 'Duplicate', description: 'Duplicate', order: nextOrder() });
       const duplicateOrder = await api
-        .post('/api/concepts')
+        .post('/api/modules')
         .set(authHeader(adminToken))
-        .send({ slug: `${prefix}-duplicate-order`, title: 'Duplicate', description: 'Duplicate', order: conceptOrder });
+        .send({ slug: `${prefix}-duplicate-order`, title: 'Duplicate', description: 'Duplicate', order: moduleOrder });
       const invalid = await api
-        .post('/api/concepts')
+        .post('/api/modules')
         .set(authHeader(adminToken))
         .send({ slug: 'ab', title: 'ab', description: 'ab', order: 0 });
 
@@ -95,40 +95,40 @@ describe('content model endpoints', () => {
       expect(invalid.status).toBe(400);
     });
 
-    it('lists, searches, filters, and protects unpublished concepts', async () => {
-      const guestList = await api.get(`/api/concepts?search=${prefix}`);
+    it('lists, searches, filters, and protects unpublished modules', async () => {
+      const guestList = await api.get(`/api/modules?search=${prefix}`);
       const studentList = await api
-        .get(`/api/concepts?search=${prefix}`)
+        .get(`/api/modules?search=${prefix}`)
         .set(authHeader(studentToken));
       const adminDrafts = await api
-        .get(`/api/concepts?search=${prefix}&isPublished=false`)
+        .get(`/api/modules?search=${prefix}&isPublished=false`)
         .set(authHeader(adminToken));
-      const sorted = await api.get('/api/concepts?sortBy=order&orderBy=asc');
-      const invalidPage = await api.get('/api/concepts?page=abc');
-      const invalidLimit = await api.get('/api/concepts?limit=200');
+      const sorted = await api.get('/api/modules?sortBy=order&orderBy=asc');
+      const invalidPage = await api.get('/api/modules?page=abc');
+      const invalidLimit = await api.get('/api/modules?limit=200');
 
       expect(guestList.status).toBe(200);
       expect(studentList.status).toBe(200);
-      expect(guestList.body.data.every((concept: any) => concept.isPublished)).toBe(true);
-      expect(studentList.body.data.every((concept: any) => concept.isPublished)).toBe(true);
+      expect(guestList.body.data.every((modules: any) => modules.isPublished)).toBe(true);
+      expect(studentList.body.data.every((modules: any) => modules.isPublished)).toBe(true);
       expect(adminDrafts.status).toBe(200);
-      expect(adminDrafts.body.data.some((concept: any) => concept.id === unpublishedConceptId)).toBe(true);
+      expect(adminDrafts.body.data.some((modules: any) => modules.id === unpublishedModuleId)).toBe(true);
       expect(sorted.status).toBe(200);
       expect(invalidPage.status).toBe(400);
       expect(invalidLimit.status).toBe(400);
     });
 
-    it('shows published concepts to everyone and unpublished concepts only to admin', async () => {
-      const guestPublished = await api.get(`/api/concepts/${prefix}-concept`);
+    it('shows published modules to everyone and unpublished modules only to admin', async () => {
+      const guestPublished = await api.get(`/api/modules/${prefix}-module`);
       const studentPublished = await api
-        .get(`/api/concepts/${prefix}-concept`)
+        .get(`/api/modules/${prefix}-module`)
         .set(authHeader(studentToken));
-      const guestDraft = await api.get(`/api/concepts/${prefix}-concept-draft`);
+      const guestDraft = await api.get(`/api/modules/${prefix}-module-draft`);
       const studentDraft = await api
-        .get(`/api/concepts/${prefix}-concept-draft`)
+        .get(`/api/modules/${prefix}-module-draft`)
         .set(authHeader(studentToken));
       const adminDraft = await api
-        .get(`/api/concepts/${prefix}-concept-draft`)
+        .get(`/api/modules/${prefix}-module-draft`)
         .set(authHeader(adminToken));
 
       expect(guestPublished.status).toBe(200);
@@ -138,29 +138,29 @@ describe('content model endpoints', () => {
       expect(adminDraft.status).toBe(200);
     });
 
-    it('updates, publishes, unpublishes, and deletes concepts as admin', async () => {
+    it('updates, publishes, unpublishes, and deletes modules as admin', async () => {
       const update = await api
-        .patch(`/api/concepts/${conceptId}`)
+        .patch(`/api/modules/${moduleId}`)
         .set(authHeader(adminToken))
-        .send({ title: `${prefix} Updated Concept` });
+        .send({ title: `${prefix} Updated module` });
       const forbidden = await api
-        .patch(`/api/concepts/${conceptId}`)
+        .patch(`/api/modules/${moduleId}`)
         .set(authHeader(studentToken))
         .send({ title: 'Forbidden' });
       const unpublish = await api
-        .patch(`/api/concepts/${conceptId}`)
+        .patch(`/api/modules/${moduleId}`)
         .set(authHeader(adminToken))
         .send({ isPublished: false });
       const publish = await api
-        .patch(`/api/concepts/${conceptId}`)
+        .patch(`/api/modules/${moduleId}`)
         .set(authHeader(adminToken))
         .send({ isPublished: true });
       const missing = await api
-        .patch('/api/concepts/99999999')
+        .patch('/api/modules/99999999')
         .set(authHeader(adminToken))
         .send({ title: 'Missing' });
       const deleteDraft = await api
-        .delete(`/api/concepts/${unpublishedConceptId}`)
+        .delete(`/api/modules/${unpublishedModuleId}`)
         .set(authHeader(adminToken));
 
       expect(update.status).toBe(200);
@@ -173,13 +173,13 @@ describe('content model endpoints', () => {
   });
 
   describe('materials', () => {
-    let conceptId: number;
+    let moduleId: number;
     let materialId: number;
     let draftMaterialId: number;
 
     beforeAll(async () => {
-      const concept = await createConceptFixture({ prefix, label: 'material-parent', order: nextOrder() });
-      conceptId = concept.id;
+      const module = await createModuleFixture({ prefix, label: 'material-parent', order: nextOrder() });
+      moduleId = module.id;
     });
 
     it('creates materials and sanitizes rich text content', async () => {
@@ -187,7 +187,7 @@ describe('content model endpoints', () => {
         .post('/api/materials')
         .set(authHeader(adminToken))
         .send({
-          conceptId,
+          moduleId,
           slug: `${prefix}-material`,
           title: `${prefix} Material`,
           description: 'Material description',
@@ -199,7 +199,7 @@ describe('content model endpoints', () => {
         .post('/api/materials')
         .set(authHeader(adminToken))
         .send({
-          conceptId,
+          moduleId,
           slug: `${prefix}-material-draft`,
           title: `${prefix} Draft Material`,
           description: 'Draft material description',
@@ -219,8 +219,8 @@ describe('content model endpoints', () => {
     it('enforces material authorization and validation', async () => {
       const guest = await api.post('/api/materials').send({});
       const student = await api.post('/api/materials').set(authHeader(studentToken)).send({});
-      const missingConcept = await api.post('/api/materials').set(authHeader(adminToken)).send({
-        conceptId: 99999999,
+      const missingModule = await api.post('/api/materials').set(authHeader(adminToken)).send({
+        moduleId: 99999999,
         slug: `${prefix}-missing-concept-material`,
         title: 'Missing Concept',
         description: 'Missing concept material',
@@ -228,7 +228,7 @@ describe('content model endpoints', () => {
         order: 3,
       });
       const duplicateSlug = await api.post('/api/materials').set(authHeader(adminToken)).send({
-        conceptId,
+        moduleId,
         slug: `${prefix}-material`,
         title: 'Duplicate Slug',
         description: 'Duplicate slug material',
@@ -236,7 +236,7 @@ describe('content model endpoints', () => {
         order: 3,
       });
       const duplicateOrder = await api.post('/api/materials').set(authHeader(adminToken)).send({
-        conceptId,
+        moduleId,
         slug: `${prefix}-material-duplicate-order`,
         title: 'Duplicate Order',
         description: 'Duplicate order material',
@@ -244,7 +244,7 @@ describe('content model endpoints', () => {
         order: 1,
       });
       const emptyContent = await api.post('/api/materials').set(authHeader(adminToken)).send({
-        conceptId,
+        moduleId,
         slug: `${prefix}-empty-content`,
         title: 'Empty Content',
         description: 'Empty content material',
@@ -254,7 +254,7 @@ describe('content model endpoints', () => {
 
       expect(guest.status).toBe(401);
       expect(student.status).toBe(403);
-      expect(missingConcept.status).toBe(404);
+      expect(missingModule.status).toBe(404);
       expect(duplicateSlug.status).toBe(400);
       expect(duplicateOrder.status).toBe(400);
       expect(emptyContent.status).toBe(400);
@@ -262,7 +262,7 @@ describe('content model endpoints', () => {
 
     it('lists, sorts, filters, and protects unpublished materials', async () => {
       const sortedWithoutConcept = await api.get('/api/materials?sortBy=order');
-      const sortedWithConcept = await api.get(`/api/materials?conceptId=${conceptId}&sortBy=order&orderBy=asc`);
+      const sortedWithConcept = await api.get(`/api/materials?moduleId=${moduleId}&sortBy=order&orderBy=asc`);
       const guestList = await api.get(`/api/materials?search=${prefix}`);
       const adminDrafts = await api.get(`/api/materials?isPublished=false&search=${prefix}`).set(authHeader(adminToken));
       const invalidPage = await api.get('/api/materials?page=abc');
@@ -307,25 +307,25 @@ describe('content model endpoints', () => {
     });
   });
 
-  describe('study cases and test cases', () => {
+  describe('exercises and test cases', () => {
     let materialId: number;
-    let studyCaseId: number;
-    let draftStudyCaseId: number;
+    let exerciseId: number;
+    let draftExerciseId: number;
     let testCaseId: number;
     let draftTestCaseId: number;
 
     beforeAll(async () => {
-      const concept = await createConceptFixture({ prefix, label: 'assessment-parent', order: nextOrder() });
-      const material = await createMaterialFixture({ prefix, conceptId: concept.id, label: 'assessment-material' });
+      const concept = await createModuleFixture({ prefix, label: 'assessment-parent', order: nextOrder() });
+      const material = await createMaterialFixture({ prefix, moduleId: concept.id, label: 'assessment-material' });
       materialId = material.id;
     });
 
-    it('creates study cases with syntax rules and metadata', async () => {
-      const published = await api.post('/api/study-cases').set(authHeader(adminToken)).send({
+    it('creates exercises with syntax rules and metadata', async () => {
+      const published = await api.post('/api/exercises').set(authHeader(adminToken)).send({
         materialId,
-        slug: `${prefix}-study-case`,
-        title: `${prefix} Study Case`,
-        description: 'Study case description',
+        slug: `${prefix}-exercise`,
+        title: `${prefix} Exercise`,
+        description: 'Exercise description',
         hint: 'Use an if statement.',
         order: 1,
         starterCode: 'if (age >= 18) { return true; } return false;',
@@ -334,11 +334,11 @@ describe('content model endpoints', () => {
         functionName: 'isAdult',
         isPublished: true,
       });
-      const draft = await api.post('/api/study-cases').set(authHeader(adminToken)).send({
+      const draft = await api.post('/api/exercises').set(authHeader(adminToken)).send({
         materialId,
-        slug: `${prefix}-study-case-draft`,
-        title: `${prefix} Draft Study Case`,
-        description: 'Draft study case description',
+        slug: `${prefix}-exercise-draft`,
+        title: `${prefix} Draft Exercise`,
+        description: 'Draft exercise description',
         order: 2,
         starterCode: 'return age >= 18;',
         syntaxRules: { required: [], forbidden: [] },
@@ -351,36 +351,36 @@ describe('content model endpoints', () => {
       expect(published.body.data.syntaxRules.required).toContain('IfStatement');
       expect(published.body.data.parameterNames).toEqual(['age']);
       expect(draft.status).toBe(201);
-      studyCaseId = published.body.data.id;
-      draftStudyCaseId = draft.body.data.id;
+      exerciseId = published.body.data.id;
+      draftExerciseId = draft.body.data.id;
     });
 
-    it('enforces study case authorization and validation', async () => {
-      const guest = await api.post('/api/study-cases').send({});
-      const student = await api.post('/api/study-cases').set(authHeader(studentToken)).send({});
-      const missingMaterial = await api.post('/api/study-cases').set(authHeader(adminToken)).send({
+    it('enforces exercise authorization and validation', async () => {
+      const guest = await api.post('/api/exercises').send({});
+      const student = await api.post('/api/exercises').set(authHeader(studentToken)).send({});
+      const missingMaterial = await api.post('/api/exercises').set(authHeader(adminToken)).send({
         materialId: 99999999,
-        slug: `${prefix}-missing-material-study-case`,
+        slug: `${prefix}-missing-material-exercise`,
         title: 'Missing Material',
-        description: 'Missing material study case',
+        description: 'Missing material exercise',
         order: 3,
         starterCode: 'return true;',
         syntaxRules: { required: [], forbidden: [] },
       });
-      const duplicateSlug = await api.post('/api/study-cases').set(authHeader(adminToken)).send({
+      const duplicateSlug = await api.post('/api/exercises').set(authHeader(adminToken)).send({
         materialId,
-        slug: `${prefix}-study-case`,
+        slug: `${prefix}-exercise`,
         title: 'Duplicate Slug',
-        description: 'Duplicate slug study case',
+        description: 'Duplicate slug exercise',
         order: 3,
         starterCode: 'return true;',
         syntaxRules: { required: [], forbidden: [] },
       });
-      const duplicateOrder = await api.post('/api/study-cases').set(authHeader(adminToken)).send({
+      const duplicateOrder = await api.post('/api/exercises').set(authHeader(adminToken)).send({
         materialId,
-        slug: `${prefix}-study-case-duplicate-order`,
+        slug: `${prefix}-exercise-duplicate-order`,
         title: 'Duplicate Order',
-        description: 'Duplicate order study case',
+        description: 'Duplicate order exercise',
         order: 1,
         starterCode: 'return true;',
         syntaxRules: { required: [], forbidden: [] },
@@ -393,34 +393,34 @@ describe('content model endpoints', () => {
       expect(duplicateOrder.status).toBe(400);
     });
 
-    it('lists, sorts, filters, and protects unpublished study cases', async () => {
-      const sortWithoutMaterial = await api.get('/api/study-cases?sortBy=order');
-      const sortWithMaterial = await api.get(`/api/study-cases?materialId=${materialId}&sortBy=order&orderBy=asc`);
-      const guestList = await api.get(`/api/study-cases?search=${prefix}`);
-      const adminDrafts = await api.get(`/api/study-cases?isPublished=false&search=${prefix}`).set(authHeader(adminToken));
-      const guestPublished = await api.get(`/api/study-cases/${prefix}-study-case`);
-      const guestDraft = await api.get(`/api/study-cases/${prefix}-study-case-draft`);
-      const adminDraft = await api.get(`/api/study-cases/${prefix}-study-case-draft`).set(authHeader(adminToken));
+    it('lists, sorts, filters, and protects unpublished exercises', async () => {
+      const sortWithoutMaterial = await api.get('/api/exercises?sortBy=order');
+      const sortWithMaterial = await api.get(`/api/exercises?materialId=${materialId}&sortBy=order&orderBy=asc`);
+      const guestList = await api.get(`/api/exercises?search=${prefix}`);
+      const adminDrafts = await api.get(`/api/exercises?isPublished=false&search=${prefix}`).set(authHeader(adminToken));
+      const guestPublished = await api.get(`/api/exercises/${prefix}-exercise`);
+      const guestDraft = await api.get(`/api/exercises/${prefix}-exercise-draft`);
+      const adminDraft = await api.get(`/api/exercises/${prefix}-exercise-draft`).set(authHeader(adminToken));
 
       expect(sortWithoutMaterial.status).toBe(400);
       expect(sortWithMaterial.status).toBe(200);
-      expect(guestList.body.data.every((studyCase: any) => studyCase.isPublished)).toBe(true);
-      expect(adminDrafts.body.data.some((studyCase: any) => studyCase.id === draftStudyCaseId)).toBe(true);
+      expect(guestList.body.data.every((exercise: any) => exercise.isPublished)).toBe(true);
+      expect(adminDrafts.body.data.some((exercise: any) => exercise.id === draftExerciseId)).toBe(true);
       expect(guestPublished.status).toBe(200);
       expect(guestDraft.status).toBe(404);
       expect(adminDraft.status).toBe(200);
     });
 
-    it('updates and deletes study cases as admin', async () => {
-      const update = await api.patch(`/api/study-cases/${studyCaseId}`).set(authHeader(adminToken)).send({
-        title: `${prefix} Updated Study Case`,
+    it('updates and deletes exercises as admin', async () => {
+      const update = await api.patch(`/api/exercises/${exerciseId}`).set(authHeader(adminToken)).send({
+        title: `${prefix} Updated Exercise`,
         hint: 'Updated hint',
         syntaxRules: { required: ['IfStatement'], forbidden: ['ForStatement'] },
       });
-      const duplicateOrder = await api.patch(`/api/study-cases/${studyCaseId}`).set(authHeader(adminToken)).send({ order: 2 });
-      const forbidden = await api.patch(`/api/study-cases/${studyCaseId}`).set(authHeader(studentToken)).send({ title: 'Forbidden' });
-      const missing = await api.patch('/api/study-cases/99999999').set(authHeader(adminToken)).send({ title: 'Missing' });
-      const deleteDraft = await api.delete(`/api/study-cases/${draftStudyCaseId}`).set(authHeader(adminToken));
+      const duplicateOrder = await api.patch(`/api/exercises/${exerciseId}`).set(authHeader(adminToken)).send({ order: 2 });
+      const forbidden = await api.patch(`/api/exercises/${exerciseId}`).set(authHeader(studentToken)).send({ title: 'Forbidden' });
+      const missing = await api.patch('/api/exercises/99999999').set(authHeader(adminToken)).send({ title: 'Missing' });
+      const deleteDraft = await api.delete(`/api/exercises/${draftExerciseId}`).set(authHeader(adminToken));
 
       expect(update.status).toBe(200);
       expect(update.body.data.syntaxRules.forbidden).toContain('ForStatement');
@@ -432,7 +432,7 @@ describe('content model endpoints', () => {
 
     it('creates test cases with input and expected JSON', async () => {
       const published = await api.post('/api/test-cases').set(authHeader(adminToken)).send({
-        studyCaseId,
+        exerciseId,
         description: 'should return true for age 18',
         input: { age: 18 },
         expected: { result: true },
@@ -440,7 +440,7 @@ describe('content model endpoints', () => {
         isPublished: true,
       });
       const draft = await api.post('/api/test-cases').set(authHeader(adminToken)).send({
-        studyCaseId,
+        exerciseId,
         description: 'should return false for age 17',
         input: { age: 17 },
         expected: { result: false },
@@ -459,22 +459,22 @@ describe('content model endpoints', () => {
     it('enforces test case authorization and validation', async () => {
       const guest = await api.post('/api/test-cases').send({});
       const student = await api.post('/api/test-cases').set(authHeader(studentToken)).send({});
-      const missingStudyCase = await api.post('/api/test-cases').set(authHeader(adminToken)).send({
-        studyCaseId: 99999999,
-        description: 'missing study case',
+      const missingExercise = await api.post('/api/test-cases').set(authHeader(adminToken)).send({
+        exerciseId: 99999999,
+        description: 'missing exercise',
         input: { age: 18 },
         expected: { result: true },
         order: 3,
       });
       const duplicateOrder = await api.post('/api/test-cases').set(authHeader(adminToken)).send({
-        studyCaseId,
+        exerciseId,
         description: 'duplicate order',
         input: { age: 20 },
         expected: { result: true },
         order: 1,
       });
       const invalidJsonShape = await api.post('/api/test-cases').set(authHeader(adminToken)).send({
-        studyCaseId,
+        exerciseId,
         description: 'invalid input shape',
         input: 'age=18',
         expected: { result: true },
@@ -483,22 +483,22 @@ describe('content model endpoints', () => {
 
       expect(guest.status).toBe(401);
       expect(student.status).toBe(403);
-      expect(missingStudyCase.status).toBe(404);
+      expect(missingExercise.status).toBe(404);
       expect(duplicateOrder.status).toBe(400);
       expect(invalidJsonShape.status).toBe(400);
     });
 
     it('lists, sorts, filters, and protects unpublished test cases', async () => {
-      const sortWithoutStudyCase = await api.get('/api/test-cases?sortBy=order');
-      const sortWithStudyCase = await api.get(`/api/test-cases?studyCaseId=${studyCaseId}&sortBy=order&orderBy=asc`);
-      const guestList = await api.get(`/api/test-cases?studyCaseId=${studyCaseId}`);
-      const adminDrafts = await api.get(`/api/test-cases?studyCaseId=${studyCaseId}&isPublished=false`).set(authHeader(adminToken));
+      const sortWithoutExercise = await api.get('/api/test-cases?sortBy=order');
+      const sortWithExercise = await api.get(`/api/test-cases?exerciseId=${exerciseId}&sortBy=order&orderBy=asc`);
+      const guestList = await api.get(`/api/test-cases?exerciseId=${exerciseId}`);
+      const adminDrafts = await api.get(`/api/test-cases?exerciseId=${exerciseId}&isPublished=false`).set(authHeader(adminToken));
       const guestPublished = await api.get(`/api/test-cases/${testCaseId}`);
       const guestDraft = await api.get(`/api/test-cases/${draftTestCaseId}`);
       const adminDraft = await api.get(`/api/test-cases/${draftTestCaseId}`).set(authHeader(adminToken));
 
-      expect(sortWithoutStudyCase.status).toBe(400);
-      expect(sortWithStudyCase.status).toBe(200);
+      expect(sortWithoutExercise.status).toBe(400);
+      expect(sortWithExercise.status).toBe(200);
       expect(guestList.body.data.every((testCase: any) => testCase.isPublished)).toBe(true);
       expect(adminDrafts.body.data.some((testCase: any) => testCase.id === draftTestCaseId)).toBe(true);
       expect(guestPublished.status).toBe(200);

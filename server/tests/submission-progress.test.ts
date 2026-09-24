@@ -20,10 +20,10 @@ import { ProgressService } from '../src/services/progress.service';
 import {
   authHeader,
   cleanupTestData,
-  createConceptFixture,
+  createModuleFixture,
   createLearningPathFixture,
   createMaterialFixture,
-  createStudyCaseFixture,
+  createExerciseFixture,
   createSubmissionFixture,
   createTestCaseFixture,
   createTestPrefix,
@@ -42,8 +42,8 @@ describe('submission, AGS API, and progress endpoints', () => {
   let otherStudentToken: string;
   let studentId: number;
   let otherStudentId: number;
-  let studyCaseId: number;
-  let unpublishedStudyCaseId: number;
+  let exerciseId: number;
+  let unpublishedExerciseId: number;
   let testCaseId: number;
   let otherStudentSubmissionId: number;
 
@@ -54,10 +54,10 @@ describe('submission, AGS API, and progress endpoints', () => {
     const otherStudent = await createUserFixture({ prefix, label: 'other-student', role: Role.STUDENT });
     const learningPath = await createLearningPathFixture(prefix);
 
-    const draftStudyCase = await createStudyCaseFixture({
+    const draftExercise = await createExerciseFixture({
       prefix,
       materialId: learningPath.material.id,
-      label: 'draft-study-case',
+      label: 'draft-exercise',
       order: 2,
       isPublished: false,
     });
@@ -67,13 +67,13 @@ describe('submission, AGS API, and progress endpoints', () => {
     otherStudentToken = otherStudent.token;
     studentId = student.user.id;
     otherStudentId = otherStudent.user.id;
-    studyCaseId = learningPath.studyCase.id;
-    unpublishedStudyCaseId = draftStudyCase.id;
+    exerciseId = learningPath.exercise.id;
+    unpublishedExerciseId = draftExercise.id;
     testCaseId = learningPath.testCases[0].id;
 
     const otherSubmission = await createSubmissionFixture({
       userId: otherStudentId,
-      studyCaseId,
+      exerciseId,
       status: SubmissionStatus.PASSED,
     });
     await createTestResultFixture({
@@ -90,21 +90,21 @@ describe('submission, AGS API, and progress endpoints', () => {
   describe('POST /api/submissions/run', () => {
     it('requires authentication and validates payload', async () => {
       const unauthorized = await api.post('/api/submissions/run').send({
-        studyCaseId,
+        exerciseId,
         code: 'return age >= 18;',
       });
       const invalidPayload = await api
         .post('/api/submissions/run')
         .set(authHeader(studentToken))
-        .send({ studyCaseId });
-      const missingStudyCase = await api
+        .send({ exerciseId });
+      const missingExercise = await api
         .post('/api/submissions/run')
         .set(authHeader(studentToken))
-        .send({ studyCaseId: 99999999, code: 'return true;' });
+        .send({ exerciseId: 99999999, code: 'return true;' });
 
       expect(unauthorized.status).toBe(401);
       expect(invalidPayload.status).toBe(400);
-      expect(missingStudyCase.status).toBe(404);
+      expect(missingExercise.status).toBe(404);
     });
 
     it('returns PASSED with expected and received output for correct code', async () => {
@@ -112,7 +112,7 @@ describe('submission, AGS API, and progress endpoints', () => {
         .post('/api/submissions/run')
         .set(authHeader(studentToken))
         .send({
-          studyCaseId,
+          exerciseId,
           code: 'if (age >= 18) { return true; } return false;',
         });
 
@@ -131,7 +131,7 @@ describe('submission, AGS API, and progress endpoints', () => {
         .post('/api/submissions/run')
         .set(authHeader(studentToken))
         .send({
-          studyCaseId,
+          exerciseId,
           code: 'if (age > 18) { return true; } return false;',
         });
 
@@ -150,26 +150,26 @@ describe('submission, AGS API, and progress endpoints', () => {
         .post('/api/submissions/run')
         .set(authHeader(studentToken))
         .send({
-          studyCaseId,
+          exerciseId,
           code: 'if (age >= 18) { return true; ',
         });
 
-      const ruleViolationConcept = await createConceptFixture({ prefix, label: 'rule-parent', order: nextOrder() });
-      const ruleViolationMaterial = await createMaterialFixture({ prefix, conceptId: ruleViolationConcept.id, label: 'rule-material' });
-      const ruleViolationStudyCase = await createStudyCaseFixture({
+      const ruleViolationModule = await createModuleFixture({ prefix, label: 'rule-parent', order: nextOrder() });
+      const ruleViolationMaterial = await createMaterialFixture({ prefix, moduleId: ruleViolationModule.id, label: 'rule-material' });
+      const ruleViolationExercise = await createExerciseFixture({
         prefix,
         materialId: ruleViolationMaterial.id,
-        label: 'rule-study-case',
+        label: 'rule-exercise',
         order: 1,
         syntaxRules: { required: ['IfStatement'], forbidden: [] },
       });
-      await createTestCaseFixture({ studyCaseId: ruleViolationStudyCase.id });
+      await createTestCaseFixture({ exerciseId: ruleViolationExercise.id });
 
       const ruleViolation = await api
         .post('/api/submissions/run')
         .set(authHeader(studentToken))
         .send({
-          studyCaseId: ruleViolationStudyCase.id,
+          exerciseId: ruleViolationExercise.id,
           code: 'return age >= 18;',
         });
 
@@ -180,15 +180,15 @@ describe('submission, AGS API, and progress endpoints', () => {
       expect(ruleViolation.body.data.testResults[0].failureMessage).toContain('You must use');
     });
 
-    it('does not allow students to run unpublished study cases', async () => {
+    it('does not allow students to run unpublished exercises', async () => {
       const studentRun = await api
         .post('/api/submissions/run')
         .set(authHeader(studentToken))
-        .send({ studyCaseId: unpublishedStudyCaseId, code: 'return true;' });
+        .send({ exerciseId: unpublishedExerciseId, code: 'return true;' });
       const adminRun = await api
         .post('/api/submissions/run')
         .set(authHeader(adminToken))
-        .send({ studyCaseId: unpublishedStudyCaseId, code: 'return age >= 18;' });
+        .send({ exerciseId: unpublishedExerciseId, code: 'return age >= 18;' });
 
       expect(studentRun.status).toBe(404);
       expect(adminRun.status).toBe(200);
@@ -200,16 +200,16 @@ describe('submission, AGS API, and progress endpoints', () => {
       const res = await api
         .post('/api/submissions')
         .set(authHeader(studentToken))
-        .send({ studyCaseId, code: 'if (age >= 18) { return true; } return false;' });
+        .send({ exerciseId, code: 'if (age >= 18) { return true; } return false;' });
       const admin = await api
         .post('/api/submissions')
         .set(authHeader(adminToken))
-        .send({ studyCaseId, code: 'return true;' });
-      const guest = await api.post('/api/submissions').send({ studyCaseId, code: 'return true;' });
+        .send({ exerciseId, code: 'return true;' });
+      const guest = await api.post('/api/submissions').send({ exerciseId, code: 'return true;' });
       const invalid = await api
         .post('/api/submissions')
         .set(authHeader(studentToken))
-        .send({ studyCaseId });
+        .send({ exerciseId });
 
       expect(res.status).toBe(201);
       expect(res.body.data.status).toBe('PENDING');
@@ -219,24 +219,24 @@ describe('submission, AGS API, and progress endpoints', () => {
       expect(invalid.status).toBe(400);
     });
 
-    it('does not allow students to submit unpublished study cases', async () => {
+    it('does not allow students to submit unpublished exercises', async () => {
       const res = await api
         .post('/api/submissions')
         .set(authHeader(studentToken))
-        .send({ studyCaseId: unpublishedStudyCaseId, code: 'return true;' });
+        .send({ exerciseId: unpublishedExerciseId, code: 'return true;' });
 
       expect(res.status).toBe(404);
     });
   });
 
   describe('GET /api/submissions and /api/submissions/:id', () => {
-    it('shows only student own submissions, while admin can filter by userId/status/studyCaseId', async () => {
-      await createSubmissionFixture({ userId: studentId, studyCaseId, status: SubmissionStatus.FAILED, code: 'return false;' });
+    it('shows only student own submissions, while admin can filter by userId/status/exerciseId', async () => {
+      await createSubmissionFixture({ userId: studentId, exerciseId, status: SubmissionStatus.FAILED, code: 'return false;' });
 
       const studentList = await api.get('/api/submissions').set(authHeader(studentToken));
       const adminFilteredByUser = await api.get(`/api/submissions?userId=${otherStudentId}`).set(authHeader(adminToken));
       const adminFilteredByStatus = await api.get('/api/submissions?status=PASSED').set(authHeader(adminToken));
-      const adminFilteredByStudyCase = await api.get(`/api/submissions?studyCaseId=${studyCaseId}`).set(authHeader(adminToken));
+      const adminFilteredByExercise = await api.get(`/api/submissions?exerciseId=${exerciseId}`).set(authHeader(adminToken));
       const invalidStatus = await api.get('/api/submissions?status=DONE').set(authHeader(adminToken));
       const unauthorized = await api.get('/api/submissions');
 
@@ -245,13 +245,13 @@ describe('submission, AGS API, and progress endpoints', () => {
       expect(adminFilteredByUser.status).toBe(200);
       expect(adminFilteredByUser.body.data.every((submission: any) => submission.userId === otherStudentId)).toBe(true);
       expect(adminFilteredByStatus.status).toBe(200);
-      expect(adminFilteredByStudyCase.status).toBe(200);
+      expect(adminFilteredByExercise.status).toBe(200);
       expect(invalidStatus.status).toBe(400);
       expect(unauthorized.status).toBe(401);
     });
 
     it('protects submission detail by owner and includes test results', async () => {
-      const ownerSubmission = await createSubmissionFixture({ userId: studentId, studyCaseId, status: SubmissionStatus.PASSED });
+      const ownerSubmission = await createSubmissionFixture({ userId: studentId, exerciseId, status: SubmissionStatus.PASSED });
       await createTestResultFixture({ submissionId: ownerSubmission.id, testCaseId });
 
       const owner = await api.get(`/api/submissions/${ownerSubmission.id}`).set(authHeader(studentToken));
@@ -271,89 +271,89 @@ describe('submission, AGS API, and progress endpoints', () => {
 
   describe('progress endpoints and progression logic', () => {
     it('requires authentication for progress endpoints', async () => {
-      const concepts = await api.get('/api/progress/concepts');
+      const modules = await api.get('/api/progress/modules');
       const materials = await api.get('/api/progress/materials');
-      const studyCases = await api.get('/api/progress/study-cases');
+      const exercises = await api.get('/api/progress/exercises');
 
-      expect(concepts.status).toBe(401);
+      expect(modules.status).toBe(401);
       expect(materials.status).toBe(401);
-      expect(studyCases.status).toBe(401);
+      expect(exercises.status).toBe(401);
     });
 
-    it('returns existing progress records and supports material/study case filters', async () => {
-      await prisma.studyCaseProgress.upsert({
-        where: { userId_studyCaseId: { userId: studentId, studyCaseId } },
+    it('returns existing progress records and supports material/exercise filters', async () => {
+      await prisma.exerciseProgress.upsert({
+        where: { userId_exerciseId: { userId: studentId, exerciseId } },
         update: { isCompleted: true, completedAt: new Date() },
-        create: { userId: studentId, studyCaseId, isCompleted: true, completedAt: new Date() },
+        create: { userId: studentId, exerciseId, isCompleted: true, completedAt: new Date() },
       });
 
-      const material = await prisma.material.findFirstOrThrow({ where: { studyCases: { some: { id: studyCaseId } } } });
-      const concept = await prisma.concept.findFirstOrThrow({ where: { materials: { some: { id: material.id } } } });
+      const material = await prisma.material.findFirstOrThrow({ where: { exercises: { some: { id: exerciseId } } } });
+      const module = await prisma.module.findFirstOrThrow({ where: { materials: { some: { id: material.id } } } });
 
       await prisma.materialProgress.upsert({
         where: { userId_materialId: { userId: studentId, materialId: material.id } },
         update: {},
         create: { userId: studentId, materialId: material.id },
       });
-      await prisma.conceptProgress.upsert({
-        where: { userId_conceptId: { userId: studentId, conceptId: concept.id } },
+      await prisma.moduleProgress.upsert({
+        where: { userId_moduleId: { userId: studentId, moduleId: module.id } },
         update: {},
-        create: { userId: studentId, conceptId: concept.id },
+        create: { userId: studentId, moduleId: module.id },
       });
 
-      const concepts = await api.get('/api/progress/concepts').set(authHeader(studentToken));
-      const materials = await api.get(`/api/progress/materials?conceptId=${concept.id}`).set(authHeader(studentToken));
-      const studyCases = await api.get(`/api/progress/study-cases?materialId=${material.id}`).set(authHeader(studentToken));
+      const modules = await api.get('/api/progress/modules').set(authHeader(studentToken));
+      const materials = await api.get(`/api/progress/materials?moduleId=${module.id}`).set(authHeader(studentToken));
+      const exercises = await api.get(`/api/progress/exercises?materialId=${material.id}`).set(authHeader(studentToken));
 
-      expect(concepts.status).toBe(200);
+      expect(modules.status).toBe(200);
       expect(materials.status).toBe(200);
-      expect(studyCases.status).toBe(200);
-      expect(studyCases.body.data.some((progress: any) => progress.studyCaseId === studyCaseId)).toBe(true);
+      expect(exercises.status).toBe(200);
+      expect(exercises.body.data.some((progress: any) => progress.exerciseId === exerciseId)).toBe(true);
     });
 
-    it('marks study case, material, and concept progress through the learning path', async () => {
-      const concept = await createConceptFixture({ prefix, label: 'progress-concept', order: nextOrder() });
-      const materialOne = await createMaterialFixture({ prefix, conceptId: concept.id, label: 'progress-material-one', order: 1 });
-      const materialTwo = await createMaterialFixture({ prefix, conceptId: concept.id, label: 'progress-material-two', order: 2 });
-      const firstStudyCase = await createStudyCaseFixture({ prefix, materialId: materialOne.id, label: 'progress-study-one', order: 1 });
-      const secondStudyCase = await createStudyCaseFixture({ prefix, materialId: materialOne.id, label: 'progress-study-two', order: 2 });
-      const thirdStudyCase = await createStudyCaseFixture({ prefix, materialId: materialTwo.id, label: 'progress-study-three', order: 1 });
+    it('marks exercise, material, and module progress through the learning path', async () => {
+      const module = await createModuleFixture({ prefix, label: 'progress-module', order: nextOrder() });
+      const materialOne = await createMaterialFixture({ prefix, moduleId: module.id, label: 'progress-material-one', order: 1 });
+      const materialTwo = await createMaterialFixture({ prefix, moduleId: module.id, label: 'progress-material-two', order: 2 });
+      const firstExercise = await createExerciseFixture({ prefix, materialId: materialOne.id, label: 'progress-exercise-one', order: 1 });
+      const secondExercise = await createExerciseFixture({ prefix, materialId: materialOne.id, label: 'progress-exercise-two', order: 2 });
+      const thirdExercise = await createExerciseFixture({ prefix, materialId: materialTwo.id, label: 'progress-exercise-three', order: 1 });
 
-      await ProgressService.updateOnSubmissionPassed(studentId, firstStudyCase.id);
-      const firstStudyProgress = await prisma.studyCaseProgress.findUnique({
-        where: { userId_studyCaseId: { userId: studentId, studyCaseId: firstStudyCase.id } },
+      await ProgressService.updateOnSubmissionPassed(studentId, firstExercise.id);
+      const firstExerciseProgress = await prisma.exerciseProgress.findUnique({
+        where: { userId_exerciseId: { userId: studentId, exerciseId: firstExercise.id } },
       });
-      const nextStudyProgress = await prisma.studyCaseProgress.findUnique({
-        where: { userId_studyCaseId: { userId: studentId, studyCaseId: secondStudyCase.id } },
+      const nextExerciseProgress = await prisma.exerciseProgress.findUnique({
+        where: { userId_exerciseId: { userId: studentId, exerciseId: secondExercise.id } },
       });
       const materialAfterFirst = await prisma.materialProgress.findUnique({
         where: { userId_materialId: { userId: studentId, materialId: materialOne.id } },
       });
 
-      await ProgressService.updateOnSubmissionPassed(studentId, secondStudyCase.id);
+      await ProgressService.updateOnSubmissionPassed(studentId, secondExercise.id);
       const materialAfterSecond = await prisma.materialProgress.findUnique({
         where: { userId_materialId: { userId: studentId, materialId: materialOne.id } },
       });
       const nextMaterialProgress = await prisma.materialProgress.findUnique({
         where: { userId_materialId: { userId: studentId, materialId: materialTwo.id } },
       });
-      const firstStudyCaseNextMaterial = await prisma.studyCaseProgress.findUnique({
-        where: { userId_studyCaseId: { userId: studentId, studyCaseId: thirdStudyCase.id } },
+      const firstExerciseNextMaterial = await prisma.exerciseProgress.findUnique({
+        where: { userId_exerciseId: { userId: studentId, exerciseId: thirdExercise.id } },
       });
 
-      await ProgressService.updateOnSubmissionPassed(studentId, thirdStudyCase.id);
-      const conceptProgress = await prisma.conceptProgress.findUnique({
-        where: { userId_conceptId: { userId: studentId, conceptId: concept.id } },
+      await ProgressService.updateOnSubmissionPassed(studentId, thirdExercise.id);
+      const moduleProgress = await prisma.moduleProgress.findUnique({
+        where: { userId_moduleId: { userId: studentId, moduleId: module.id } },
       });
 
-      expect(firstStudyProgress?.isCompleted).toBe(true);
-      expect(nextStudyProgress).toBeDefined();
-      expect(nextStudyProgress?.isCompleted).toBe(false);
+      expect(firstExerciseProgress?.isCompleted).toBe(true);
+      expect(nextExerciseProgress).toBeDefined();
+      expect(nextExerciseProgress?.isCompleted).toBe(false);
       expect(materialAfterFirst?.isCompleted).not.toBe(true);
       expect(materialAfterSecond?.isCompleted).toBe(true);
       expect(nextMaterialProgress).toBeDefined();
-      expect(firstStudyCaseNextMaterial).toBeDefined();
-      expect(conceptProgress?.isCompleted).toBe(true);
+      expect(firstExerciseNextMaterial).toBeDefined();
+      expect(moduleProgress?.isCompleted).toBe(true);
     });
   });
 });
