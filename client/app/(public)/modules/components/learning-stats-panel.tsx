@@ -1,4 +1,3 @@
-// components/shared/public-learning-stats-panel.tsx
 'use client';
 
 import Link from 'next/link';
@@ -10,8 +9,8 @@ import { useAuthStore } from '@/stores/use-auth-store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { PublicLearningStreakCard } from '@/components/shared/public-learning-streak-card';
-import { PublicOverallLearningProgressCard } from '@/components/shared/public-overall-learning-progress-card';
+import { LearningStreakCard } from './learning-streak-card';
+import { OverallLearningProgressCard } from './overall-learning-progress-card';
 
 function GuestStatsCta() {
   return (
@@ -55,7 +54,7 @@ function GuestStatsCta() {
   );
 }
 
-export function PublicLearningStatsPanel() {
+export function LearningStatsPanel() {
   const { user, hasHydrated } = useAuthStore();
 
   // Wait for the auth store, otherwise logged-in users would flash the CTA
@@ -68,8 +67,8 @@ export function PublicLearningStatsPanel() {
 
   return (
     <>
-      <PublicOverallLearningProgressCard />
-      <PublicLearningStreakCard />
+      <LearningStreakCard />
+      <OverallLearningProgressCard />
     </>
   );
 }

@@ -35,7 +35,7 @@ function ProgressRing({ value }: { value: number }) {
       <RadialBarChart
         data={chartData}
         startAngle={90}
-        endAngle={-270}
+        endAngle={-360}
         innerRadius={50}
         outerRadius={60}
       >
@@ -100,14 +100,15 @@ function StatRow({
   count?: { completed: number; total: number };
 }) {
   return (
-    <div className='flex items-center justify-between'>
+    <div className='flex items-center justify-between text-xs font-medium'>
       <span>{label}</span>
+
       <span>{count ? `${count.completed} / ${count.total}` : '–'}</span>
     </div>
   );
 }
 
-export function PublicOverallLearningProgressCard() {
+export function OverallLearningProgressCard() {
   const { token } = useAuthStore();
 
   const [overview, setOverview] = useState<OverviewProgress | null>(null);

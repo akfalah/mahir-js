@@ -47,7 +47,7 @@ function getMessage({ currentStreak, today, activeDates }: LearningStreak) {
   return 'Submit today to keep it going';
 }
 
-export function PublicLearningStreakCard() {
+export function LearningStreakCard() {
   const { token } = useAuthStore();
 
   const [streak, setStreak] = useState<LearningStreak | null>(null);

@@ -1,47 +1,56 @@
-import { fetchModules } from '@/lib/fetch';
+import { notFound } from 'next/navigation';
 
 import { Layers3 } from 'lucide-react';
 
-import { ModuleTimeline } from './components/module-timeline';
+import { fetchModuleBySlug } from '@/lib/fetch';
 
+import { Badge } from '@/components/ui/badge';
+import { PublicBreadcrumb } from '@/components/shared/public-breadcrumb';
 import { PublicHeader } from '@/components/shared/public-header';
+import { MaterialTimeline } from './components/material-timeline';
+import { ModuleStatsCard } from './components/module-stats-card';
 
-import { LearningStatsPanel } from './components/learning-stats-panel';
-
-const pageHeader = {
-  title: 'Learning Curriculum',
-  paragraph:
-    'Start with the first module and continue step by step. Each module contains short materials and practice challenges.',
+type Props = {
+  params: Promise<{ moduleSlug: string }>;
 };
 
-export default async function ModulesPage() {
-  const { data: modules } = await fetchModules(undefined, {
-    sortBy: 'order',
-    orderBy: 'asc',
-  });
+export default async function ModuleDetailPage({ params }: Props) {
+  const { moduleSlug } = await params;
+
+  const { data: module } = await fetchModuleBySlug(moduleSlug);
+
+  if (!module) {
+    notFound();
+  }
 
   return (
     <>
+      <PublicBreadcrumb />
+
       <PublicHeader
-        title={pageHeader.title}
-        paragraph={pageHeader.paragraph}
+        title={module.title}
+        paragraph={module.description}
+        badges={<Badge variant='tertiary'>Module {module.order}</Badge>}
       />
 
       <div className='grid grid-cols-1 md:grid-cols-5 xl:grid-cols-6 md:grid-rows-1 gap-6 xl:gap-8'>
         <div className='order-2 md:order-1 md:col-span-3 xl:col-span-4 flex flex-col gap-y-6 xl:gap-y-8'>
           <div className='flex items-end justify-between'>
             <h2 className='text-xl lg:text-2xl font-semibold'>
-              Learning Modules
+              Learning Materials
             </h2>
 
             <span className='text-xs font-medium text-muted-foreground'>
-              {modules.length} Modules Available
+              {module.materials.length} Materials Available
             </span>
           </div>
 
           <div>
-            {modules.length > 0 ? (
-              <ModuleTimeline modules={modules} />
+            {module.materials.length > 0 ? (
+              <MaterialTimeline
+                materials={module.materials}
+                moduleSlug={module.slug}
+              />
             ) : (
               <section className='rounded-2xl border border-dashed bg-card p-10 text-center'>
                 <div className='mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground'>
@@ -49,10 +58,10 @@ export default async function ModulesPage() {
                 </div>
 
                 <div className='flex flex-col gap-y-2 pt-4'>
-                  <h3 className='font-bold'>No concepts yet</h3>
+                  <h3 className='font-bold'>No materials yet</h3>
 
                   <p className='text-xs lg:text-sm text-muted-foreground'>
-                    Published concepts will appear here.
+                    Published materials will appear here.
                   </p>
                 </div>
               </section>
@@ -61,7 +70,7 @@ export default async function ModulesPage() {
         </div>
 
         <div className='order-1 md:order-2 md:col-span-2'>
-          <LearningStatsPanel />
+          <ModuleStatsCard materials={module.materials} />
         </div>
       </div>
     </>

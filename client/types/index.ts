@@ -17,7 +17,7 @@ export type User = {
   email: string;
   name: string;
   role: Role;
-  imageUrl?: string;
+  imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -36,32 +36,20 @@ export type PaginationMeta = {
 };
 
 export type ApiResponse<T> = {
+  message: string;
   data: T;
   pagination?: PaginationMeta;
 };
 
 // ===== Shared Relation Types =====
-export type ModuleRelation = {
+// A flat parent reference — what /modules/:slug, /materials/:slug and
+// /exercises/:slug embed on their child rows. No nesting: a Material's
+// `module` ref doesn't itself carry a `materials` list, etc.
+export type EntityRef = {
   id: number;
   slug: string;
   title: string;
-  isPublished: boolean;
-};
-
-export type MaterialRelation = {
-  id: number;
-  slug: string;
-  title: string;
-  isPublished: boolean;
-  module: ModuleRelation;
-};
-
-export type ExerciseRelation = {
-  id: number;
-  slug: string;
-  title: string;
-  isPublished: boolean;
-  material: MaterialRelation;
+  order: number;
 };
 
 // ===== Module =====
@@ -74,9 +62,24 @@ export type Module = {
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
+  // Present on GET /modules/:slug (ModuleDetailResponse). Absent on the
+  // /modules list endpoint.
+  materials?: MaterialSummary[];
 };
 
+export type ModuleDetail = Module & { materials: MaterialSummary[] };
+
 // ===== Material =====
+export type MaterialSummary = {
+  id: number;
+  moduleId: number;
+  slug: string;
+  title: string;
+  description: string;
+  order: number;
+  isPublished?: boolean; // only present for admin requests
+};
+
 export type Material = {
   id: number;
   moduleId: number;
@@ -88,13 +91,32 @@ export type Material = {
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
-  module?: ModuleRelation;
+  // Present on GET /materials/:slug always, and on the /materials list
+  // endpoint for admin requests only.
+  module?: EntityRef;
+  // Present on GET /materials/:slug (MaterialDetailResponse).
+  exercises?: ExerciseSummary[];
+};
+
+export type MaterialDetail = Material & {
+  module: EntityRef;
+  exercises: ExerciseSummary[];
 };
 
 // ===== Exercise =====
 export type SyntaxRules = {
   required?: string[];
   forbidden?: string[];
+};
+
+export type ExerciseSummary = {
+  id: number;
+  materialId: number;
+  slug: string;
+  title: string;
+  description: string;
+  order: number;
+  isPublished?: boolean;
 };
 
 export type Exercise = {
@@ -105,17 +127,32 @@ export type Exercise = {
   description: string;
   hint: string | null;
   order: number;
-  starterCode: string;
+  starterCode: string | null;
   syntaxRules: SyntaxRules;
   parameterNames: string[] | null;
   functionName: string | null;
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
-  material?: MaterialRelation;
+  material?: EntityRef;
+  // Present on GET /exercises/:slug (ExerciseDetailResponse).
+  testCases?: TestCaseSummary[];
+};
+
+export type ExerciseDetailFull = Exercise & {
+  material: EntityRef;
+  testCases: TestCaseSummary[];
 };
 
 // ===== Test Case =====
+export type TestCaseSummary = {
+  id: number;
+  exerciseId: number;
+  description: string;
+  order: number;
+  isPublished?: boolean;
+};
+
 export type TestCase = {
   id: number;
   exerciseId: number;
@@ -126,7 +163,7 @@ export type TestCase = {
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
-  exercise?: ExerciseRelation;
+  exercise?: EntityRef;
 };
 
 // ===== Submission =====
@@ -143,19 +180,6 @@ export type SubmissionUser = {
   email: string;
 };
 
-export type SubmissionExercise = {
-  id: number;
-  title: string;
-  material: {
-    id: number;
-    title: string;
-    module: {
-      id: number;
-      title: string;
-    };
-  };
-};
-
 export type Submission = {
   id: number;
   userId: number;
@@ -164,8 +188,9 @@ export type Submission = {
   status: SubmissionStatus;
   errorMessage: string | null;
   createdAt: string;
+  updatedAt: string;
+  exercise?: EntityRef;
   user?: SubmissionUser;
-  studyCase?: SubmissionExercise;
 };
 
 // ===== Test Result =====
@@ -179,7 +204,7 @@ export type TestResult = {
   testCaseId: number;
   description: string;
   status: TestResultStatus;
-  expected: string;
+  expected: string | null;
   received: string | null;
   failureMessage: string | null;
 };

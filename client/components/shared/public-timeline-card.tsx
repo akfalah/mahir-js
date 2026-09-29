@@ -108,7 +108,9 @@ export function PublicTimelineCard({
 
       <Card
         className={cn(
-          ['h-fit w-full py-6'],
+          [
+            'h-fit w-full py-6 hover:translate-x-1 hover:-translate-y-1 transition-transform',
+          ],
           status === 'locked' ? 'opacity-75' : '',
         )}
       >
