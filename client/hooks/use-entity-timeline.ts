@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
-import { useAuthStore } from '@/stores/use-auth-store';
+import { CardStatus } from '@/types';
 
-import type { PublicTimelineCardStatus } from '@/components/shared/public-timeline-card';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 type EntityTimelineItem = {
   id: number;
@@ -19,7 +19,7 @@ type ProgressByParent = Map<number, ChildProgress>;
 
 export type TimelineEntry<T extends EntityTimelineItem> = {
   item: T;
-  status?: PublicTimelineCardStatus;
+  status?: CardStatus;
   progress?: ChildProgress;
 };
 
@@ -44,7 +44,7 @@ function buildEntries<T extends EntityTimelineItem>(
     };
     const isDone = progress.total > 0 && progress.completed === progress.total;
 
-    const status: PublicTimelineCardStatus = isDone
+    const status: CardStatus = isDone
       ? 'completed'
       : previousDone
         ? 'in-progress'

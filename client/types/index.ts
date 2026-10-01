@@ -256,3 +256,6 @@ export type LearningStreak = {
   today: string; // YYYY-MM-DD, from the BE
   activeDates: string[]; // YYYY-MM-DD
 };
+
+// ===== Card Status =====
+export type CardStatus = 'completed' | 'in-progress' | 'locked'

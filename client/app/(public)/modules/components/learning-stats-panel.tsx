@@ -23,8 +23,8 @@ function GuestStatsCta() {
 
       <CardContent className='px-6 flex flex-col gap-y-6'>
         <div className='flex gap-x-4'>
-          <div className='size-14 shrink-0 flex items-center justify-center bg-orange-200 text-orange-600 rounded-lg'>
-            <Flame className='size-8' />
+          <div className='size-12 lg:size-14 shrink-0 flex items-center justify-center bg-orange-200 text-orange-600 rounded-lg'>
+            <Flame className='size-6 lg:size-8' />
           </div>
 
           <p className='text-xs lg:text-sm text-muted-foreground'>
@@ -33,18 +33,18 @@ function GuestStatsCta() {
           </p>
         </div>
 
-        <div className='flex gap-x-3'>
+        <div className='flex justify-center gap-x-3'>
           <Button
             asChild
             variant={'outline'}
-            className='flex-1'
+            className='w-20'
           >
             <Link href='/sign-in'>Sign In</Link>
           </Button>
 
           <Button
             asChild
-            className='flex-1'
+            className='w-20'
           >
             <Link href='/sign-up'>Sign Up</Link>
           </Button>

@@ -5,14 +5,15 @@ import { useEffect, useState } from 'react';
 
 import { Lock } from 'lucide-react';
 
+import { MaterialSummary } from '@/types';
+
+import { useAuthStore } from '@/stores/use-auth-store';
+
+import { fetchMaterialProgress } from '@/lib/fetch';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-
-import { fetchMaterialProgress } from '@/lib/fetch';
-import { useAuthStore } from '@/stores/use-auth-store';
-
-import { MaterialSummary } from '@/types';
 
 type Props = {
   materials: MaterialSummary[];
@@ -81,15 +82,17 @@ function GuestStatsCta({ total }: { total: number }) {
           Sign in to track your progress through this module
         </p>
 
-        <div className='flex gap-x-2'>
+        <div className='flex gap-x-3'>
           <Button
             asChild
             variant='outline'
+            className='w-20'
           >
             <Link href='/sign-in'>Sign In</Link>
           </Button>
 
           <Button
+            className='w-20'
             asChild
           >
             <Link href='/sign-up'>Sign Up</Link>

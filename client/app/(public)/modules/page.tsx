@@ -2,10 +2,9 @@ import { fetchModules } from '@/lib/fetch';
 
 import { Layers3 } from 'lucide-react';
 
-import { ModuleTimeline } from './components/module-timeline';
-
 import { PublicHeader } from '@/components/shared/public-header';
 
+import { ModuleTimeline } from './components/module-timeline';
 import { LearningStatsPanel } from './components/learning-stats-panel';
 
 const pageHeader = {
@@ -60,7 +59,7 @@ export default async function ModulesPage() {
           </div>
         </div>
 
-        <div className='order-1 md:order-2 md:col-span-2'>
+        <div className='order-1 md:order-2 md:col-span-2 flex flex-col gap-y-6 lg:gap-y-8'>
           <LearningStatsPanel />
         </div>
       </div>

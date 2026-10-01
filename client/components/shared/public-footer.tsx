@@ -4,10 +4,10 @@ import Link from 'next/link';
 
 import { useAuthStore } from '@/stores/use-auth-store';
 
-import { Skeleton } from '../ui/skeleton';
-import { Separator } from '../ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
-import { PublicLogo } from './public-logo';
+import { PublicLogo } from '@/components/shared/public-logo';
 
 export function PublicFooter() {
   const { user, hasHydrated } = useAuthStore();

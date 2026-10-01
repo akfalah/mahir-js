@@ -12,26 +12,11 @@ import {
   fetchModuleBySlug,
 } from '@/lib/fetch';
 
-// Static segment -> label. `null` hides the segment from the trail.
-const SEGMENT_LABELS: Record<string, string | null> = {
-  modules: 'Curriculum',
-  materials: 'Materials',
-  exercises: 'Exercises',
-};
-
-// A segment right after one of these is a slug, resolved to a real title
-const TITLE_RESOLVERS: Record<string, (slug: string) => Promise<string>> = {
-  modules: async (slug) => (await fetchModuleBySlug(slug)).data.title,
-  materials: async (slug) => (await fetchMaterialBySlug(slug)).data.title,
-  exercises: async (slug) => (await fetchExerciseBySlug(slug)).data.title,
-};
-
-// Lives for the whole browser session, so navigating back doesn't refetch
 const titleCache = new Map<string, string>();
 
 type Crumb = {
   href: string;
-  label: string; // fallback label, used until the real title loads
+  label: string;
   slug?: string;
   resolve?: (slug: string) => Promise<string>;
 };
@@ -45,23 +30,37 @@ function prettify(slug: string) {
 
 function buildCrumbs(pathname: string): Crumb[] {
   const segments = pathname.split('/').filter(Boolean);
-  const crumbs: Crumb[] = [];
 
-  segments.forEach((segment, index) => {
-    const href = '/' + segments.slice(0, index + 1).join('/');
-    const parent = segments[index - 1];
-    const resolve = parent ? TITLE_RESOLVERS[parent] : undefined;
+  if (segments[0] !== 'modules') {
+    // Fallback for routes outside this nested tree — prettify each segment
+    return segments.map((segment, index) => ({
+      href: '/' + segments.slice(0, index + 1).join('/'),
+      label: prettify(segment),
+    }));
+  }
 
-    if (resolve) {
-      crumbs.push({ href, label: prettify(segment), slug: segment, resolve });
-      return;
-    }
+  const crumbs: Crumb[] = [{ href: '/modules', label: 'Curriculum' }];
 
-    const label = SEGMENT_LABELS[segment];
-    if (label === null) return;
+  // segments[0] = 'modules', segments[1] = moduleSlug,
+  // segments[2] = materialSlug (optional), segments[3] = exerciseSlug (optional)
+  const resolvers = [
+    fetchModuleBySlug,
+    fetchMaterialBySlug,
+    fetchExerciseBySlug,
+  ];
 
-    crumbs.push({ href, label: label ?? prettify(segment) });
-  });
+  for (let i = 1; i < segments.length && i <= 3; i++) {
+    const slug = segments[i];
+    const href = '/' + segments.slice(0, i + 1).join('/');
+    const resolve = resolvers[i - 1];
+
+    crumbs.push({
+      href,
+      label: prettify(slug),
+      slug,
+      resolve: (s) => resolve(s).then((res) => res.data.title),
+    });
+  }
 
   return crumbs;
 }
@@ -70,7 +69,6 @@ export function PublicBreadcrumb() {
   const pathname = usePathname();
   const crumbs = useMemo(() => buildCrumbs(pathname), [pathname]);
 
-  // Only used to trigger a re-render when a title arrives; the cache is the source of truth
   const [, setLoadedCount] = useState(0);
 
   useEffect(() => {
@@ -96,7 +94,7 @@ export function PublicBreadcrumb() {
 
   return (
     <nav aria-label='Breadcrumb'>
-      <ol className='flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm text-muted-foreground'>
+      <ol className='flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground'>
         {crumbs.map((crumb, index) => {
           const isLast = index === crumbs.length - 1;
           const label = titleCache.get(crumb.href) ?? crumb.label;

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
 import {
   Label,
   PolarAngleAxis,
@@ -133,15 +132,15 @@ export function OverallLearningProgressCard() {
   return (
     <Card className='py-6 gap-y-6'>
       <CardHeader className='px-6'>
-        <CardTitle className='text-2xl font-semibold'>
+        <CardTitle className='text-xl lg:text-2xl font-semibold'>
           Overall Learning Progress
         </CardTitle>
       </CardHeader>
 
-      <CardContent className='px-6 flex gap-x-4'>
+      <CardContent className='px-6 flex flex-col items-center lg:items-start justify-center lg:flex-row gap-4'>
         <ProgressRing value={overview?.percentage ?? 0} />
 
-        <div className='flex-1 py-3 flex flex-col gap-y-3'>
+        <div className='w-full flex-1 py-3 flex flex-col gap-y-3'>
           <StatRow
             label='Module(s)'
             count={overview?.modules}

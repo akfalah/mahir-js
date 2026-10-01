@@ -1,10 +1,12 @@
 'use client';
 
 import { Exercise, MaterialSummary } from '@/types';
+
+import { useEntityTimeline } from '@/hooks/use-entity-timeline';
+
 import { fetchExerciseProgress, fetchPublishedExercises } from '@/lib/fetch';
 
 import { PublicTimelineCard } from '@/components/shared/public-timeline-card';
-import { useEntityTimeline } from '@/hooks/use-entity-timeline';
 
 type Props = {
   materials: MaterialSummary[];
@@ -28,13 +30,13 @@ export function MaterialTimeline({ materials, moduleSlug }: Props) {
       {entries.map(({ item, status, progress }) => (
         <PublicTimelineCard
           key={item.id}
-          label='material'
+          label={'material'}
           order={item.order}
           title={item.title}
           description={item.description}
           status={status}
           progress={progress}
-          href={`/modules/${moduleSlug}/materials/${item.slug}`}
+          href={`/modules/${moduleSlug}/${item.slug}`}
           continueLabel={
             progress?.completed === 0 ? 'Start Learning' : undefined
           }

@@ -235,7 +235,7 @@ export function PublicNavbar() {
                             className={cn(
                               'block py-2 px-3 hover:bg-secondary text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg transition-all',
                               isActive &&
-                                'bg-secondary font-semibold text-foreground',
+                                'font-semibold text-foreground',
                             )}
                           >
                             {item.label}

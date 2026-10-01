@@ -75,15 +75,15 @@ export function LearningStreakCard() {
   return (
     <Card className='py-6 gap-y-6'>
       <CardHeader className='px-6'>
-        <CardTitle className='text-2xl font-semibold'>
+        <CardTitle className='text-xl lg:text-2xl font-semibold'>
           Learning Streak
         </CardTitle>
       </CardHeader>
 
       <CardContent className='px-6 flex flex-col gap-y-6'>
         <div className='flex gap-x-4'>
-          <div className='size-14 shrink-0 flex items-center justify-center bg-orange-200 text-orange-600 rounded-lg'>
-            <Flame className='size-8' />
+          <div className='size-12 lg:size-14 shrink-0 flex items-center justify-center bg-orange-200 text-orange-600 rounded-lg'>
+            <Flame className='size-6 lg:size-8' />
           </div>
 
           <div className='flex flex-col gap-y-0.5'>
@@ -105,7 +105,7 @@ export function LearningStreakCard() {
           </div>
         </div>
 
-        <div className='grid grid-cols-7 gap-3'>
+        <div className='grid grid-cols-7 gap-3 overflow-x-scroll'>
           {(
             week ??
             DAY_LABELS.map((label) => ({ label, date: label, state: null }))

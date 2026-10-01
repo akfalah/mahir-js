@@ -1,10 +1,12 @@
 'use client';
 
 import { Material, Module } from '@/types';
+
+import { useEntityTimeline } from '@/hooks/use-entity-timeline';
+
 import { fetchMaterialProgress, fetchPublishedMaterials } from '@/lib/fetch';
 
 import { PublicTimelineCard } from '@/components/shared/public-timeline-card';
-import { useEntityTimeline } from '@/hooks/use-entity-timeline';
 
 export function ModuleTimeline({ modules }: { modules: Module[] }) {
   const { entries, isLoading } = useEntityTimeline<Module, Material>({
@@ -23,7 +25,7 @@ export function ModuleTimeline({ modules }: { modules: Module[] }) {
       {entries.map(({ item, status, progress }) => (
         <PublicTimelineCard
           key={item.id}
-          label='module'
+          label={'module'}
           order={item.order}
           title={item.title}
           description={item.description}

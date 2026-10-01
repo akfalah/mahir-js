@@ -7,21 +7,20 @@ import { fetchModuleBySlug } from '@/lib/fetch';
 import { Badge } from '@/components/ui/badge';
 import { PublicBreadcrumb } from '@/components/shared/public-breadcrumb';
 import { PublicHeader } from '@/components/shared/public-header';
+
 import { MaterialTimeline } from './components/material-timeline';
 import { ModuleStatsCard } from './components/module-stats-card';
 
-type Props = {
+export default async function ModuleDetailPage({
+  params,
+}: {
   params: Promise<{ moduleSlug: string }>;
-};
-
-export default async function ModuleDetailPage({ params }: Props) {
+}) {
   const { moduleSlug } = await params;
 
   const { data: module } = await fetchModuleBySlug(moduleSlug);
 
-  if (!module) {
-    notFound();
-  }
+  if (!module) notFound();
 
   return (
     <>
