@@ -35,6 +35,12 @@ export type UserResponse = {
   updatedAt: Date;
 };
 
+export type UserRefResponse = {
+  id: number;
+  name: string;
+  email: string;
+};
+
 export type UserPaginationResponse = PaginationResponse<UserResponse>;
 
 export function toUserResponse(user: User): UserResponse {
@@ -46,5 +52,13 @@ export function toUserResponse(user: User): UserResponse {
     imageUrl: user.imageUrl,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+  };
+}
+
+export function toUserRefResponse(user: UserRefResponse): UserRefResponse {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
   };
 }

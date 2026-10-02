@@ -33,7 +33,6 @@ export class UserValidation {
     role: z.enum(Role).default(Role.STUDENT),
     password: z.string().min(8),
     imageUrl: z.string().min(3).optional(),
-    bio: z.string().max(300).optional(),
   });
 
   static readonly UPDATE: ZodType<UpdateUserRequest> = z.object({
@@ -42,6 +41,5 @@ export class UserValidation {
     role: z.enum(Role).optional(),
     password: z.string().min(8).optional(),
     imageUrl: z.string().min(3).optional(),
-    bio: z.string().max(300).optional(),
   });
 }

@@ -1,5 +1,7 @@
-import { prisma } from '../applications/database';
+import { Prisma } from '../../generated/prisma/client';
 import { Role } from '../../generated/prisma/enums';
+
+import { prisma } from '../applications/database';
 
 import { ResponseError } from '../errors/response.error';
 
@@ -11,6 +13,8 @@ import {
   CreateModuleRequest,
   toModuleResponse,
   UpdateModuleRequest,
+  toModuleDetailResponse,
+  ModuleDetailResponse,
 } from '../models/module.model';
 
 import { Validation } from '../validations/validation';
@@ -49,7 +53,10 @@ export class ModuleService {
         where,
         skip,
         take: data.limit,
-        orderBy: { [data.sortBy as string]: data.orderBy },
+        orderBy: {
+          [data.sortBy as keyof Prisma.ModuleOrderByWithRelationInput]:
+            data.orderBy,
+        },
       }),
       prisma.module.count({ where }),
     ]);
@@ -68,16 +75,31 @@ export class ModuleService {
   static async getModuleBySlug(
     user: JwtPayload | undefined,
     slug: string,
-  ): Promise<ModuleResponse> {
+  ): Promise<ModuleDetailResponse> {
     const isAdmin = user?.role === Role.ADMIN;
 
     const module = await prisma.module.findUnique({
       where: { slug, ...(!isAdmin && { isPublished: true }) },
+      include: {
+        materials: {
+          where: { ...(!isAdmin && { isPublished: true }) },
+          orderBy: { order: 'asc' },
+          select: {
+            id: true,
+            moduleId: true,
+            slug: true,
+            title: true,
+            description: true,
+            order: true,
+            isPublished: true,
+          },
+        },
+      },
     });
 
     if (!module) throw new ResponseError(404, 'Module not found');
 
-    return toModuleResponse(module);
+    return toModuleDetailResponse(module, isAdmin);
   }
 
   static async createModule(
@@ -85,17 +107,27 @@ export class ModuleService {
   ): Promise<ModuleResponse> {
     const data = Validation.validate(ModuleValidation.CREATE, request);
 
-    const [slugExists, orderExists] = await Promise.all([
-      prisma.module.count({ where: { slug: data.slug } }),
-      prisma.module.count({ where: { order: data.order } }),
-    ]);
+    try {
+      const module = await prisma.module.create({ data });
+      return toModuleResponse(module);
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        const target = e.meta?.target as string[] | undefined;
 
-    if (slugExists) throw new ResponseError(400, 'Slug already exists');
-    if (orderExists) throw new ResponseError(400, 'Order already exists');
+        if (target?.includes('slug')) {
+          throw new ResponseError(400, 'Slug already exists');
+        }
 
-    const module = await prisma.module.create({ data });
+        if (target?.includes('order')) {
+          throw new ResponseError(400, 'Order already exists');
+        }
+      }
 
-    return toModuleResponse(module);
+      throw e;
+    }
   }
 
   static async updateModule(
@@ -104,36 +136,42 @@ export class ModuleService {
   ): Promise<ModuleResponse> {
     const data = Validation.validate(ModuleValidation.UPDATE, request);
 
-    const exists = await prisma.module.findUnique({ where: { id } });
+    try {
+      const module = await prisma.module.update({ where: { id }, data });
+      return toModuleResponse(module);
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025')
+          throw new ResponseError(404, 'Module not found');
 
-    if (!exists) throw new ResponseError(404, 'Module not found');
+        if (e.code === 'P2002') {
+          const target = e.meta?.target as string[] | undefined;
 
-    if (data.slug) {
-      const slugExists = await prisma.module.count({
-        where: { slug: data.slug, NOT: { id } },
-      });
+          if (target?.includes('slug')) {
+            throw new ResponseError(400, 'Slug already exists');
+          }
+          if (target?.includes('order')) {
+            throw new ResponseError(400, 'Order already exists');
+          }
+        }
+      }
 
-      if (slugExists) throw new ResponseError(400, 'Slug already exists');
+      throw e;
     }
-
-    if (data.order) {
-      const orderExists = await prisma.module.count({
-        where: { order: data.order, NOT: { id } },
-      });
-
-      if (orderExists) throw new ResponseError(400, 'Order already exists');
-    }
-
-    const module = await prisma.module.update({ where: { id }, data });
-
-    return toModuleResponse(module);
   }
 
   static async deleteModule(id: number): Promise<void> {
-    const module = await prisma.module.findUnique({ where: { id } });
+    try {
+      await prisma.module.delete({ where: { id } });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2025'
+      ) {
+        throw new ResponseError(404, 'Module not found');
+      }
 
-    if (!module) throw new ResponseError(404, 'Module not found');
-
-    await prisma.module.delete({ where: { id } });
+      throw e;
+    }
   }
 }

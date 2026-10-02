@@ -5,6 +5,7 @@ const acorn = require('acorn');
 const AST_NODE_DESCRIPTIONS = {
   IfStatement: 'if/else statement',
   SwitchStatement: 'switch statement',
+  ConditionalExpression: 'ternary expression',
   ForStatement: 'for loop',
   WhileStatement: 'while loop',
   DoWhileStatement: 'do-while loop',
@@ -13,7 +14,13 @@ const AST_NODE_DESCRIPTIONS = {
   FunctionDeclaration: 'function declaration',
   ArrowFunctionExpression: 'arrow function',
   FunctionExpression: 'function expression',
+  ReturnStatement: 'return statement',
   TryStatement: 'try-catch statement',
+  ImportDeclaration: 'import statement',
+  ImportExpression: 'dynamic import',
+  ExportNamedDeclaration: 'export statement',
+  ExportDefaultDeclaration: 'default export',
+  ExportAllDeclaration: 'export-all statement',
 };
 
 function collectNodes(ast) {
@@ -28,6 +35,7 @@ function collectNodes(ast) {
       if (key === 'type') continue;
 
       const child = node[key];
+
       if (Array.isArray(child)) {
         child.forEach(traverse);
       } else if (child && typeof child === 'object') {
@@ -42,12 +50,10 @@ function collectNodes(ast) {
 }
 
 function checkSyntax(code, syntaxRules) {
-  if (!syntaxRules) return { passed: true, errors: [] };
-
-  const { required = [], forbidden = [] } = syntaxRules;
-  const errors = [];
-
+  // Always parse first: the AST is needed by the runtime-access check
+  // even when the exercise has no syntaxRules.
   let ast;
+
   try {
     ast = acorn.parse(code, {
       ecmaVersion: 2020,
@@ -58,26 +64,30 @@ function checkSyntax(code, syntaxRules) {
     return {
       passed: false,
       errors: [`Syntax error: ${parseErr.message}`],
+      ast: null,
     };
   }
 
+  if (!syntaxRules) {
+    return { passed: true, errors: [], ast };
+  }
+
+  const { required = [], forbidden = [] } = syntaxRules;
+  const errors = [];
   const nodeTypes = collectNodes(ast);
 
-  // cek forbidden nodes
-  for (const forbidden_node of forbidden) {
-    if (nodeTypes.has(forbidden_node)) {
-      const description =
-        AST_NODE_DESCRIPTIONS[forbidden_node] ?? forbidden_node;
-      errors.push(
-        `You are not allowed to use ${description} in this exercise`,
-      );
+  for (const forbiddenNode of forbidden) {
+    if (nodeTypes.has(forbiddenNode)) {
+      const description = AST_NODE_DESCRIPTIONS[forbiddenNode] ?? forbiddenNode;
+
+      errors.push(`You are not allowed to use ${description} in this exercise`);
     }
   }
 
-  // cek required nodes
-  for (const required_node of required) {
-    if (!nodeTypes.has(required_node)) {
-      const description = AST_NODE_DESCRIPTIONS[required_node] ?? required_node;
+  for (const requiredNode of required) {
+    if (!nodeTypes.has(requiredNode)) {
+      const description = AST_NODE_DESCRIPTIONS[requiredNode] ?? requiredNode;
+      
       errors.push(`You must use ${description} in this exercise`);
     }
   }
@@ -85,6 +95,7 @@ function checkSyntax(code, syntaxRules) {
   return {
     passed: errors.length === 0,
     errors,
+    ast,
   };
 }
 

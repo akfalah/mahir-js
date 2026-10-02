@@ -1,6 +1,23 @@
-import { Prisma, Exercise } from '../../generated/prisma/client';
+import { Exercise } from '../../generated/prisma/client';
 
 import { PaginationRequest, PaginationResponse } from './pagination.model';
+import { MaterialRefResponse } from './material.model';
+import {
+  TestCaseSummaryResponse,
+  TestCaseSummarySource,
+  toTestCaseSummaryResponse,
+} from './test-case.model';
+
+export type ExerciseSummarySource = Pick<
+  Exercise,
+  | 'id'
+  | 'materialId'
+  | 'slug'
+  | 'title'
+  | 'description'
+  | 'order'
+  | 'isPublished'
+>;
 
 export type ExerciseSortBy =
   | 'id'
@@ -26,9 +43,9 @@ export type CreateExerciseRequest = {
   slug: string;
   title: string;
   description: string;
-  hint?: string;
   order: number;
-  starterCode: string;
+  hint?: string;
+  starterCode?: string;
   syntaxRules: SyntaxRules;
   parameterNames?: string[];
   functionName?: string;
@@ -39,51 +56,13 @@ export type UpdateExerciseRequest = {
   slug?: string;
   title?: string;
   description?: string;
-  hint?: string;
   order?: number;
+  hint?: string;
   starterCode?: string;
   syntaxRules?: SyntaxRules;
   parameterNames?: string[];
   functionName?: string;
   isPublished?: boolean;
-};
-
-export const ExerciseRelationInclude = {
-  material: {
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      isPublished: true,
-      module: {
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          isPublished: true,
-        },
-      },
-    },
-  },
-} satisfies Prisma.ExerciseInclude;
-
-export type ExerciseWithRelations = Prisma.ExerciseGetPayload<{
-  include: typeof ExerciseRelationInclude;
-}>;
-
-export type ExerciseModuleResponse = {
-  id: number;
-  slug: string;
-  title: string;
-  isPublished: boolean;
-};
-
-export type ExerciseMaterialResponse = {
-  id: number;
-  slug: string;
-  title: string;
-  isPublished: boolean;
-  module: ExerciseModuleResponse;
 };
 
 export type ExerciseResponse = {
@@ -92,8 +71,8 @@ export type ExerciseResponse = {
   slug: string;
   title: string;
   description: string;
-  hint: string | null;
   order: number;
+  hint: string | null;
   starterCode: string | null;
   syntaxRules: SyntaxRules;
   parameterNames: string[] | null;
@@ -101,22 +80,44 @@ export type ExerciseResponse = {
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
-  material?: ExerciseMaterialResponse;
+  material?: MaterialRefResponse;
+};
+
+export type ExerciseSummaryResponse = {
+  id: number;
+  materialId: number;
+  slug: string;
+  title: string;
+  description: string;
+  order: number;
+  isPublished?: boolean;
+};
+
+export type ExerciseRefResponse = {
+  id: number;
+  slug: string;
+  title: string;
+  order: number;
 };
 
 export type ExercisePaginationResponse = PaginationResponse<ExerciseResponse>;
 
-export function toExerciseeResponse(
-  exercise: Exercise | ExerciseWithRelations,
+export type ExerciseDetailResponse = ExerciseResponse & {
+  testCases: TestCaseSummaryResponse[];
+};
+
+export function toExerciseResponse(
+  exercise: Exercise,
+  material?: MaterialRefResponse,
 ): ExerciseResponse {
-  const response: ExerciseResponse = {
+  return {
     id: exercise.id,
     materialId: exercise.materialId,
     slug: exercise.slug,
     title: exercise.title,
     description: exercise.description,
-    hint: exercise.hint,
     order: exercise.order,
+    hint: exercise.hint,
     starterCode: exercise.starterCode,
     syntaxRules: exercise.syntaxRules as SyntaxRules,
     parameterNames: exercise.parameterNames as string[] | null,
@@ -124,11 +125,47 @@ export function toExerciseeResponse(
     isPublished: exercise.isPublished,
     createdAt: exercise.createdAt,
     updatedAt: exercise.updatedAt,
+    ...(material && { material }),
   };
+}
 
-  if ('material' in exercise) {
-    response.material = exercise.material;
-  }
+export function toExerciseDetailResponse(
+  exercise: Exercise & {
+    material: MaterialRefResponse;
+    testCases: TestCaseSummarySource[];
+  },
+  isAdmin: boolean,
+): ExerciseDetailResponse {
+  return {
+    ...toExerciseResponse(exercise, exercise.material),
+    testCases: exercise.testCases.map((testCase) =>
+      toTestCaseSummaryResponse(testCase, isAdmin),
+    ),
+  };
+}
 
-  return response;
+export function toExerciseSummaryResponse(
+  exercise: ExerciseSummarySource,
+  includeIsPublished: boolean,
+): ExerciseSummaryResponse {
+  return {
+    id: exercise.id,
+    materialId: exercise.materialId,
+    slug: exercise.slug,
+    title: exercise.title,
+    description: exercise.description,
+    order: exercise.order,
+    ...(includeIsPublished && { isPublished: exercise.isPublished }),
+  };
+}
+
+export function toExerciseRefResponse(
+  exercise: ExerciseRefResponse,
+): ExerciseRefResponse {
+  return {
+    id: exercise.id,
+    slug: exercise.slug,
+    title: exercise.title,
+    order: exercise.order,
+  };
 }

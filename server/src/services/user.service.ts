@@ -1,5 +1,7 @@
 import bcrypt from 'bcrypt';
 
+import { Prisma } from '../../generated/prisma/client';
+
 import { prisma } from '../applications/database';
 
 import { ResponseError } from '../errors/response.error';
@@ -7,6 +9,7 @@ import { ResponseError } from '../errors/response.error';
 import { Validation } from '../validations/validation';
 import { UserValidation } from '../validations/user.validation';
 
+import { JwtPayload } from '../models/auth.model';
 import {
   CreateUserRequest,
   toUserResponse,
@@ -39,7 +42,10 @@ export class UserService {
         where,
         skip,
         take: data.limit,
-        orderBy: { [data.sortBy as string]: data.orderBy },
+        orderBy: {
+          [data.sortBy as keyof Prisma.UserOrderByWithRelationInput]:
+            data.orderBy,
+        },
       }),
       prisma.user.count({ where }),
     ]);
@@ -66,55 +72,72 @@ export class UserService {
   static async createUser(request: CreateUserRequest): Promise<UserResponse> {
     const data = Validation.validate(UserValidation.CREATE, request);
 
-    const emailExists = await prisma.user.count({
-      where: { email: data.email },
-    });
-
-    if (emailExists) {
-      throw new ResponseError(400, 'Email already exists');
-    }
-
     data.password = await bcrypt.hash(data.password, 10);
 
-    const user = await prisma.user.create({ data });
+    try {
+      const user = await prisma.user.create({ data });
 
-    return toUserResponse(user);
+      return toUserResponse(user);
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ResponseError(400, 'Email already exists');
+      }
+
+      throw e;
+    }
   }
 
   static async updateUser(
     id: number,
+    actingUser: JwtPayload,
     request: UpdateUserRequest,
   ): Promise<UserResponse> {
     const data = Validation.validate(UserValidation.UPDATE, request);
 
-    const exists = await prisma.user.findUnique({ where: { id } });
-
-    if (!exists) throw new ResponseError(404, 'User not found');
-
-    if (data.email) {
-      const emailExists = await prisma.user.count({
-        where: { email: data.email, NOT: { id } },
-      });
-
-      if (emailExists) throw new ResponseError(400, 'Email already exists');
+    if (id === actingUser.id && data.role && data.role !== actingUser.role) {
+      throw new ResponseError(400, 'You cannot change your own role');
     }
 
     if (data.password) {
       data.password = await bcrypt.hash(data.password, 10);
     }
 
-    const user = await prisma.user.update({ where: { id }, data });
+    try {
+      const user = await prisma.user.update({ where: { id }, data });
 
-    return toUserResponse(user);
+      return toUserResponse(user);
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025') throw new ResponseError(404, 'User not found');
+
+        if (e.code === 'P2002') {
+          throw new ResponseError(400, 'Email already exists');
+        }
+      }
+
+      throw e;
+    }
   }
 
-  static async deleteUser(id: number): Promise<void> {
-    const user = await prisma.user.findFirst({ where: { id } });
+  static async deleteUser(id: number, actingUser: JwtPayload): Promise<void> {
+    if (id === actingUser.id) {
+      throw new ResponseError(400, 'You cannot delete your own account');
+    }
 
-    if (!user) throw new ResponseError(404, 'User not found');
+    try {
+      await prisma.user.delete({ where: { id } });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2025'
+      ) {
+        throw new ResponseError(404, 'User not found');
+      }
 
-    await prisma.user.delete({
-      where: { id },
-    });
+      throw e;
+    }
   }
 }

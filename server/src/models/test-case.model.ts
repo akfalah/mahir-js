@@ -1,6 +1,12 @@
-import { Prisma, TestCase } from '../../generated/prisma/client';
+import { TestCase } from '../../generated/prisma/client';
+import { ExerciseRefResponse } from './exercise.model';
 
 import { PaginationRequest, PaginationResponse } from './pagination.model';
+
+export type TestCaseSummarySource = Pick<
+  TestCase,
+  'id' | 'exerciseId' | 'description' | 'order' | 'isPublished'
+>;
 
 export type TestCaseSortBy =
   | 'id'
@@ -31,58 +37,11 @@ export type UpdateTestCaseRequest = {
   isPublished?: boolean;
 };
 
-export const testCaseRelationInclude = {
-  exercise: {
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      isPublished: true,
-      material: {
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          isPublished: true,
-          module: {
-            select: {
-              id: true,
-              slug: true,
-              title: true,
-              isPublished: true,
-            },
-          },
-        },
-      },
-    },
-  },
-} satisfies Prisma.TestCaseInclude;
-
-export type TestCaseWithRelations = Prisma.TestCaseGetPayload<{
-  include: typeof testCaseRelationInclude;
-}>;
-
-export type TestCaseModuleResponse = {
+export type TestCaseInput = {
   id: number;
-  slug: string;
-  title: string;
-  isPublished: boolean;
-};
-
-export type TestCaseMaterialResponse = {
-  id: number;
-  slug: string;
-  title: string;
-  isPublished: boolean;
-  module: TestCaseModuleResponse;
-};
-
-export type TestCaseExerciseResponse = {
-  id: number;
-  slug: string;
-  title: string;
-  isPublished: boolean;
-  material: TestCaseMaterialResponse;
+  description: string;
+  input: Record<string, unknown>;
+  expected: Record<string, unknown>;
 };
 
 export type TestCaseResponse = {
@@ -95,22 +54,24 @@ export type TestCaseResponse = {
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
-  exercise?: TestCaseExerciseResponse;
+  exercise?: ExerciseRefResponse;
 };
 
-export type TestCaseInput = {
+export type TestCaseSummaryResponse = {
   id: number;
+  exerciseId: number;
   description: string;
-  input: Record<string, unknown>;
-  expected: Record<string, unknown>;
+  order: number;
+  isPublished?: boolean;
 };
 
 export type TestCasePaginationResponse = PaginationResponse<TestCaseResponse>;
 
 export function toTestCaseResponse(
-  testCase: TestCase | TestCaseWithRelations,
+  testCase: TestCase,
+  exercise?: ExerciseRefResponse,
 ): TestCaseResponse {
-  const response: TestCaseResponse = {
+  return {
     id: testCase.id,
     exerciseId: testCase.exerciseId,
     description: testCase.description,
@@ -120,11 +81,19 @@ export function toTestCaseResponse(
     isPublished: testCase.isPublished,
     createdAt: testCase.createdAt,
     updatedAt: testCase.updatedAt,
+    ...(exercise && { exercise }),
   };
+}
 
-  if ('exercise' in testCase) {
-    response.exercise = testCase.exercise;
-  }
-
-  return response;
+export function toTestCaseSummaryResponse(
+  testCase: TestCaseSummarySource,
+  includeIsPublished: boolean,
+): TestCaseSummaryResponse {
+  return {
+    id: testCase.id,
+    exerciseId: testCase.exerciseId,
+    description: testCase.description,
+    order: testCase.order,
+    ...(includeIsPublished && { isPublished: testCase.isPublished }),
+  };
 }

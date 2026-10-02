@@ -9,11 +9,11 @@ import { Validation } from '../validations/validation';
 import { TestCaseValidation } from '../validations/test-case.validation';
 
 import { JwtPayload } from '../models/auth.model';
+import { toExerciseRefResponse } from '../models/exercise.model';
 import {
   CreateTestCaseRequest,
   TestCasePaginationRequest,
   TestCasePaginationResponse,
-  testCaseRelationInclude,
   TestCaseResponse,
   toTestCaseResponse,
   UpdateTestCaseRequest,
@@ -47,16 +47,33 @@ export class TestCaseService {
     const [testCases, total] = await Promise.all([
       prisma.testCase.findMany({
         where,
-        include: testCaseRelationInclude,
+        include: {
+          exercise: {
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              order: true,
+            },
+          },
+        },
         skip,
         take: data.limit,
-        orderBy: { [data.sortBy as string]: data.orderBy },
+        orderBy: {
+          [data.sortBy as keyof Prisma.TestCaseOrderByWithRelationInput]:
+            data.orderBy,
+        },
       }),
       prisma.testCase.count({ where }),
     ]);
 
     return {
-      data: testCases.map(toTestCaseResponse),
+      data: testCases.map((testCase) =>
+        toTestCaseResponse(
+          testCase,
+          isAdmin ? toExerciseRefResponse(testCase.exercise) : undefined,
+        ),
+      ),
       pagination: {
         page: data.page,
         limit: data.limit,
@@ -74,12 +91,24 @@ export class TestCaseService {
 
     const testCase = await prisma.testCase.findUnique({
       where: { id, ...(!isAdmin && { isPublished: true }) },
-      include: testCaseRelationInclude,
+      include: {
+        exercise: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            order: true,
+          },
+        },
+      },
     });
 
     if (!testCase) throw new ResponseError(404, 'Test case not found');
 
-    return toTestCaseResponse(testCase);
+    return toTestCaseResponse(
+      testCase,
+      toExerciseRefResponse(testCase.exercise),
+    );
   }
 
   static async createTestCase(
@@ -93,21 +122,33 @@ export class TestCaseService {
 
     if (!exercise) throw new ResponseError(404, 'Exercise not found');
 
-    const orderExists = await prisma.testCase.count({
-      where: { exerciseId: data.exerciseId, order: data.order },
-    });
+    try {
+      const testCase = await prisma.testCase.create({
+        data: {
+          ...data,
+          input: data.input as Prisma.InputJsonValue,
+          expected: data.expected as Prisma.InputJsonValue,
+        },
+      });
 
-    if (orderExists) throw new ResponseError(400, 'Order already exists');
+      return toTestCaseResponse(testCase);
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        const target = e.meta?.target as string[] | undefined;
 
-    const testCase = await prisma.testCase.create({
-      data: {
-        ...data,
-        input: data.input as Prisma.InputJsonValue,
-        expected: data.expected as Prisma.InputJsonValue,
-      },
-    });
+        if (target?.includes('order')) {
+          throw new ResponseError(
+            400,
+            'Order already exists within this exercise',
+          );
+        }
+      }
 
-    return toTestCaseResponse(testCase);
+      throw e;
+    }
   }
 
   static async updateTestCase(
@@ -116,45 +157,50 @@ export class TestCaseService {
   ): Promise<TestCaseResponse> {
     const data = Validation.validate(TestCaseValidation.UPDATE, request);
 
-    const exists = await prisma.testCase.findUnique({ where: { id } });
-
-    if (!exists) throw new ResponseError(404, 'Test case not found');
-
-    if (data.order) {
-      const orderExists = await prisma.testCase.count({
-        where: {
-          exerciseId: exists.exerciseId,
-          order: data.order,
-          NOT: { id },
+    try {
+      const testCase = await prisma.testCase.update({
+        where: { id },
+        data: {
+          ...data,
+          input: data.input as Prisma.InputJsonValue,
+          expected: data.expected as Prisma.InputJsonValue,
         },
       });
 
-      if (orderExists) throw new ResponseError(400, 'Order already exists');
+      return toTestCaseResponse(testCase);
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025')
+          throw new ResponseError(404, 'Test case not found');
+
+        if (e.code === 'P2002') {
+          const target = e.meta?.target as string[] | undefined;
+
+          if (target?.includes('order')) {
+            throw new ResponseError(
+              400,
+              'Order already exists within this exercise',
+            );
+          }
+        }
+      }
+
+      throw e;
     }
-
-    const testCase = await prisma.testCase.update({
-      where: { id },
-      data: {
-        ...(data.description && { description: data.description }),
-        ...(data.order && { order: data.order }),
-        ...(data.isPublished !== undefined && {
-          isPublished: data.isPublished,
-        }),
-        ...(data.input && { input: data.input as Prisma.InputJsonValue }),
-        ...(data.expected && {
-          expected: data.expected as Prisma.InputJsonValue,
-        }),
-      },
-    });
-
-    return toTestCaseResponse(testCase);
   }
 
   static async deleteTestCase(id: number): Promise<void> {
-    const testCase = await prisma.testCase.findUnique({ where: { id } });
+    try {
+      await prisma.testCase.delete({ where: { id } });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2025'
+      ) {
+        throw new ResponseError(404, 'Test case not found');
+      }
 
-    if (!testCase) throw new ResponseError(404, 'Test case not found');
-
-    await prisma.testCase.delete({ where: { id } });
+      throw e;
+    }
   }
 }

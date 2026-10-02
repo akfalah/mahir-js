@@ -40,49 +40,65 @@ const BLOCKED_MODULES = [
 process.on(
   'message',
   ({ code, functionName, parameterNames, testCases, syntaxRules }) => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mahirjs-'));
-    const solutionFile = path.join(tempDir, 'solution.js');
-    const testFile = path.join(tempDir, 'solution.test.js');
-    const jestConfigFile = path.join(tempDir, 'jest.config.json');
+    let tempDir;
+    let finished = false;
+
+    // single exit point: clean up first, then reply, then exit
+    const finish = (payload) => {
+      if (finished) return;
+      finished = true;
+
+      if (tempDir) {
+        try {
+          fs.rmSync(tempDir, { recursive: true, force: true });
+        } catch {}
+      }
+
+      // exit only after the message has been flushed to the parent
+      process.send(payload, () => process.exit(0));
+    };
 
     try {
       const syntaxCheck = checkSyntax(code, syntaxRules);
 
       if (!syntaxCheck.passed) {
-        process.send({
+        return finish({
           success: true,
           results: buildErrorResults(testCases, syntaxCheck.errors.join('\n')),
         });
-        process.exit(0);
-        return;
       }
 
-      const runtimeAccessCheck = checkBlockedRuntimeAccess(code);
+      const runtimeAccessCheck = checkBlockedRuntimeAccess(syntaxCheck.ast);
 
       if (!runtimeAccessCheck.passed) {
-        process.send({
+        return finish({
           success: true,
           results: buildErrorResults(
             testCases,
             runtimeAccessCheck.errors.join('\n'),
           ),
         });
-        process.exit(0);
-        return;
       }
 
-      // deteksi apakah student menulis full function atau hanya isi
-      const hasDeclaration =
-        code.includes(`function ${functionName}`) ||
-        code.includes(`const ${functionName}`) ||
-        code.includes(`let ${functionName}`) ||
-        code.includes(`var ${functionName}`);
+      // detect whether the student wrote the full function or just the body
+      const hasDeclaration = declaresFunction(syntaxCheck.ast, functionName);
+
+      // the student wrote only function(s), but not the one this exercise asks for
+      if (!hasDeclaration && definesOnlyFunctions(syntaxCheck.ast)) {
+        return finish({
+          success: true,
+          results: buildErrorResults(
+            testCases,
+            `Your code must define a function named "${functionName}"`,
+          ),
+        });
+      }
 
       const studentCode = hasDeclaration
         ? code
         : `function ${functionName}(${parameterNames.join(', ')}) {\n${code}\n}`;
 
-      // block require via proxy di dalam solution.js
+      // block 'require' via proxy in solution.js
       const blockedModuleEntries = BLOCKED_MODULES.map(
         (mod) => `  '${mod}': true`,
       ).join(',\n');
@@ -90,24 +106,26 @@ process.on(
       const wrappedCode = `
     'use strict';
 
-    // block modul berbahaya
+    // block dangerous modules
     const _originalRequire = require;
     const _blockedModules = {
     ${blockedModuleEntries}
     };
 
-    // override via global — tidak redeclare 'require'
+    // override via global — do not redeclare 'require'
     global.require = function(mod) {
       if (_blockedModules[mod]) {
         throw new Error(\`Module '\${mod}' is not allowed\`);
       }
+      
       if (typeof mod === 'string' && (mod.startsWith('.') || mod.startsWith('/'))) {
         throw new Error('Relative and absolute path imports are not allowed');
       }
+      
       return _originalRequire(mod);
     };
 
-    // block akses global berbahaya
+    // block dangerous global access
     (function blockGlobals() {
       const blocked = ['process', '__dirname', '__filename'];
       for (const key of blocked) {
@@ -129,6 +147,11 @@ process.on(
     module.exports = { ${functionName} };
     `;
 
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mahirjs-'));
+      const solutionFile = path.join(tempDir, 'solution.js');
+      const testFile = path.join(tempDir, 'solution.test.js');
+      const jestConfigFile = path.join(tempDir, 'jest.config.json');
+
       fs.writeFileSync(solutionFile, wrappedCode, 'utf8');
 
       // jest test file
@@ -139,7 +162,7 @@ process.on(
       );
       fs.writeFileSync(testFile, testContent, 'utf8');
 
-      // jest config — tanpa moduleNameMapper
+      // jest config — without moduleNameMapper
       fs.writeFileSync(
         jestConfigFile,
         JSON.stringify({
@@ -152,8 +175,9 @@ process.on(
         'utf8',
       );
 
-      // jalankan jest
+      // run jest
       const jestBin = path.resolve(__dirname, '../../node_modules/.bin/jest');
+
       let output;
 
       try {
@@ -170,100 +194,180 @@ process.on(
         output = execErr.stdout?.toString() ?? '';
 
         if (!output) {
-          process.send({
+          return finish({
             success: false,
             error:
               execErr.stderr?.toString() ??
               'Jest execution failed with no output',
           });
-          process.exit(0);
-          return;
         }
       }
 
       const jestResult = JSON.parse(output);
       const results = parseJestResults(jestResult, testCases);
 
-      process.send({ success: true, results });
+      return finish({ success: true, results });
     } catch (err) {
-      process.send({
+      return finish({
         success: false,
         error: err.message ?? 'Unknown error',
       });
-    } finally {
-      try {
-        fs.rmSync(tempDir, { recursive: true, force: true });
-      } catch {}
     }
-
-    process.exit(0);
   },
 );
 
 function buildErrorResults(testCases, failureMessage) {
-  return testCases.map((tc) => ({
-    testCaseId: tc.id,
-    description: tc.description,
+  return testCases.map((testCase) => ({
+    testCaseId: testCase.id,
+    description: testCase.description,
     status: 'ERROR',
-    expected: JSON.stringify(tc.expected.result),
+    expected: JSON.stringify(testCase.expected.result),
     received: null,
     failureMessage,
   }));
 }
 
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function isFunctionLike(node) {
+  if (node.type === 'FunctionDeclaration') return true;
+
+  return (
+    node.type === 'VariableDeclaration' &&
+    node.declarations.every(
+      (declaration) =>
+        declaration.init &&
+        (declaration.init.type === 'FunctionExpression' ||
+          declaration.init.type === 'ArrowFunctionExpression'),
+    )
+  );
 }
 
-function checkBlockedRuntimeAccess(code) {
+function declaresFunction(ast, functionName) {
+  return ast.body.some((node) => {
+    if (node.type === 'FunctionDeclaration') {
+      return node.id?.name === functionName;
+    }
+
+    if (node.type === 'VariableDeclaration') {
+      return node.declarations.some(
+        (declaration) =>
+          declaration.id.type === 'Identifier' &&
+          declaration.id.name === functionName,
+      );
+    }
+
+    return false;
+  });
+}
+
+function definesOnlyFunctions(ast) {
+  return ast.body.length > 0 && ast.body.every(isFunctionLike);
+}
+
+function checkBlockedRuntimeAccess(ast) {
+  if (!ast) {
+    return { passed: false, errors: ['Could not analyze code'] };
+  }
+
   const errors = [];
+  const blockedGlobals = new Set(['process', '__dirname', '__filename']);
+  const blockedCalls = new Set(['eval']);
 
-  for (const mod of BLOCKED_MODULES) {
-    const requirePattern = new RegExp(
-      `\\brequire\\s*\\(\\s*['"]${escapeRegExp(mod)}['"]\\s*\\)`,
-    );
+  function traverse(node, parent) {
+    if (!node || typeof node !== 'object') return;
 
-    if (requirePattern.test(code)) {
-      errors.push(`Module '${mod}' is not allowed`);
+    if (node.type === 'Identifier' && blockedGlobals.has(node.name)) {
+      // `{ process: 1 }` or `{ process() {} }`: a property key, not the global.
+      // Shorthand `{ process }` does reference the global, so it stays flagged.
+      const isPropertyKey =
+        parent &&
+        parent.type === 'Property' &&
+        parent.key === node &&
+        !parent.computed &&
+        !parent.shorthand;
+
+      // `obj.process`: a property name, not the global
+      const isMemberProperty =
+        parent &&
+        parent.type === 'MemberExpression' &&
+        parent.property === node &&
+        !parent.computed;
+
+      if (!isPropertyKey && !isMemberProperty) {
+        errors.push(`'${node.name}' is not allowed`);
+      }
+    }
+
+    // eval(...), Function(...), new Function(...), require('fs')
+    if (node.type === 'CallExpression' || node.type === 'NewExpression') {
+      const callee = node.callee;
+
+      if (callee && callee.type === 'Identifier') {
+        if (blockedCalls.has(callee.name)) {
+          errors.push(`'${callee.name}' is not allowed`);
+        }
+
+        if (callee.name === 'Function') {
+          errors.push(`'Function' constructor is not allowed`);
+        }
+
+        if (callee.name === 'require') {
+          const arg = node.arguments[0];
+
+          if (arg && arg.type === 'Literal' && typeof arg.value === 'string') {
+            const mod = arg.value;
+
+            if (BLOCKED_MODULES.includes(mod)) {
+              errors.push(`Module '${mod}' is not allowed`);
+            } else if (mod.startsWith('.') || mod.startsWith('/')) {
+              errors.push('Relative and absolute path imports are not allowed');
+            }
+          }
+        }
+      }
+    }
+
+    for (const key of Object.keys(node)) {
+      if (
+        key === 'type' ||
+        key === 'loc' ||
+        key === 'range' ||
+        key === 'start' ||
+        key === 'end'
+      ) {
+        continue;
+      }
+
+      const child = node[key];
+
+      if (Array.isArray(child)) {
+        child.forEach((c) => traverse(c, node));
+      } else if (child && typeof child === 'object') {
+        traverse(child, node);
+      }
     }
   }
 
-  const blockedGlobals = ['process', '__dirname', '__filename'];
+  traverse(ast, null);
 
-  for (const globalName of blockedGlobals) {
-    const globalPattern = new RegExp(`\\b${escapeRegExp(globalName)}\\b`);
-
-    if (globalPattern.test(code)) {
-      errors.push(`'${globalName}' is not allowed`);
-    }
-  }
-
-  const blockedDynamicExecution = ['eval', 'Function'];
-
-  for (const fnName of blockedDynamicExecution) {
-    const dynamicPattern = new RegExp(`\\b${escapeRegExp(fnName)}\\s*\\(`);
-
-    if (dynamicPattern.test(code)) {
-      errors.push(`'${fnName}' is not allowed`);
-    }
-  }
+  // dedupe repeated errors (e.g. `process` referenced multiple times)
+  const uniqueErrors = [...new Set(errors)];
 
   return {
-    passed: errors.length === 0,
-    errors,
+    passed: uniqueErrors.length === 0,
+    errors: uniqueErrors,
   };
 }
 
 function generateJestTestFile(functionName, parameterNames, testCases) {
   const testBlocks = testCases
-    .map((tc) => {
+    .map((testCase) => {
       const args = parameterNames
-        .map((param) => JSON.stringify(tc.input[param]))
+        .map((param) => JSON.stringify(testCase.input[param]))
         .join(', ');
-      const expected = JSON.stringify(tc.expected.result);
+      const expected = JSON.stringify(testCase.expected.result);
 
       return `
-      test(${JSON.stringify(tc.description)}, () => {
+      test(${JSON.stringify(testCase.description)}, () => {
         const result = ${functionName}(${args});
         expect(result).toEqual(${expected});
       });`;
@@ -285,7 +389,7 @@ function generateJestTestFile(functionName, parameterNames, testCases) {
 function cleanFailureMessage(failMessage) {
   if (!failMessage) return null;
 
-  // ambil hanya sampai baris pertama yang dimulai dengan 'at ' (stack trace)
+  // extract only up to the first line that begins with 'at' (stack trace)
   const lines = failMessage.split('\n');
   const stackIndex = lines.findIndex((line) => line.trim().startsWith('at '));
   const relevantLines = stackIndex > 0 ? lines.slice(0, stackIndex) : lines;
@@ -296,8 +400,9 @@ function cleanFailureMessage(failMessage) {
 function parseJestResults(jestResult, testCases) {
   const results = [];
 
-  // handle runtime error — test suite gagal run sama sekali
+  // handle runtime error - the test suite fails to run at all
   const suiteError = jestResult.testResults?.[0];
+
   if (
     jestResult.numRuntimeErrorTestSuites > 0 &&
     suiteError?.assertionResults?.length === 0
@@ -320,6 +425,7 @@ function parseJestResults(jestResult, testCases) {
 
   // map assertion results by title
   const assertionMap = new Map();
+
   for (const suite of jestResult.testResults ?? []) {
     for (const assertion of suite.assertionResults ?? []) {
       assertionMap.set(assertion.title, assertion);
@@ -345,10 +451,12 @@ function parseJestResults(jestResult, testCases) {
     const failMessage = matched.failureMessages?.[0] ?? null;
 
     let received = null;
+
     if (passed) {
       received = JSON.stringify(testCase.expected.result);
     } else if (failMessage) {
       const receivedMatch = failMessage.match(/Received:\s*(.+)/);
+
       received = receivedMatch ? receivedMatch[1].trim() : null;
     }
 

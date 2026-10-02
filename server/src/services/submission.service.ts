@@ -1,3 +1,4 @@
+import { Prisma } from '../../generated/prisma/client';
 import {
   Role,
   SubmissionStatus,
@@ -12,21 +13,20 @@ import { Validation } from '../validations/validation';
 import { SubmissionValidation } from '../validations/submission.validation';
 
 import { JwtPayload } from '../models/auth.model';
+import { toUserRefResponse } from '../models/user.model';
+import { toExerciseRefResponse } from '../models/exercise.model';
 import {
   CreateSubmissionRequest,
   RunSubmissionResponse,
-  submissionDetailInclude,
+  SubmissionDetailResponse,
   SubmissionPaginationRequest,
   SubmissionPaginationResponse,
-  submissionRelationInclude,
   SubmissionResponse,
+  toSubmissionDetailResponse,
   toSubmissionResponse,
 } from '../models/submission.model';
-import {
-  TestResultResponse,
-  toTestResultResponse,
-} from '../models/test-result.model';
 
+import { gradeSubmissionCode } from '../utils/grade-exercise';
 import { normalizeCodeForCompare } from '../utils/normalize-code-for-compare';
 
 import { submissionQueue } from '../queues/submission.queue';
@@ -40,9 +40,10 @@ export class SubmissionService {
   ): Promise<SubmissionPaginationResponse> {
     const data = Validation.validate(SubmissionValidation.GET, request);
 
+    const isAdmin = user?.role === Role.ADMIN;
+
     const where = {
-      ...(user.role === Role.STUDENT && { userId: user.id }),
-      ...(user.role === Role.ADMIN && data.userId && { userId: data.userId }),
+      userId: isAdmin ? data.userId : user.id,
       ...(data.exerciseId && { exerciseId: data.exerciseId }),
       ...(data.status && { status: data.status }),
     };
@@ -52,16 +53,41 @@ export class SubmissionService {
     const [submissions, total] = await Promise.all([
       prisma.submission.findMany({
         where,
-        include: submissionRelationInclude,
+        include: {
+          exercise: {
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              order: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
         skip,
         take: data.limit,
-        orderBy: { [data.sortBy as string]: data.orderBy },
+        orderBy: {
+          [data.sortBy as keyof Prisma.SubmissionOrderByWithRelationInput]:
+            data.orderBy,
+        },
       }),
       prisma.submission.count({ where }),
     ]);
 
     return {
-      data: submissions.map(toSubmissionResponse),
+      data: submissions.map((submission) =>
+        toSubmissionResponse(
+          submission,
+          toExerciseRefResponse(submission.exercise),
+          isAdmin ? toUserRefResponse(submission.user) : undefined,
+        ),
+      ),
       pagination: {
         page: data.page,
         limit: data.limit,
@@ -74,22 +100,34 @@ export class SubmissionService {
   static async getSubmissionById(
     user: JwtPayload,
     id: number,
-  ): Promise<SubmissionResponse & { testResults: TestResultResponse[] }> {
+  ): Promise<SubmissionDetailResponse> {
+    const isAdmin = user.role === Role.ADMIN;
+
     const submission = await prisma.submission.findUnique({
       where: { id },
-      include: submissionDetailInclude,
+      include: {
+        exercise: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            order: true,
+          },
+        },
+        testResults: true,
+      },
     });
 
     if (!submission) throw new ResponseError(404, 'Submission not found');
 
-    if (user.role === Role.STUDENT && submission.userId !== user.id) {
-      throw new ResponseError(403, 'Forbidden');
+    if (!isAdmin && submission.userId !== user.id) {
+      throw new ResponseError(404, 'Submission not found');
     }
 
-    return {
-      ...toSubmissionResponse(submission),
-      testResults: submission.testResults.map(toTestResultResponse),
-    };
+    return toSubmissionDetailResponse(
+      submission,
+      toExerciseRefResponse(submission.exercise),
+    );
   }
 
   static async runSubmission(
@@ -101,18 +139,10 @@ export class SubmissionService {
     const exercise = await prisma.exercise.findUnique({
       where: { id: data.exerciseId },
       include: {
-        material: {
-          include: {
-            module: true,
-          },
-        },
+        material: { include: { module: true } },
         testCases: {
-          where: {
-            isPublished: true,
-          },
-          orderBy: {
-            order: 'asc',
-          },
+          where: { isPublished: true },
+          orderBy: { order: 'asc' },
         },
       },
     });
@@ -130,35 +160,12 @@ export class SubmissionService {
       throw new ResponseError(404, 'Exercise not found');
     }
 
-    const testCaseInputs = exercise.testCases.map((tc) => ({
-      id: tc.id,
-      description: tc.description,
-      input: tc.input as Record<string, unknown>,
-      expected: tc.expected as Record<string, unknown>,
-    }));
-
     try {
-      const results = await runSubmissionCode(
+      const { status, results } = await gradeSubmissionCode(
         data.code,
-        exercise.functionName ?? '',
-        (exercise.parameterNames as string[]) ?? [],
-        testCaseInputs,
-        exercise.syntaxRules as Record<string, string[]> | null,
+        exercise,
+        exercise.testCases,
       );
-
-      const allPassed = results.every(
-        (result) => result.status === TestResultStatus.PASSED,
-      );
-
-      const hasError = results.some(
-        (result) => result.status === TestResultStatus.ERROR,
-      );
-
-      const status = allPassed
-        ? SubmissionStatus.PASSED
-        : hasError
-          ? SubmissionStatus.ERROR
-          : SubmissionStatus.FAILED;
 
       return {
         status,
@@ -176,13 +183,15 @@ export class SubmissionService {
       return {
         status: SubmissionStatus.ERROR,
         errorMessage: e instanceof Error ? e.message : 'Unknown error',
-        testResults: testCaseInputs.map((testCase) => ({
+        testResults: exercise.testCases.map((testCase) => ({
           testCaseId: testCase.id,
           description: testCase.description,
           status: TestResultStatus.ERROR,
-          expected: JSON.stringify(testCase.expected.result),
+          expected: JSON.stringify(
+            (testCase.expected as Record<string, unknown>).result,
+          ),
           received: null,
-          failureMessage: e instanceof Error ? e.message : 'Unknown error',
+          failureMessage: e instanceof Error ? e.message : 'Unknown Error',
         })),
       };
     }

@@ -1,3 +1,7 @@
+export type JwtClaims = {
+  id: number;
+};
+
 export type JwtPayload = {
   id: number;
   email: string;
@@ -19,7 +23,6 @@ export type SignInRequest = {
 export type UpdateProfileRequest = {
   name?: string;
   email?: string;
-  bio?: string;
   imageUrl?: string;
 };
 

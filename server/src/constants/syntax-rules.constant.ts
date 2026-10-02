@@ -194,7 +194,6 @@ export const SYNTAX_RULE_PRESETS = {
     ],
   }),
 
-  // alias supaya seed lama yang pakai nama ini tidak langsung error
   CONDITIONAL_BODY_ONLY: createRules({
     required: [AST_NODE.IF_STATEMENT],
     forbidden: [

@@ -9,6 +9,28 @@ import {
   UpdateExerciseRequest,
 } from '../models/exercise.model';
 
+import { ALLOWED_SYNTAX_RULE_NODES } from '../constants/syntax-rules.constant';
+
+const astNode = z.enum(ALLOWED_SYNTAX_RULE_NODES as [string, ...string[]]);
+
+const syntaxRulesSchema = z
+  .object({
+    required: z.array(astNode),
+    forbidden: z.array(astNode),
+  })
+  .refine((rules) => rules.required.length > 0 && rules.forbidden.length > 0, {
+    message:
+      'syntaxRules must have at least one required rule and one forbidden rule',
+  })
+  .refine(
+    (rules) => !rules.required.some((node) => rules.forbidden.includes(node)),
+    { message: 'A node cannot be both required and forbidden' },
+  );
+
+const identifier = z
+  .string()
+  .regex(/^[A-Za-z_$][A-Za-z0-9_$]*$/, 'Must be a valid JavaScript identifier');
+
 export class ExerciseValidation {
   static readonly GET: ZodType<ExercisePaginationRequest> = z.object({
     ...PaginationValidation.BaseSchema,
@@ -34,15 +56,12 @@ export class ExerciseValidation {
     slug: z.string().min(3),
     title: z.string().min(3),
     description: z.string().min(3),
-    hint: z.string().trim().min(1).optional(),
     order: z.number().min(1),
-    starterCode: z.string().min(1),
-    syntaxRules: z.object({
-      required: z.array(z.string()).optional(),
-      forbidden: z.array(z.string()).optional(),
-    }),
-    parameterNames: z.array(z.string()).optional(),
-    functionName: z.string().min(1).optional(),
+    hint: z.string().trim().min(1).optional(),
+    starterCode: z.string().min(1).optional(),
+    syntaxRules: syntaxRulesSchema,
+    parameterNames: z.array(identifier).optional(),
+    functionName: identifier.min(1).optional(),
     isPublished: z.boolean().optional(),
   });
 
@@ -50,17 +69,12 @@ export class ExerciseValidation {
     slug: z.string().min(3).optional(),
     title: z.string().min(3).optional(),
     description: z.string().min(3).optional(),
-    hint: z.string().trim().min(1).optional(),
     order: z.number().min(1).optional(),
+    hint: z.string().trim().min(1).optional(),
     starterCode: z.string().min(1).optional(),
-    syntaxRules: z
-      .object({
-        required: z.array(z.string()).optional(),
-        forbidden: z.array(z.string()).optional(),
-      })
-      .optional(),
-    parameterNames: z.array(z.string()).optional(),
-    functionName: z.string().min(1).optional(),
+    syntaxRules: syntaxRulesSchema.optional(),
+    parameterNames: z.array(identifier).optional(),
+    functionName: identifier.min(1).optional(),
     isPublished: z.boolean().optional(),
   });
 }

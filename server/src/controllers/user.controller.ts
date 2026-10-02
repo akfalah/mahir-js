@@ -44,7 +44,9 @@ export class UserController {
     try {
       const response = await UserService.createUser(req.body);
 
-      res.status(201).json({ message: 'Successfully stored user', data: response });
+      res
+        .status(201)
+        .json({ message: 'Successfully stored user', data: response });
     } catch (e) {
       next(e);
     }
@@ -54,10 +56,13 @@ export class UserController {
     try {
       const response = await UserService.updateUser(
         Number(req.params.id),
+        req.user!,
         req.body,
       );
 
-      res.status(200).json({ message: 'Successfully updated user', data: response });
+      res
+        .status(200)
+        .json({ message: 'Successfully updated user', data: response });
     } catch (e) {
       next(e);
     }
@@ -65,9 +70,9 @@ export class UserController {
 
   static async destroy(req: Request, res: Response, next: NextFunction) {
     try {
-      await UserService.deleteUser(Number(req.params.id));
+      await UserService.deleteUser(Number(req.params.id), req.user!);
 
-      res.status(200).json({ message: 'Successfully deleted user', });
+      res.status(200).json({ message: 'Successfully deleted user' });
     } catch (e) {
       next(e);
     }

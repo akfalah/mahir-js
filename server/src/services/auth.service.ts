@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
+import { Prisma } from '../../generated/prisma/client';
+
 import { prisma } from '../applications/database';
 
 import { ResponseError } from '../errors/response.error';
@@ -10,7 +12,6 @@ import { AuthValidation } from '../validations/auth.validation';
 
 import {
   AuthResponse,
-  JwtPayload,
   SignInRequest,
   SignUpRequest,
   UpdatePasswordRequest,
@@ -22,19 +23,24 @@ export class AuthService {
   static async signUp(request: SignUpRequest): Promise<UserResponse> {
     const data = Validation.validate(AuthValidation.SIGN_UP, request);
 
-    const emailExists = await prisma.user.count({
-      where: { email: data.email },
-    });
-
-    if (emailExists) throw new ResponseError(400, 'Email already exists');
-
     data.password = await bcrypt.hash(data.password, 10);
 
-    const user = await prisma.user.create({
-      data: data,
-    });
+    try {
+      const user = await prisma.user.create({
+        data: data,
+      });
 
-    return toUserResponse(user);
+      return toUserResponse(user);
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ResponseError(400, 'Email already exists');
+      }
+
+      throw e;
+    }
   }
 
   static async signIn(request: SignInRequest): Promise<AuthResponse> {
@@ -50,18 +56,19 @@ export class AuthService {
       throw new ResponseError(401, 'Incorrect email or password');
     }
 
-    const payload: JwtPayload = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    };
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET!, {
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
       expiresIn: '7d',
     });
 
-    return { token, user: payload };
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    };
   }
 
   static async profile(userId: number): Promise<UserResponse> {
@@ -78,17 +85,21 @@ export class AuthService {
   ): Promise<UserResponse> {
     const data = Validation.validate(AuthValidation.UPDATE_PROFILE, request);
 
-    if (data.email) {
-      const emailExists = await prisma.user.count({
-        where: { email: data.email, NOT: { id: userId } },
-      });
+    try {
+      const user = await prisma.user.update({ where: { id: userId }, data });
 
-      if (emailExists) throw new ResponseError(400, 'Email already exists');
+      return toUserResponse(user);
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025') throw new ResponseError(404, 'User not found');
+
+        if (e.code === 'P2002') {
+          throw new ResponseError(400, 'Email already exists');
+        }
+      }
+
+      throw e;
     }
-
-    const user = await prisma.user.update({ where: { id: userId }, data });
-
-    return toUserResponse(user);
   }
 
   static async updatePassword(

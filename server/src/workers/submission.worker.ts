@@ -3,7 +3,6 @@ import path from 'path';
 
 import {
   SubmissionStatus,
-  TestResultStatus,
 } from '../../generated/prisma/enums';
 
 import { prisma } from '../applications/database';
@@ -14,6 +13,8 @@ import { ExecutionResult } from '../models/test-result.model';
 
 import { ProgressService } from '../services/progress.service';
 
+import { gradeSubmissionCode } from '../utils/grade-exercise';
+
 const EXECUTION_TIMEOUT_MS = 15000;
 
 export function runSubmissionCode(
@@ -21,7 +22,7 @@ export function runSubmissionCode(
   functionName: string,
   parameterNames: string[],
   testCases: TestCaseInput[],
-  syntaxRules: Record<string, string[]> | null,
+  syntaxRules: Record<string, string[]>,
 ): Promise<ExecutionResult[]> {
   return new Promise((resolve, reject) => {
     const child = fork(
@@ -94,81 +95,51 @@ export function runSubmissionCode(
 }
 
 export async function executeSubmission(submissionId: number): Promise<void> {
-  await prisma.submission.update({
-    where: { id: submissionId },
-    data: { status: SubmissionStatus.RUNNING },
-  });
+  try {
+    await prisma.submission.update({
+      where: { id: submissionId },
+      data: { status: SubmissionStatus.RUNNING },
+    });
 
-  const submission = await prisma.submission.findUnique({
-    where: { id: submissionId },
-    include: {
-      exercise: {
-        include: {
-          testCases: {
-            where: {
-              isPublished: true,
-            },
-            orderBy: {
-              order: 'asc',
+    const submission = await prisma.submission.findUnique({
+      where: { id: submissionId },
+      include: {
+        exercise: {
+          include: {
+            testCases: {
+              where: { isPublished: true },
+              orderBy: { order: 'asc' },
             },
           },
         },
       },
-    },
-  });
-
-  if (!submission) return;
-
-  const { code, exercise } = submission;
-  const { testCases, functionName, parameterNames } = exercise;
-
-  try {
-    const testCaseInputs: TestCaseInput[] = testCases.map((tc) => ({
-      id: tc.id,
-      description: tc.description,
-      input: tc.input as Record<string, unknown>,
-      expected: tc.expected as Record<string, unknown>,
-    }));
-
-    const results = await runSubmissionCode(
-      code,
-      functionName ?? '',
-      (parameterNames as string[]) ?? [],
-      testCaseInputs,
-      exercise.syntaxRules as Record<string, string[]> | null,
-    );
-
-    await prisma.testResult.deleteMany({
-      where: {
-        submissionId,
-      },
     });
 
+    if (!submission) {
+      logger.error(`Submission ${submissionId} not found during execution`);
+      return;
+    }
+
+    const { status, results } = await gradeSubmissionCode(
+      submission.code,
+      submission.exercise,
+      submission.exercise.testCases,
+    );
+
+    await prisma.testResult.deleteMany({ where: { submissionId } });
     await prisma.testResult.createMany({
-      data: results.map((r) => ({
+      data: results.map((result) => ({
         submissionId,
-        testCaseId: r.testCaseId,
-        description: r.description,
-        status: r.status,
-        expected: r.expected,
-        received: r.received,
-        failureMessage: r.failureMessage,
+        testCaseId: result.testCaseId,
+        description: result.description,
+        status: result.status,
+        expected: result.expected,
+        received: result.received,
+        failureMessage: result.failureMessage,
       })),
     });
 
-    const allPassed = results.every(
-      (r) => r.status === TestResultStatus.PASSED,
-    );
-
-    const hasError = results.some((r) => r.status === TestResultStatus.ERROR);
-
-    const status = allPassed
-      ? SubmissionStatus.PASSED
-      : hasError
-        ? SubmissionStatus.ERROR
-        : SubmissionStatus.FAILED;
-
-    if (allPassed) {
+    if (status === SubmissionStatus.PASSED) {
       await ProgressService.updateOnSubmissionPassed(
         submission.userId,
         submission.exerciseId,
@@ -177,18 +148,22 @@ export async function executeSubmission(submissionId: number): Promise<void> {
 
     await prisma.submission.update({
       where: { id: submissionId },
-      data: {
-        status,
-        errorMessage: null,
-      },
+      data: { status, errorMessage: null },
     });
   } catch (e) {
-    await prisma.submission.update({
-      where: { id: submissionId },
-      data: {
-        status: SubmissionStatus.ERROR,
-        errorMessage: e instanceof Error ? e.message : 'Unknown error',
-      },
-    });
+    await prisma.submission
+      .update({
+        where: { id: submissionId },
+        data: {
+          status: SubmissionStatus.ERROR,
+          errorMessage: e instanceof Error ? e.message : 'Unknown error',
+        },
+      })
+      .catch((updateErr) => {
+        logger.error(
+          `Failed to record error state for submission ${submissionId}`,
+          updateErr,
+        );
+      });
   }
 }

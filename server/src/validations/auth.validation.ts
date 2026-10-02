@@ -23,7 +23,6 @@ export class AuthValidation {
     email: z.email().optional(),
     name: z.string().min(3).optional(),
     imageUrl: z.string().max(300).optional(),
-    bio: z.string().max(300).optional(),
   });
 
   static readonly UPDATE_PASSWORD: ZodType<UpdatePasswordRequest> = z.object({

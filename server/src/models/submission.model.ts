@@ -1,10 +1,12 @@
-import { Prisma, Submission } from '../../generated/prisma/client';
+import { Submission, TestResult } from '../../generated/prisma/client';
 import {
   SubmissionStatus,
   TestResultStatus,
 } from '../../generated/prisma/enums';
 
 import { PaginationRequest, PaginationResponse } from './pagination.model';
+import { UserRefResponse } from './user.model';
+import { ExerciseRefResponse } from './exercise.model';
 import { TestResultResponse, toTestResultResponse } from './test-result.model';
 
 export type SubmissionSortBy =
@@ -26,74 +28,6 @@ export type CreateSubmissionRequest = {
   code: string;
 };
 
-export const submissionRelationInclude = {
-  user: {
-    select: {
-      id: true,
-      name: true,
-      email: true,
-    },
-  },
-  exercise: {
-    select: {
-      id: true,
-      title: true,
-      material: {
-        select: {
-          id: true,
-          title: true,
-          module: {
-            select: {
-              id: true,
-              title: true,
-            },
-          },
-        },
-      },
-    },
-  },
-} satisfies Prisma.SubmissionInclude;
-
-export const submissionDetailInclude = {
-  ...submissionRelationInclude,
-  testResults: {
-    orderBy: {
-      id: 'asc' as const,
-    },
-  },
-} satisfies Prisma.SubmissionInclude;
-
-export type SubmissionWithRelations = Prisma.SubmissionGetPayload<{
-  include: typeof submissionRelationInclude;
-}>;
-
-export type SubmissionDetailWithRelations = Prisma.SubmissionGetPayload<{
-  include: typeof submissionDetailInclude;
-}>;
-
-export type SubmissionUserResponse = {
-  id: number;
-  name: string;
-  email: string;
-};
-
-export type SubmissionModuleResponse = {
-  id: number;
-  title: string;
-};
-
-export type SubmissionMaterialResponse = {
-  id: number;
-  title: string;
-  module: SubmissionModuleResponse;
-};
-
-export type SubmissionExerciseResponse = {
-  id: number;
-  title: string;
-  material: SubmissionMaterialResponse;
-};
-
 export type SubmissionResponse = {
   id: number;
   userId: number;
@@ -102,8 +36,9 @@ export type SubmissionResponse = {
   status: SubmissionStatus;
   errorMessage: string | null;
   createdAt: Date;
-  user?: SubmissionUserResponse;
-  exercise?: SubmissionExerciseResponse;
+  updatedAt: Date;
+  exercise?: ExerciseRefResponse;
+  user?: UserRefResponse;
 };
 
 export type SubmissionDetailResponse = SubmissionResponse & {
@@ -129,9 +64,11 @@ export type SubmissionPaginationResponse =
   PaginationResponse<SubmissionResponse>;
 
 export function toSubmissionResponse(
-  submission: Submission | SubmissionWithRelations,
+  submission: Submission,
+  exercise?: ExerciseRefResponse,
+  user?: UserRefResponse,
 ): SubmissionResponse {
-  const response: SubmissionResponse = {
+  return {
     id: submission.id,
     userId: submission.userId,
     exerciseId: submission.exerciseId,
@@ -139,24 +76,18 @@ export function toSubmissionResponse(
     status: submission.status,
     errorMessage: submission.errorMessage,
     createdAt: submission.createdAt,
+    updatedAt: submission.updatedAt,
+    ...(exercise && { exercise }),
+    ...(user && { user }),
   };
-
-  if ('user' in submission) {
-    response.user = submission.user;
-  }
-
-  if ('exercise' in submission) {
-    response.exercise = submission.exercise;
-  }
-
-  return response;
 }
 
 export function toSubmissionDetailResponse(
-  submission: SubmissionDetailWithRelations,
+  submission: Submission & { testResults: TestResult[] },
+  exercise?: ExerciseRefResponse,
 ): SubmissionDetailResponse {
   return {
-    ...toSubmissionResponse(submission),
+    ...toSubmissionResponse(submission, exercise),
     testResults: submission.testResults.map(toTestResultResponse),
   };
 }

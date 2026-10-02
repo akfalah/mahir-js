@@ -1,6 +1,17 @@
-import { Material, Prisma } from '../../generated/prisma/client';
+import { Material } from '../../generated/prisma/client';
 
 import { PaginationRequest, PaginationResponse } from './pagination.model';
+import { ModuleRefResponse } from './module.model';
+import {
+  ExerciseSummaryResponse,
+  ExerciseSummarySource,
+  toExerciseSummaryResponse,
+} from './exercise.model';
+
+export type MaterialSummarySource = Pick<
+  Material,
+  'id' | 'moduleId' | 'slug' | 'title' | 'description' | 'order' | 'isPublished'
+>;
 
 export type MaterialSortBy =
   | 'id'
@@ -34,28 +45,6 @@ export type UpdateMaterialRequest = {
   isPublished?: boolean;
 };
 
-export const materialRelationInclude = {
-  module: {
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      isPublished: true,
-    },
-  },
-} satisfies Prisma.MaterialInclude;
-
-export type MaterialWithRelations = Prisma.MaterialGetPayload<{
-  include: typeof materialRelationInclude;
-}>;
-
-export type MaterialModuleResponse = {
-  id: number;
-  slug: string;
-  title: string;
-  isPublished: boolean;
-};
-
 export type MaterialResponse = {
   id: number;
   moduleId: number;
@@ -67,15 +56,37 @@ export type MaterialResponse = {
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
-  module?: MaterialModuleResponse;
+  module?: ModuleRefResponse;
+};
+
+export type MaterialSummaryResponse = {
+  id: number;
+  moduleId: number;
+  slug: string;
+  title: string;
+  description: string;
+  order: number;
+  isPublished?: boolean;
+};
+
+export type MaterialRefResponse = {
+  id: number;
+  slug: string;
+  title: string;
+  order: number;
 };
 
 export type MaterialPaginationResponse = PaginationResponse<MaterialResponse>;
 
+export type MaterialDetailResponse = MaterialResponse & {
+  exercises: ExerciseSummaryResponse[];
+};
+
 export function toMaterialResponse(
-  material: Material | MaterialWithRelations,
+  material: Material,
+  module?: ModuleRefResponse,
 ): MaterialResponse {
-  const response: MaterialResponse = {
+  return {
     id: material.id,
     moduleId: material.moduleId,
     slug: material.slug,
@@ -86,11 +97,47 @@ export function toMaterialResponse(
     isPublished: material.isPublished,
     createdAt: material.createdAt,
     updatedAt: material.updatedAt,
+    ...(module && { module }),
   };
+}
 
-  if ('module' in material) {
-    response.module = material.module;
-  }
+export function toMaterialDetailResponse(
+  material: Material & {
+    module: ModuleRefResponse;
+    exercises: ExerciseSummarySource[];
+  },
+  isAdmin: boolean,
+): MaterialDetailResponse {
+  return {
+    ...toMaterialResponse(material, material.module),
+    exercises: material.exercises.map((exercise) =>
+      toExerciseSummaryResponse(exercise, isAdmin),
+    ),
+  };
+}
 
-  return response;
+export function toMaterialSummaryResponse(
+  material: MaterialSummarySource,
+  includeIsPublished: boolean,
+): MaterialSummaryResponse {
+  return {
+    id: material.id,
+    moduleId: material.moduleId,
+    slug: material.slug,
+    title: material.title,
+    description: material.description,
+    order: material.order,
+    ...(includeIsPublished && { isPublished: material.isPublished }),
+  };
+}
+
+export function toMaterialRefResponse(
+  material: MaterialRefResponse,
+): MaterialRefResponse {
+  return {
+    id: material.id,
+    slug: material.slug,
+    title: material.title,
+    order: material.order,
+  };
 }

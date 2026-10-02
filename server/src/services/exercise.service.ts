@@ -1,5 +1,7 @@
-import { prisma } from '../applications/database';
+import { Prisma } from '../../generated/prisma/client';
 import { Role } from '../../generated/prisma/enums';
+
+import { prisma } from '../applications/database';
 
 import { ResponseError } from '../errors/response.error';
 
@@ -7,13 +9,15 @@ import { Validation } from '../validations/validation';
 import { ExerciseValidation } from '../validations/exercise.validation';
 
 import { JwtPayload } from '../models/auth.model';
+import { toMaterialRefResponse } from '../models/material.model';
 import {
   CreateExerciseRequest,
+  ExerciseDetailResponse,
   ExercisePaginationRequest,
   ExercisePaginationResponse,
-  ExerciseRelationInclude,
   ExerciseResponse,
-  toExerciseeResponse,
+  toExerciseDetailResponse,
+  toExerciseResponse,
   UpdateExerciseRequest,
 } from '../models/exercise.model';
 
@@ -59,16 +63,33 @@ export class ExerciseService {
     const [exercises, total] = await Promise.all([
       prisma.exercise.findMany({
         where,
-        include: ExerciseRelationInclude,
+        include: {
+          material: {
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              order: true,
+            },
+          },
+        },
         skip,
         take: data.limit,
-        orderBy: { [data.sortBy as string]: data.orderBy },
+        orderBy: {
+          [data.sortBy as keyof Prisma.ExerciseOrderByWithRelationInput]:
+            data.orderBy,
+        },
       }),
       prisma.exercise.count({ where }),
     ]);
 
     return {
-      data: exercises.map(toExerciseeResponse),
+      data: exercises.map((exercise) =>
+        toExerciseResponse(
+          exercise,
+          isAdmin ? toMaterialRefResponse(exercise.material) : undefined,
+        ),
+      ),
       pagination: {
         page: data.page,
         limit: data.limit,
@@ -81,17 +102,37 @@ export class ExerciseService {
   static async getExerciseBySlug(
     user: JwtPayload | undefined,
     slug: string,
-  ): Promise<ExerciseResponse> {
+  ): Promise<ExerciseDetailResponse> {
     const isAdmin = user?.role === Role.ADMIN;
 
     const exercise = await prisma.exercise.findUnique({
       where: { slug, ...(!isAdmin && { isPublished: true }) },
-      include: ExerciseRelationInclude,
+      include: {
+        material: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            order: true,
+          },
+        },
+        testCases: {
+          where: { ...(!isAdmin && { isPublished: true }) },
+          orderBy: { order: 'asc' },
+          select: {
+            id: true,
+            exerciseId: true,
+            description: true,
+            order: true,
+            isPublished: true,
+          },
+        },
+      },
     });
 
     if (!exercise) throw new ResponseError(404, 'Exercise not found');
 
-    return toExerciseeResponse(exercise);
+    return toExerciseDetailResponse(exercise, isAdmin);
   }
 
   static async createExercise(
@@ -105,19 +146,31 @@ export class ExerciseService {
 
     if (!material) throw new ResponseError(404, 'Material not found');
 
-    const [slugExists, orderExists] = await Promise.all([
-      prisma.exercise.count({ where: { slug: data.slug } }),
-      prisma.exercise.count({
-        where: { materialId: data.materialId, order: data.order },
-      }),
-    ]);
+    try {
+      const exercise = await prisma.exercise.create({ data });
 
-    if (slugExists) throw new ResponseError(400, 'Slug already exists');
-    if (orderExists) throw new ResponseError(400, 'Order already exists');
+      return toExerciseResponse(exercise);
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        const target = e.meta?.target as string[] | undefined;
 
-    const exercise = await prisma.exercise.create({ data });
+        if (target?.includes('slug')) {
+          throw new ResponseError(400, 'Slug already exists');
+        }
 
-    return toExerciseeResponse(exercise);
+        if (target?.includes('order')) {
+          throw new ResponseError(
+            400,
+            'Order already exists within this material',
+          );
+        }
+      }
+
+      throw e;
+    }
   }
 
   static async updateExercise(
@@ -126,40 +179,47 @@ export class ExerciseService {
   ): Promise<ExerciseResponse> {
     const data = Validation.validate(ExerciseValidation.UPDATE, request);
 
-    const exists = await prisma.exercise.findUnique({ where: { id } });
+    try {
+      const exercise = await prisma.exercise.update({ where: { id }, data });
 
-    if (!exists) throw new ResponseError(404, 'Exercise not found');
+      return toExerciseResponse(exercise);
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025')
+          throw new ResponseError(404, 'Exercise not found');
 
-    if (data.slug) {
-      const slugExists = await prisma.exercise.count({
-        where: { slug: data.slug, NOT: { id } },
-      });
+        if (e.code === 'P2002') {
+          const target = e.meta?.target as string[] | undefined;
 
-      if (slugExists) throw new ResponseError(400, 'Slug already exists');
+          if (target?.includes('slug')) {
+            throw new ResponseError(400, 'Slug already exists');
+          }
+          
+          if (target?.includes('order')) {
+            throw new ResponseError(
+              400,
+              'Order already exists within this material',
+            );
+          }
+        }
+      }
+
+      throw e;
     }
-
-    if (data.order) {
-      const orderExists = await prisma.exercise.count({
-        where: {
-          materialId: exists.materialId,
-          order: data.order,
-          NOT: { id },
-        },
-      });
-
-      if (orderExists) throw new ResponseError(400, 'Order already exists');
-    }
-
-    const exercise = await prisma.exercise.update({ where: { id }, data });
-
-    return toExerciseeResponse(exercise);
   }
 
   static async deleteExercise(id: number): Promise<void> {
-    const exercise = await prisma.exercise.findUnique({ where: { id } });
+    try {
+      await prisma.exercise.delete({ where: { id } });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2025'
+      ) {
+        throw new ResponseError(404, 'Exercise not found');
+      }
 
-    if (!exercise) throw new ResponseError(404, 'Exercise not found');
-
-    await prisma.exercise.delete({ where: { id } });
+      throw e;
+    }
   }
 }

@@ -1,5 +1,7 @@
-import { prisma } from '../applications/database';
+import { Prisma } from '../../generated/prisma/client';
 import { Role } from '../../generated/prisma/enums';
+
+import { prisma } from '../applications/database';
 
 import { ResponseError } from '../errors/response.error';
 
@@ -7,12 +9,14 @@ import { Validation } from '../validations/validation';
 import { MaterialValidation } from '../validations/material.validation';
 
 import { JwtPayload } from '../models/auth.model';
+import { toModuleRefResponse } from '../models/module.model';
 import {
   CreateMaterialRequest,
+  MaterialDetailResponse,
   MaterialPaginationRequest,
   MaterialPaginationResponse,
-  materialRelationInclude,
   MaterialResponse,
+  toMaterialDetailResponse,
   toMaterialResponse,
   UpdateMaterialRequest,
 } from '../models/material.model';
@@ -42,7 +46,12 @@ export class MaterialService {
       ...(data.search && {
         OR: [
           { title: { contains: data.search, mode: 'insensitive' as const } },
-          { description: { contains: data.search, mode: 'insensitive' as const } },
+          {
+            description: {
+              contains: data.search,
+              mode: 'insensitive' as const,
+            },
+          },
         ],
       }),
     };
@@ -52,16 +61,28 @@ export class MaterialService {
     const [materials, total] = await Promise.all([
       prisma.material.findMany({
         where,
-        include: materialRelationInclude,
+        include: {
+          module: {
+            select: { id: true, slug: true, title: true, order: true },
+          },
+        },
         skip,
         take: data.limit,
-        orderBy: { [data.sortBy as string]: data.orderBy },
+        orderBy: {
+          [data.sortBy as keyof Prisma.MaterialOrderByWithRelationInput]:
+            data.orderBy,
+        },
       }),
       prisma.material.count({ where }),
     ]);
 
     return {
-      data: materials.map(toMaterialResponse),
+      data: materials.map((material) =>
+        toMaterialResponse(
+          material,
+          isAdmin ? toModuleRefResponse(material.module) : undefined,
+        ),
+      ),
       pagination: {
         page: data.page,
         limit: data.limit,
@@ -74,17 +95,34 @@ export class MaterialService {
   static async getMaterialBySlug(
     user: JwtPayload | undefined,
     slug: string,
-  ): Promise<MaterialResponse> {
+  ): Promise<MaterialDetailResponse> {
     const isAdmin = user?.role === Role.ADMIN;
 
     const material = await prisma.material.findUnique({
       where: { slug, ...(!isAdmin && { isPublished: true }) },
-      include: materialRelationInclude,
+      include: {
+        module: {
+          select: { id: true, slug: true, title: true, order: true },
+        },
+        exercises: {
+          where: { ...(!isAdmin && { isPublished: true }) },
+          orderBy: { order: 'asc' },
+          select: {
+            id: true,
+            materialId: true,
+            slug: true,
+            title: true,
+            description: true,
+            order: true,
+            isPublished: true,
+          },
+        },
+      },
     });
 
     if (!material) throw new ResponseError(404, 'Material not found');
 
-    return toMaterialResponse(material);
+    return toMaterialDetailResponse(material, isAdmin);
   }
 
   static async createMaterial(
@@ -98,16 +136,6 @@ export class MaterialService {
 
     if (!module) throw new ResponseError(404, 'Module not found');
 
-    const [slugExists, orderExists] = await Promise.all([
-      prisma.material.count({ where: { slug: data.slug } }),
-      prisma.material.count({
-        where: { moduleId: data.moduleId, order: data.order },
-      }),
-    ]);
-
-    if (slugExists) throw new ResponseError(400, 'Slug already exists');
-    if (orderExists) throw new ResponseError(400, 'Order already exists');
-
     const cleanContent = sanitizeMaterialContent(data.content);
     const plainTextContent = getPlainTextFromHtml(cleanContent);
 
@@ -115,11 +143,33 @@ export class MaterialService {
       throw new ResponseError(400, 'Material content is too short.');
     }
 
-    const material = await prisma.material.create({
-      data: { ...data, content: cleanContent },
-    });
+    try {
+      const material = await prisma.material.create({
+        data: { ...data, content: cleanContent },
+      });
 
-    return toMaterialResponse(material);
+      return toMaterialResponse(material);
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        const target = e.meta?.target as string[] | undefined;
+
+        if (target?.includes('slug')) {
+          throw new ResponseError(400, 'Slug already exists');
+        }
+
+        if (target?.includes('order')) {
+          throw new ResponseError(
+            400,
+            'Order already exists within this module',
+          );
+        }
+      }
+
+      throw e;
+    }
   }
 
   static async updateMaterial(
@@ -127,26 +177,6 @@ export class MaterialService {
     request: UpdateMaterialRequest,
   ): Promise<MaterialResponse> {
     const data = Validation.validate(MaterialValidation.UPDATE, request);
-
-    const exists = await prisma.material.findUnique({ where: { id } });
-
-    if (!exists) throw new ResponseError(404, 'Material not found');
-
-    if (data.slug) {
-      const slugExists = await prisma.material.count({
-        where: { slug: data.slug, NOT: { id } },
-      });
-
-      if (slugExists) throw new ResponseError(400, 'Slug already exists');
-    }
-
-    if (data.order) {
-      const orderExists = await prisma.material.count({
-        where: { moduleId: exists.moduleId, order: data.order, NOT: { id } },
-      });
-
-      if (orderExists) throw new ResponseError(400, 'Order already exists');
-    }
 
     const cleanContent =
       data.content !== undefined
@@ -161,19 +191,50 @@ export class MaterialService {
       }
     }
 
-    const material = await prisma.material.update({
-      where: { id },
-      data: { ...data, content: cleanContent },
-    });
+    try {
+      const material = await prisma.material.update({
+        where: { id },
+        data: { ...data, content: cleanContent },
+      });
 
-    return toMaterialResponse(material);
+      return toMaterialResponse(material);
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025')
+          throw new ResponseError(404, 'Material not found');
+
+        if (e.code === 'P2002') {
+          const target = e.meta?.target as string[] | undefined;
+
+          if (target?.includes('slug')) {
+            throw new ResponseError(400, 'Slug already exists');
+          }
+          
+          if (target?.includes('order')) {
+            throw new ResponseError(
+              400,
+              'Order already exists within this module',
+            );
+          }
+        }
+      }
+
+      throw e;
+    }
   }
 
   static async deleteMaterial(id: number): Promise<void> {
-    const material = await prisma.material.findUnique({ where: { id } });
+    try {
+      await prisma.material.delete({ where: { id } });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2025'
+      ) {
+        throw new ResponseError(404, 'Material not found');
+      }
 
-    if (!material) throw new ResponseError(404, 'Material not found');
-
-    await prisma.material.delete({ where: { id } });
+      throw e;
+    }
   }
 }
