@@ -123,6 +123,8 @@ export class ExerciseService {
             id: true,
             exerciseId: true,
             description: true,
+            input: true,
+            expected: true,
             order: true,
             isPublished: true,
           },
@@ -194,7 +196,7 @@ export class ExerciseService {
           if (target?.includes('slug')) {
             throw new ResponseError(400, 'Slug already exists');
           }
-          
+
           if (target?.includes('order')) {
             throw new ResponseError(
               400,

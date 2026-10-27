@@ -31,8 +31,6 @@ import { normalizeCodeForCompare } from '../utils/normalize-code-for-compare';
 
 import { submissionQueue } from '../queues/submission.queue';
 
-import { runSubmissionCode } from '../workers/submission.worker';
-
 export class SubmissionService {
   static async getSubmissions(
     user: JwtPayload,
@@ -46,6 +44,16 @@ export class SubmissionService {
       userId: isAdmin ? data.userId : user.id,
       ...(data.exerciseId && { exerciseId: data.exerciseId }),
       ...(data.status && { status: data.status }),
+      ...(data.search && {
+        OR: [
+          {
+            exercise: {
+              title: { contains: data.search, mode: 'insensitive' as const },
+              slug: { contains: data.search, mode: 'insensitive' as const },
+            },
+          },
+        ],
+      }),
     };
 
     const skip = (data.page - 1) * data.limit;

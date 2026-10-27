@@ -33,7 +33,7 @@ export class AuthController {
 
       res
         .status(200)
-        .json({ message: 'Successfully retrieved user', data: response });
+        .json({ message: 'Successfully retrieved profile', data: response });
     } catch (e) {
       next(e);
     }
@@ -45,7 +45,7 @@ export class AuthController {
 
       res
         .status(200)
-        .json({ message: 'Successfully updated user', data: response });
+        .json({ message: 'Successfully updated profile', data: response });
     } catch (e) {
       next(e);
     }

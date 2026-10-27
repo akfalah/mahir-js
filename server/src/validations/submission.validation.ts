@@ -15,6 +15,8 @@ export class SubmissionValidation {
     sortBy: z
       .enum([
         'id',
+        'userId',
+        'exerciseId',
         'status',
         'createdAt',
       ] as const satisfies readonly SubmissionSortBy[])

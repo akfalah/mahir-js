@@ -5,7 +5,13 @@ import { PaginationRequest, PaginationResponse } from './pagination.model';
 
 export type TestCaseSummarySource = Pick<
   TestCase,
-  'id' | 'exerciseId' | 'description' | 'order' | 'isPublished'
+  | 'id'
+  | 'exerciseId'
+  | 'description'
+  | 'input'
+  | 'expected'
+  | 'order'
+  | 'isPublished'
 >;
 
 export type TestCaseSortBy =
@@ -61,6 +67,8 @@ export type TestCaseSummaryResponse = {
   id: number;
   exerciseId: number;
   description: string;
+  input: Record<string, unknown>;
+  expected: Record<string, unknown>;
   order: number;
   isPublished?: boolean;
 };
@@ -93,6 +101,8 @@ export function toTestCaseSummaryResponse(
     id: testCase.id,
     exerciseId: testCase.exerciseId,
     description: testCase.description,
+    input: testCase.input as Record<string, unknown>,
+    expected: testCase.expected as Record<string, unknown>,
     order: testCase.order,
     ...(includeIsPublished && { isPublished: testCase.isPublished }),
   };
